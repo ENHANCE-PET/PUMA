@@ -10,18 +10,17 @@
 import os
 import subprocess
 
-
 # Constants
 PET_FOLDER = 'PET'
 CT_FOLDER = 'CT'
 TRANSFORM_FOLDER = 'transforms'
 LABELS_FOLDER = 'labels'
 
-COST_FUNCTION = 'SSD'
 MULTI_RESOLUTION_SCHEME = '100x25x10'
+COST_FUNCTION = 'NCC 2x2x2'  # 'SSD'
 greedy_version = "/home/horyzen/Projects/builds/Greedy/bin/greedy"
 
-main_directory = '/home/horyzen/Downloads/multiplexing'
+main_directory = '/home/horyzen/Downloads/multiplexing/UCD/TracerMultiplexingProject/test_run'
 
 # 1 Get a list of patients
 patients = os.listdir(main_directory)
@@ -49,7 +48,7 @@ for patient in patients:
                     command_string = f"c3d {patient_reference_PET_path} {patient_CT_path} " \
                                      f"-reslice-identity " \
                                      f"-o {patient_reference_CT_path}"
-                    # subprocess.run(command_string, shell=True, capture_output=True)
+                    subprocess.run(command_string, shell=True, capture_output=True)
                 else:
                     print(f'  Resliced {tracer} CT already exists.')
 
@@ -73,7 +72,7 @@ for patient in patients:
                     command_string = f"c3d {patient_current_PET_path} {patient_CT_path} " \
                                      f"-reslice-identity " \
                                      f"-o {patient_current_CT_path}"
-                    # subprocess.run(command_string, shell=True, capture_output=True)
+                    subprocess.run(command_string, shell=True, capture_output=True)
                 else:
                     print(f'  Resliced {tracer} CT already exists.')
 
@@ -93,7 +92,7 @@ for patient in patients:
                                  f"-o {affine_transform_file_path} " \
                                  f"-n {MULTI_RESOLUTION_SCHEME} " \
                                  f"-m {COST_FUNCTION}"
-                # subprocess.run(command_string, shell=True, capture_output=True)
+                subprocess.run(command_string, shell=True, capture_output=True)
 
                 # Deformable alignment
                 print(f"  Aligning [deformable] {patient_current_CT_path} -> {patient_reference_CT_path}")
@@ -109,12 +108,12 @@ for patient in patients:
                                  f"-n {MULTI_RESOLUTION_SCHEME} " \
                                  f"-sv " \
                                  f"-m {COST_FUNCTION}"
-                # subprocess.run(command_string, shell=True, capture_output=True)
+                subprocess.run(command_string, shell=True, capture_output=True)
 
                 # Reslicing PET
                 interpolation_type = "LINEAR"
                 patient_resliced_PET_image = os.path.join(tracer_PET_directory,
-                                                          f"{tracers[0]}_{os.path.basename(patient_current_PET_path)}")
+                                                          f"MULTIPLEXED_{patient}_{tracer}-to-{tracers[0]}_{os.path.basename(patient_current_PET_path)}")
                 print(f"  Reslicing: {patient_current_PET_path} -> {patient_resliced_PET_image}")
                 print(f"             Reference {patient_reference_PET_path} | Interpolation: {interpolation_type}")
 
@@ -124,8 +123,9 @@ for patient in patients:
                                  f"-ri {interpolation_type} " \
                                  f"-rm {patient_current_PET_path} {patient_resliced_PET_image} " \
                                  f"-r {deformable_transform_file_path} {affine_transform_file_path}"
-                # subprocess.run(command_string, shell=True, capture_output=True)
+                subprocess.run(command_string, shell=True, capture_output=True)
 
+                '''
                 # label preparation
                 tracer_label_directory = os.path.join(tracer_directory, LABELS_FOLDER)
                 patient_label_path = os.path.join(tracer_label_directory, os.listdir(tracer_label_directory)[0])
@@ -143,7 +143,7 @@ for patient in patients:
                 # Reslicing labels
                 interpolation_type = "LABEL 0.2vox"
                 patient_resliced_label_image = os.path.join(tracer_label_directory,
-                                                            f"{tracers[0]}_{os.path.basename(patient_current_label_path)}")
+                                                            f"MULTIPLEXED_{patient}_{tracer}-to-{tracers[0]}_{os.path.basename(patient_current_label_path)}")
                 print(f"  Reslicing: {patient_current_label_path} -> {patient_resliced_label_image}")
                 print(f"             Reference {patient_reference_PET_path} | Interpolation: {interpolation_type}")
 
@@ -156,6 +156,7 @@ for patient in patients:
                 # subprocess.run(command_string, shell=True, capture_output=True)
 
                 # Analysis can go here
+                '''
 
         print('')
     else:
