@@ -107,9 +107,9 @@ for patient in patients:
 
             # Evaluate before alignment
             print(f' Before alignment   ({tracer}):')
-            print(f'  Reference labels ({tracer}): {patient_reference_label_path}')
-            print(f'  Compare labels   ({tracer}): {patient_current_label_path}')
-            print(f'  Compare PET      ({tracer}): {patient_current_PET_path}')
+            print(f'  Reference labels  ({tracer}): {patient_reference_label_path}')
+            print(f'  Compare labels    ({tracer}): {patient_current_label_path}')
+            print(f'  Compare PET       ({tracer}): {patient_current_PET_path}')
             reference_labels = SimpleITK.ReadImage(patient_reference_label_path, SimpleITK.sitkUInt8)
             resliced_labels = SimpleITK.ReadImage(patient_current_label_path, SimpleITK.sitkUInt8)
             resliced_PET = SimpleITK.ReadImage(patient_current_PET_path)
