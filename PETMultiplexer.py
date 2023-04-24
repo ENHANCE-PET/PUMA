@@ -12,7 +12,8 @@ import subprocess
 import SimpleITK
 import evaluation
 import image_processing as imgp
-
+import pandas as pd
+import openpyxl
 
 # Constants
 PET_FOLDER = 'PET'
@@ -26,15 +27,16 @@ greedy_version = "/home/horyzen/Projects/builds/Greedy/bin/greedy"
 
 # Indices with Organs
 # 4 Brain
-# 12 Lungs
 # 7 Liver
-# 3 bladder
 # 9 spleen
+# 12 Lungs
 
-EVALUATION_ORGANS = [3, 4, 7, 9, 12]
+EVALUATION_ORGANS = [4, 7, 9, 12]
 
 main_directory = '/home/horyzen/Downloads/multiplexing/UCD/TracerMultiplexingProject/test_run'
 patients = os.listdir(main_directory)
+
+all_dice_scores = []
 
 for patient in patients:
     patient_directory = os.path.join(main_directory, patient)
@@ -51,6 +53,9 @@ for patient in patients:
         tracer_PET_directory = os.path.join(tracer_directory, PET_FOLDER)
         tracer_label_directory = os.path.join(tracer_directory, LABELS_FOLDER)
 
+        metrics_unaligned = []
+        metrics_aligned = []
+
         # First tracer as reference
         if tracer_index == 0:
             print(f' {tracer} -> REFERENCE: Subsequent tracers are aligned towards it.')
@@ -59,20 +64,15 @@ for patient in patients:
             patient_CT_path = os.path.join(tracer_CT_directory, os.listdir(tracer_CT_directory)[0])
             patient_reference_CT_path = os.path.join(tracer_CT_directory,
                                                      f"PET-ALIGNED_{os.path.basename(patient_CT_path)}")
-            if not os.path.exists(patient_reference_CT_path):
-                print(f'  Reslicing {tracer} CT to fit {tracer} PET domain')
-                imgp.reslice_identity(patient_reference_PET_path, patient_CT_path, patient_reference_CT_path)
-            else:
-                print(f'  Resliced {tracer} CT already exists.')
+
+            print(f'  Reslicing {tracer} CT to fit {tracer} PET domain')
+            imgp.reslice_identity(patient_reference_PET_path, patient_CT_path, patient_reference_CT_path)
 
             patient_label_path = os.path.join(tracer_label_directory, os.listdir(tracer_label_directory)[0])
             patient_reference_label_path = os.path.join(tracer_label_directory,
                                                         f"PET-ALIGNED_{os.path.basename(patient_label_path)}")
-            if not os.path.exists(patient_reference_label_path):
-                print(f'  Reslicing {tracer} labels to fit {tracer} PET domain')
-                imgp.reslice_identity(patient_reference_PET_path, patient_label_path, patient_reference_label_path)
-            else:
-                print(f'  Resliced {tracer} labels already exists.')
+            print(f'  Reslicing {tracer} labels to fit {tracer} PET domain')
+            imgp.reslice_identity(patient_reference_PET_path, patient_label_path, patient_reference_label_path)
 
             print(f'  Reference PET    ({tracer}): {patient_reference_PET_path}')
             print(f'  Reference CT     ({tracer}): {patient_reference_CT_path}')
@@ -86,38 +86,43 @@ for patient in patients:
             patient_CT_path = os.path.join(tracer_CT_directory, os.listdir(tracer_CT_directory)[0])
             patient_current_CT_path = os.path.join(tracer_CT_directory,
                                                    f"PET-ALIGNED_{os.path.basename(patient_CT_path)}")
-            if not os.path.exists(patient_current_CT_path):
-                print(f'  Reslicing {tracer} CT to fit {tracer} PET domain')
-                imgp.reslice_identity(patient_current_PET_path, patient_CT_path, patient_current_CT_path)
-            else:
-                print(f'  Resliced {tracer} CT already exists.')
+
+            print(f'  Reslicing {tracer} CT to fit {tracer} PET domain')
+            imgp.reslice_identity(patient_current_PET_path, patient_CT_path, patient_current_CT_path)
 
             patient_label_path = os.path.join(tracer_label_directory, os.listdir(tracer_label_directory)[0])
             patient_current_label_path = os.path.join(tracer_label_directory,
                                                       f"PET-ALIGNED_{os.path.basename(patient_label_path)}")
-            if not os.path.exists(patient_current_label_path):
-                print(f'  Reslicing {tracer} labels to fit PET domain')
-                imgp.reslice_identity(patient_current_PET_path, patient_label_path, patient_current_label_path)
-            else:
-                print(f'  Resliced {tracer} labels already exist.')
+
+            print(f'  Reslicing {tracer} labels to fit {tracer} PET domain')
+            imgp.reslice_identity(patient_current_PET_path, patient_label_path, patient_current_label_path)
 
             print(f'  Current PET     ({tracer}): {patient_current_PET_path}')
             print(f'  Current CT      ({tracer}): {patient_current_CT_path}')
             print(f'  Current labels  ({tracer}): {patient_current_label_path}')
 
             # Evaluate before alignment
+            patient_current_label_unaligned_path = os.path.join(tracer_label_directory,
+                                                                f"UNALIGNED_{os.path.basename(patient_current_label_path)}")
+            imgp.reslice_identity(patient_reference_label_path, patient_current_label_path,
+                                  patient_current_label_unaligned_path)
+            patient_current_PET_unaligned_path = os.path.join(tracer_PET_directory,
+                                                              f"UNALIGNED_{os.path.basename(patient_current_PET_path)}")
+            imgp.reslice_identity(patient_reference_PET_path, patient_current_PET_path,
+                                  patient_current_PET_unaligned_path)
+
             print(f' Before alignment   ({tracer}):')
             print(f'  Reference labels  ({tracer}): {patient_reference_label_path}')
-            print(f'  Compare labels    ({tracer}): {patient_current_label_path}')
-            print(f'  Compare PET       ({tracer}): {patient_current_PET_path}')
+            print(f'  Compare labels    ({tracer}): {patient_current_label_unaligned_path}')
+            print(f'  Compare PET       ({tracer}): {patient_current_PET_unaligned_path}')
             reference_labels = SimpleITK.ReadImage(patient_reference_label_path, SimpleITK.sitkUInt8)
-            resliced_labels = SimpleITK.ReadImage(patient_current_label_path, SimpleITK.sitkUInt8)
-            resliced_PET = SimpleITK.ReadImage(patient_current_PET_path)
+            resliced_labels = SimpleITK.ReadImage(patient_current_label_unaligned_path, SimpleITK.sitkUInt8)
+            resliced_PET = SimpleITK.ReadImage(patient_current_PET_unaligned_path)
 
             images = (reference_labels, resliced_labels, resliced_PET)
 
             for EVALUATION_ORGAN in EVALUATION_ORGANS:
-                evaluation.evaluate_label(images, EVALUATION_ORGAN)
+                metrics_unaligned.append(evaluation.evaluate_label(images, EVALUATION_ORGAN))
 
             # Alignment preparation
             tracer_transform_directory = os.path.join(tracer_directory, TRANSFORM_FOLDER)
@@ -159,7 +164,7 @@ for patient in patients:
             # Reslicing PET
             interpolation_type = "LINEAR"
             patient_resliced_PET_path = os.path.join(tracer_PET_directory, f"MULTIPLEXED_{tracer}_"
-                                                     f"{os.path.basename(patient_current_PET_path)}")
+                                                                           f"{os.path.basename(patient_current_PET_path)}")
             print(f"  Reslicing: {patient_current_PET_path} -> {patient_resliced_PET_path}")
             print(f"             Reference {patient_reference_PET_path} | Interpolation: {interpolation_type}")
 
@@ -174,7 +179,7 @@ for patient in patients:
             # Reslicing labels
             interpolation_type = "LABEL 0.2vox"
             patient_resliced_label_path = os.path.join(tracer_label_directory, f"MULTIPLEXED_{tracer}_"
-                                                       f"{os.path.basename(patient_current_label_path)}")
+                                                                               f"{os.path.basename(patient_current_label_path)}")
             print(f"  Reslicing: {patient_current_label_path} -> {patient_resliced_label_path}")
             print(f"             Reference {patient_reference_PET_path} | Interpolation: {interpolation_type}")
 
@@ -198,6 +203,24 @@ for patient in patients:
             images = (reference_labels, resliced_labels, resliced_PET)
 
             for EVALUATION_ORGAN in EVALUATION_ORGANS:
-                evaluation.evaluate_label(images, EVALUATION_ORGAN)
+                metrics_aligned.append(evaluation.evaluate_label(images, EVALUATION_ORGAN))
+
+            tracer_dice_scores = [patient, tracer]
+            print(f' Percentage difference:')
+            for i in range(len(EVALUATION_ORGANS)):
+                dice_unaligned = float(metrics_unaligned[i][1])
+                dice_aligned = float(metrics_aligned[i][1])
+                dice_difference_percentage = ((dice_aligned-dice_unaligned)/dice_aligned)*100
+                print(f'  DICE score (label {EVALUATION_ORGANS[i]}) %: {dice_difference_percentage}')
+                tracer_dice_scores.append(dice_difference_percentage)
+            all_dice_scores.append(tracer_dice_scores)
 
     print('')
+
+column_names = ['Patient', 'Tracer', 'Brain', 'Liver', 'Spleen', 'Lungs']
+
+# convert the list of lists to a Pandas DataFrame with column names
+df = pd.DataFrame(all_dice_scores, columns=column_names)
+df.to_csv(os.path.join(main_directory, 'dice_scores.csv'), index=False)
+
+print('FINISHED')
