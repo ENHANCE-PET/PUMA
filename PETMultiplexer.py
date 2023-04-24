@@ -33,7 +33,7 @@ greedy_version = "/home/horyzen/Projects/builds/Greedy/bin/greedy"
 
 EVALUATION_ORGANS = [4, 7, 9, 12]
 
-main_directory = '/home/horyzen/Downloads/multiplexing/UCD/TracerMultiplexingProject/test_run_batch0'
+main_directory = '/home/horyzen/Downloads/multiplexing/UCD/TracerMultiplexingProject/test_run_batch1'
 subjects = os.listdir(main_directory)
 
 all_dice_scores = []
