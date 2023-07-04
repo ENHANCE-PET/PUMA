@@ -17,9 +17,9 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
-import logging
-import constants
 import pyfiglet
+
+import constants
 
 
 def logo():

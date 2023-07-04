@@ -17,11 +17,13 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
-import os
-import requests
-import zipfile
 import logging
+import os
+import zipfile
+
+import requests
 from rich.progress import Progress
+
 import constants
 
 
