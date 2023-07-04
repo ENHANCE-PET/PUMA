@@ -1,0 +1,6 @@
+requests~=2.25.1
+rich~=13.4.1
+setuptools~=59.6.0
+SimpleITK~=2.2.1
+pandas~=1.4.4
+pyfiglet~=0.8.post1
