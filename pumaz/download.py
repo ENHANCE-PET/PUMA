@@ -22,9 +22,12 @@ import os
 import zipfile
 
 import requests
-from rich.progress import Progress
 
 from pumaz import constants
+
+from rich.console import Console
+from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn, FileSizeColumn, TransferSpeedColumn
+import time
 
 
 def download(item_name, item_path, item_dict):
@@ -41,22 +44,49 @@ def download(item_name, item_path, item_dict):
 
     if not os.path.exists(directory):
         logging.info(f" Downloading {directory}")
+
         # show progress using rich
         response = requests.get(url, stream=True)
         total_size = int(response.headers.get("Content-Length", 0))
         chunk_size = 1024 * 10
 
-        with Progress() as progress:
-            task = progress.add_task(f"[white] Downloading system specific registration binaries...", total=total_size)
+        console = Console()
+        progress = Progress(
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(bar_width=None),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            "•",
+            FileSizeColumn(),
+            TransferSpeedColumn(),
+            TimeRemainingColumn(),
+            console=console,
+            expand=True
+        )
+
+        with progress:
+            task = progress.add_task("[white] Downloading system specific registration binaries", total=total_size)
             for chunk in response.iter_content(chunk_size=chunk_size):
                 open(filename, "ab").write(chunk)
                 progress.update(task, advance=chunk_size)
 
         # Unzip the item
-        with Progress() as progress:
+        progress = Progress(  # Create new instance for extraction task
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(bar_width=None),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            "•",
+            FileSizeColumn(),
+            TransferSpeedColumn(),
+            TimeRemainingColumn(),
+            console=console,
+            expand=True
+        )
+
+        with progress:
             with zipfile.ZipFile(filename, 'r') as zip_ref:
                 total_size = sum((file.file_size for file in zip_ref.infolist()))
-                task = progress.add_task(f"[white] Extracting system specific registration binaries...", total=total_size)
+                task = progress.add_task("[white] Extracting system specific registration binaries",
+                                         total=total_size)
                 # Get the parent directory of 'directory'
                 parent_directory = os.path.dirname(directory)
                 for file in zip_ref.infolist():

@@ -42,7 +42,8 @@ setup(
         'colorama~=0.4.6',
         'rich',
         'pandas',
-        'dicom2nifti~=2.4.8'
+        'dicom2nifti~=2.4.8',
+        'requests'
     ],
     entry_points={
         'console_scripts': [

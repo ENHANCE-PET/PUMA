@@ -21,7 +21,8 @@ import os
 import sys
 import SimpleITK
 import pydicom
-from rich.progress import Progress
+from rich.console import Console
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn
 import dicom2nifti
 from pumaz import constants
 
@@ -55,6 +56,18 @@ def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
     SimpleITK.WriteImage(output_image, output_image_path)
 
 
+def dcm2niix(input_path: str, output_image_basename: str) -> None:
+    """
+    Converts DICOM images into Nifti images using dcm2niix
+    :param input_path: Path to the folder with the dicom files to convert
+    :param output_image_basename: Name of the output image
+    """
+    output_dir = os.path.dirname(input_path)
+    output_file = os.path.join(output_dir, output_image_basename)
+
+    dicom2nifti.dicom_series_to_nifti(input_path, output_file, reorient_nifti=True)
+
+
 def standardize_to_nifti(parent_dir: str):
     """
     Converts all images in a parent directory to NIFTI
@@ -64,7 +77,17 @@ def standardize_to_nifti(parent_dir: str):
     # get only the directories
     subjects = [subject for subject in subjects if os.path.isdir(os.path.join(parent_dir, subject))]
 
-    with Progress() as progress:
+    console = Console()
+    progress = Progress(
+        TextColumn("[bold blue]{task.description}", justify="right"),
+        BarColumn(bar_width=None),
+        "[progress.percentage]{task.percentage:>3.0f}%",
+        TimeRemainingColumn(),
+        console=console,
+        expand=True
+    )
+
+    with progress:
         task = progress.add_task("[white] Processing subjects...", total=len(subjects))
         for subject in subjects:
             subject_path = os.path.join(parent_dir, subject)
@@ -80,15 +103,3 @@ def standardize_to_nifti(parent_dir: str):
             else:
                 continue
             progress.update(task, advance=1, description=f"[white] Processing {subject}...")
-
-
-def dcm2niix(input_path: str, output_image_basename: str) -> None:
-    """
-    Converts DICOM images into Nifti images using dcm2niix
-    :param input_path: Path to the folder with the dicom files to convert
-    :param output_image_basename: Name of the output image
-    """
-    output_dir = os.path.dirname(input_path)
-    output_file = os.path.join(output_dir, output_image_basename)
-
-    dicom2nifti.dicom_series_to_nifti(input_path, output_file, reorient_nifti=True)
