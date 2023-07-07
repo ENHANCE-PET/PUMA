@@ -22,6 +22,7 @@ import logging
 from pumaz import constants
 
 
+
 def logo():
     """
     Display PUMA logo
