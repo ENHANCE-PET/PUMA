@@ -30,6 +30,7 @@ from pumaz import constants
 from pumaz import file_utilities
 from pumaz import download
 from pumaz import resources
+from pumaz import image_conversion
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
                     filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'),
@@ -94,6 +95,6 @@ def main():
     logging.info(' ')
     logging.info(' STANDARDIZING INPUT DATA TO NIFTI:')
     logging.info(' ')
-    image_conversion.standardize_to_nifti(parent_folder)
+    image_conversion.standardize_to_nifti(subject_folder)
     print(f"{constants.ANSI_GREEN} Standardization complete.{constants.ANSI_RESET}")
     logging.info(" Standardization complete.")

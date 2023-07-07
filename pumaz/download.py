@@ -47,7 +47,7 @@ def download(item_name, item_path, item_dict):
         chunk_size = 1024 * 10
 
         with Progress() as progress:
-            task = progress.add_task(f"[white] Downloading {item_name}...", total=total_size)
+            task = progress.add_task(f"[white] Downloading system specific registration binaries...", total=total_size)
             for chunk in response.iter_content(chunk_size=chunk_size):
                 open(filename, "ab").write(chunk)
                 progress.update(task, advance=chunk_size)
@@ -56,7 +56,7 @@ def download(item_name, item_path, item_dict):
         with Progress() as progress:
             with zipfile.ZipFile(filename, 'r') as zip_ref:
                 total_size = sum((file.file_size for file in zip_ref.infolist()))
-                task = progress.add_task(f"[white] Extracting {item_name}...", total=total_size)
+                task = progress.add_task(f"[white] Extracting system specific registration binaries...", total=total_size)
                 # Get the parent directory of 'directory'
                 parent_directory = os.path.dirname(directory)
                 for file in zip_ref.infolist():
@@ -68,11 +68,11 @@ def download(item_name, item_path, item_dict):
 
         # Delete the zip file
         os.remove(filename)
-        print(f"{constants.ANSI_GREEN} {os.path.basename(directory)} - download complete. {constants.ANSI_RESET}")
-        logging.info(f" {os.path.basename(directory)} - download complete.")
+        print(f"{constants.ANSI_GREEN} Registration binaries - download complete. {constants.ANSI_RESET}")
+        logging.info(f" Registration binaries - download complete.")
     else:
         print(f"{constants.ANSI_GREEN} A local instance of {os.path.basename(directory)} has been detected. "
               f"{constants.ANSI_RESET}")
-        logging.info(f" A local instance of {os.path.basename(directory)} has been detected.")
+        logging.info(f" A local instance of registration binary has been detected.")
 
     return os.path.join(item_path, item_name)
