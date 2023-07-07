@@ -36,3 +36,22 @@ def logo():
     print(result)
     print(text)
     print(' ')
+
+
+def citation():
+    """
+    Display manuscript citation
+    :return:
+    """
+    print(" Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar, PET Universal Multi-tracer Aligner (PUMA) - To be submitted to Journal of Nuclear Medicine")
+    print(" Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna")
+
+
+
+def expectations() -> list:
+    """
+    Display expected modalities for PUMA. This is used to check if the user has provided the correct set of modalities for each tracer set.
+    :return: list of modalities
+    """
+    # display the expected modalities
+    print(f' Expected modalities: {constants.MODALITIES} | Number of modalities: {len(constants.MODALITIES)} |  Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')

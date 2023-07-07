@@ -23,6 +23,10 @@ import os
 import sys
 import time
 from datetime import datetime
+import colorama
+
+from pumaz import display
+from pumaz import constants
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
@@ -30,3 +34,32 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d
                     filemode='w')
 
 def main():
+    colorama.init()
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-d", "--subject_directory", type=str, help="Subject directory containing the different PET/CT images of the same subject",
+                        required=True)
+
+    args = parser.parse_args()
+
+    subject_folder = os.path.abspath(args.subject_directory)
+
+    display.logo()
+    display.citation()
+
+    logging.info('----------------------------------------------------------------------------------------------------')
+    logging.info('                                     STARTING PUMA-Z V.1.0.0                                       ')
+    logging.info('----------------------------------------------------------------------------------------------------')
+
+    # ----------------------------------
+    # INPUT VALIDATION AND PREPARATION
+    # ----------------------------------
+
+    logging.info(' ')
+    logging.info('- Subject directory: ' + subject_folder)
+    logging.info(' ')
+    print(' ')
+    print(f'{constants.ANSI_VIOLET} NOTE:{constants.ANSI_RESET}')
+    print(' ')
+    modalities = display.expectations()
