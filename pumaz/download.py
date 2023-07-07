@@ -71,7 +71,7 @@ def download(item_name, item_path, item_dict):
         print(f"{constants.ANSI_GREEN} Registration binaries - download complete. {constants.ANSI_RESET}")
         logging.info(f" Registration binaries - download complete.")
     else:
-        print(f"{constants.ANSI_GREEN} A local instance of {os.path.basename(directory)} has been detected. "
+        print(f"{constants.ANSI_GREEN} A local instance of the system specific registration binary has been detected. "
               f"{constants.ANSI_RESET}")
         logging.info(f" A local instance of registration binary has been detected.")
 

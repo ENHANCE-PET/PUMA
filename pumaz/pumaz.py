@@ -31,6 +31,7 @@ from pumaz import file_utilities
 from pumaz import download
 from pumaz import resources
 from pumaz import image_conversion
+from pumaz import input_validation
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
                     filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'),
@@ -98,3 +99,13 @@ def main():
     image_conversion.standardize_to_nifti(subject_folder)
     print(f"{constants.ANSI_GREEN} Standardization complete.{constants.ANSI_RESET}")
     logging.info(" Standardization complete.")
+
+    # --------------------------------------
+    # CHECKING FOR PUMA COMPLIANT SUBJECTS
+    # --------------------------------------
+
+    tracer_dirs = [os.path.join(subject_folder, d) for d in os.listdir(subject_folder) if
+                   os.path.isdir(os.path.join(subject_folder, d))]
+    puma_compliant_subjects = input_validation.select_puma_compliant_subjects(tracer_dirs, constants.MODALITIES)
+
+    # -------------------------------------------------
