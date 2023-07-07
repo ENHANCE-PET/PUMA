@@ -28,17 +28,18 @@ import colorama
 from pumaz import display
 from pumaz import constants
 
-
 logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
                     filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'),
                     filemode='w')
+
 
 def main():
     colorama.init()
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--subject_directory", type=str, help="Subject directory containing the different PET/CT images of the same subject",
+    parser.add_argument("-d", "--subject_directory", type=str,
+                        help="Subject directory containing the different PET/CT images of the same subject",
                         required=True)
 
     args = parser.parse_args()
@@ -62,4 +63,4 @@ def main():
     print(' ')
     print(f'{constants.ANSI_VIOLET} NOTE:{constants.ANSI_RESET}')
     print(' ')
-    modalities = display.expectations()
+    display.expectations()
