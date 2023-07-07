@@ -31,7 +31,8 @@ def logo():
     logo_color_code = constants.ANSI_VIOLET
     slogan_color_code = constants.ANSI_VIOLET
     result = logo_color_code + pyfiglet.figlet_format("PUMA 1.0", font="speed").rstrip() + "\033[0m"
-    text = slogan_color_code + " A part of the ENHANCE community. Join us at https://enhance.pet to build the future of " \
+    text = slogan_color_code + "A part of the ENHANCE community. Join us at https://enhance.pet to build the future " \
+                               "of " \
                                "PET imaging together." + "\033[0m"
     print(result)
     print(text)
@@ -48,10 +49,9 @@ def citation():
     print(" Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna")
 
 
-def expectations() -> list:
+def expectations():
     """
     Display expected modalities for PUMA. This is used to check if the user has provided the correct set of modalities for each tracer set.
-    :return: list of modalities
     """
     # display the expected modalities
     print(f' Expected modalities: {constants.MODALITIES} | Number of required modalities: {len(constants.MODALITIES)} |'

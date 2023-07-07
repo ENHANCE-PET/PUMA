@@ -16,6 +16,11 @@
 #
 # ----------------------------------------------------------------------------------------------------------
 
+import os
+from pumaz import file_utilities
+
+project_root = file_utilities.get_virtual_env_root()
+
 
 # COLOR CODES
 ANSI_ORANGE = '\033[38;5;208m'

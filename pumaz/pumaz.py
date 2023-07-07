@@ -64,3 +64,14 @@ def main():
     print(f'{constants.ANSI_VIOLET} NOTE:{constants.ANSI_RESET}')
     print(' ')
     display.expectations()
+
+    # ----------------------------------
+    # DOWNLOADING THE BINARIES
+    # ----------------------------------
+
+    print('')
+    print(f'{constants.ANSI_VIOLET} BINARIES DOWNLOAD:{constants.ANSI_RESET}')
+    print('')
+    model_path = constants.NNUNET_RESULTS_FOLDER
+    file_utilities.create_directory(model_path)
+    download.model(model_name, model_path)
