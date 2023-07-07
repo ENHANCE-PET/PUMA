@@ -20,7 +20,9 @@ import os
 from pumaz import file_utilities
 
 project_root = file_utilities.get_virtual_env_root()
-
+BINARY_PATH = os.path.join(project_root, 'bin')
+GREEDY_PATH = os.path.join(BINARY_PATH, f'greedy-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+                           'greedy')
 
 # COLOR CODES
 ANSI_ORANGE = '\033[38;5;208m'

@@ -24,7 +24,7 @@ import zipfile
 import requests
 from rich.progress import Progress
 
-import constants
+from pumaz import constants
 
 
 def download(item_name, item_path, item_dict):
@@ -74,3 +74,5 @@ def download(item_name, item_path, item_dict):
         print(f"{constants.ANSI_GREEN} A local instance of {os.path.basename(directory)} has been detected. "
               f"{constants.ANSI_RESET}")
         logging.info(f" A local instance of {os.path.basename(directory)} has been detected.")
+
+    return os.path.join(item_path, item_name)

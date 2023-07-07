@@ -19,14 +19,50 @@ import os
 import glob
 import shutil
 import sys
-from datetime import datetime
+import platform
 from multiprocessing import Pool
+import stat
+import subprocess
+
+
+def set_permissions(file_path, system_type):
+    if system_type == "windows":
+        subprocess.check_call(["icacls", file_path, "/grant", "Everyone:(F)"])
+    elif system_type in ["linux", "mac"]:
+        os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)  # equivalent to 'chmod u+x'
+    else:
+        raise ValueError("Unsupported OS")
 
 
 def get_virtual_env_root():
     python_exe = sys.executable
     virtual_env_root = os.path.dirname(os.path.dirname(python_exe))
     return virtual_env_root
+
+
+def get_system():
+    system = platform.system().lower()
+    architecture = platform.machine().lower()
+
+    # Convert system output to match your keys
+    if system == "darwin":
+        system = "mac"
+    elif system == "windows":
+        system = "windows"
+    elif system == "linux":
+        system = "linux"
+    else:
+        raise ValueError("Unsupported OS type")
+
+    # Convert architecture output to match your keys
+    if architecture in ["x86_64", "amd64"]:
+        architecture = "x86_64"
+    elif "arm" in architecture:
+        architecture = "arm64"
+    else:
+        raise ValueError("Unsupported architecture")
+
+    return system, architecture
 
 
 def create_directory(directory_path: str):

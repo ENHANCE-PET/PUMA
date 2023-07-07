@@ -27,6 +27,9 @@ import colorama
 
 from pumaz import display
 from pumaz import constants
+from pumaz import file_utilities
+from pumaz import download
+from pumaz import resources
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
                     filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'),
@@ -72,6 +75,25 @@ def main():
     print('')
     print(f'{constants.ANSI_VIOLET} BINARIES DOWNLOAD:{constants.ANSI_RESET}')
     print('')
-    model_path = constants.NNUNET_RESULTS_FOLDER
-    file_utilities.create_directory(model_path)
-    download.model(model_name, model_path)
+    binary_path = constants.BINARY_PATH
+    file_utilities.create_directory(binary_path)
+    system_os, system_arch = file_utilities.get_system()
+    print(f'{constants.ANSI_ORANGE} Detected system: {system_os} | Detected architecture: {system_arch}'
+          f'{constants.ANSI_RESET}')
+    download.download(item_name=f'greedy-{system_os}-{system_arch}', item_path=binary_path,
+                      item_dict=resources.GREEDY_BINARIES)
+    file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
+
+    # ----------------------------------
+    # INPUT STANDARDIZATION
+    # ----------------------------------
+
+    print('')
+    print(f'{constants.ANSI_VIOLET} STANDARDIZING INPUT DATA TO NIFTI:{constants.ANSI_RESET}')
+    print('')
+    logging.info(' ')
+    logging.info(' STANDARDIZING INPUT DATA TO NIFTI:')
+    logging.info(' ')
+    image_conversion.standardize_to_nifti(parent_folder)
+    print(f"{constants.ANSI_GREEN} Standardization complete.{constants.ANSI_RESET}")
+    logging.info(" Standardization complete.")
