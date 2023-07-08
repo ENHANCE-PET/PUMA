@@ -23,6 +23,7 @@ import platform
 from multiprocessing import Pool
 import stat
 import subprocess
+from datetime import datetime
 
 
 def set_permissions(file_path, system_type):
@@ -124,3 +125,20 @@ def organise_files_by_modality(tracer_dirs: list, modalities: list, pumaz_dir) -
     for modality in modalities:
         files_to_copy = select_files_by_modality(tracer_dirs, modality)
         copy_files_to_destination(files_to_copy, os.path.join(pumaz_dir, modality))
+
+
+def setup_puma_directory(tracer_dir: str, modalities: list):
+    """
+    Creates the puma folder structure.
+    :param tracer_dir: The path to the individual directory.
+    :param modalities: The list of modalities.
+    """
+    puma_dir = os.path.join(tracer_dir,
+                            'pumaz-' + '-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    create_directory(puma_dir)
+    modality_dirs = []
+    for modality in modalities:
+        modality_dirs.append(os.path.join(puma_dir, modality))
+        create_directory(modality_dirs[-1])
+
+    return puma_dir, modality_dirs

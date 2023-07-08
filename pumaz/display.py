@@ -59,10 +59,24 @@ def expectations():
     print(f' Expected modalities: {constants.MODALITIES} | Number of required modalities: {len(constants.MODALITIES)} |'
           f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
     logging.info(f' Expected modalities: {constants.MODALITIES} | Number of modalities: {len(constants.MODALITIES)} |  '
-                    f'Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
-    print(f"{constants.ANSI_ORANGE} Warning: Any subject datasets in a non-DICOM format that lack the required modalities (" \
-    f"as indicated by the file prefix) will not be included in the analysis. {constants.ANSI_RESET}")
+                 f'Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
+    print(
+        f"{constants.ANSI_ORANGE} Warning: Any subject datasets in a non-DICOM format that lack the required modalities (" \
+        f"as indicated by the file prefix) will not be included in the analysis. {constants.ANSI_RESET}")
 
     warning_message = " Skipping subjects without the required modalities (check file prefix).\n" \
                       " These subjects will be excluded from analysis and their data will not be used."
     logging.warning(warning_message)
+
+
+def alignment_strategy():
+    """
+    Display alignment strategy
+    :return:
+    """
+    print(" Step 1: A random PET tracer image will be selected as the reference from the list.")
+    print(" Step 2: Each CT image will be resliced to match its corresponding PET tracer image.")
+    print(" Step 3: The CT image that pairs with the reference PET tracer image will be set as the reference CT image.")
+    print(" Step 4: All other CT images will be aligned to the reference CT image.")
+    print(" Step 5: Using the deformation fields derived from the CT images, the corresponding PET tracer images will "
+          "be aligned to the reference PET tracer image.")

@@ -40,9 +40,9 @@ def select_puma_compliant_subjects(tracer_paths: list, modality_tags: list) -> l
         prefixes = [file.startswith(tag) for tag in modality_tags for file in files]
         if sum(prefixes) == len(modality_tags):
             puma_compliant_subjects.append(subject_path)
-    print(f"{constants.ANSI_ORANGE} Number of puma compliant subjects: {len(puma_compliant_subjects)} out of "
+    print(f"{constants.ANSI_ORANGE} Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
           f"{len(tracer_paths)} {constants.ANSI_RESET}")
-    logging.info(f" Number of puma compliant subjects: {len(puma_compliant_subjects)} out of "
+    logging.info(f" Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
                  f"{len(tracer_paths)}")
 
     return puma_compliant_subjects
