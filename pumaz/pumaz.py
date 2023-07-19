@@ -23,7 +23,6 @@ import os
 import sys
 import time
 from datetime import datetime
-from halo import Halo
 import colorama
 
 from pumaz import display
@@ -33,6 +32,7 @@ from pumaz import download
 from pumaz import resources
 from pumaz import image_conversion
 from pumaz import input_validation
+from pumaz import image_processing
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
                     filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'),
@@ -107,44 +107,18 @@ def main():
 
     tracer_dirs = [os.path.join(subject_folder, d) for d in os.listdir(subject_folder) if
                    os.path.isdir(os.path.join(subject_folder, d))]
-    puma_compliant_tracer_dirs = input_validation.select_puma_compliant_subjects(tracer_dirs, constants.MODALITIES)
-
-    # --------------------------------------
-    # ALIGNMENT STRATEGY
-    # --------------------------------------
-    print('')
-    print(f'{constants.ANSI_VIOLET} ALIGNMENT STRATEGY:{constants.ANSI_RESET}')
-    print('')
-    logging.info(' ')
-    logging.info(' ALIGNMENT STRATEGY:')
-    logging.info(' ')
-    display.alignment_strategy()
+    puma_compliant_subjects = input_validation.select_puma_compliant_subjects(tracer_dirs, constants.MODALITIES)
 
     # -------------------------------------------------
-    # RUN ALIGNMENT ONLY FOR PUMA COMPLIANT SUBJECTS
+    # RUNNING PREPROCESSING AND REGISTRATION PIPELINE
     # -------------------------------------------------
 
     print('')
-    print(f'{constants.ANSI_VIOLET} PERFORMING ALIGNMENT:{constants.ANSI_RESET}')
+    print(f'{constants.ANSI_VIOLET} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
     print('')
     logging.info(' ')
-    logging.info(' PERFORMING ALIGNMENT:')
+    logging.info(' RUNNING PREPROCESSING AND REGISTRATION PIPELINE:')
     logging.info(' ')
-
-    spinner = Halo(text=' Initiating', spinner='dots')
-    spinner.start()
-    start_total_time = time.time()
-
-    for directory in puma_compliant_tracer_dirs:
-        spinner.text = f' Setting up directory structure for {os.path.basename(directory)}...'
-        logging.info(' ')
-        logging.info(f'{constants.ANSI_VIOLET} SETTING UP PUMA-Z DIRECTORY:'
-                     f'{constants.ANSI_RESET}')
-        logging.info(' ')
-        puma_dir, modality_dirs = file_utilities.setup_puma_directory(directory, constants.MODALITIES)
-        logging.info(f' PUMA-z directory: {puma_dir}')
-
-        # ORGANISE DATA ACCORDING TO MODALITY
-        spinner.text = f' Organising data according to modality for {os.path.basename(directory)}...'
-        file_utilities.organise_files_by_modality([directory], constants.MODALITIES, puma_dir)
+    puma_dir, ct_dir, pt_dir = image_processing.preprocess(puma_compliant_subjects)
+    image_processing.align(puma_dir, ct_dir, pt_dir)
 

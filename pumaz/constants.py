@@ -18,6 +18,7 @@
 
 import os
 from pumaz import file_utilities
+from datetime import datetime
 
 project_root = file_utilities.get_virtual_env_root()
 BINARY_PATH = os.path.join(project_root, 'bin')
@@ -33,5 +34,21 @@ ANSI_RESET = '\033[0m'
 
 # EXPECTED MODALITIES
 
-MODALITIES = ['PT', 'CT']
+MODALITIES = ['PET', 'CT']
 MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT']
+
+
+# FILE NAMES
+
+RESAMPLED_PREFIX = 'resampled_'
+ALIGNED_PREFIX = 'aligned_'
+
+
+# FOLDER NAMES
+
+PUMA_WORKING_FOLDER = 'PUMAZ-V01'+'-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+TRANSFORMS_FOLDER = 'transforms'
+
+# HYPERPARAMETERS
+
+MULTI_RESOLUTION_SCHEME = '100x25x10'
