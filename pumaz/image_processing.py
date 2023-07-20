@@ -61,10 +61,11 @@ def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
 
 def prepare_reslice_tasks(puma_compliant_subjects):
     tasks = []
-    for subdir in puma_compliant_subjects:
+    for i, subdir in enumerate(puma_compliant_subjects):
         ct_file = glob.glob(os.path.join(subdir, 'CT*.nii*'))
         pt_file = glob.glob(os.path.join(subdir, 'PET*.nii*'))
-        resliced_ct_file = os.path.join(subdir, constants.RESAMPLED_PREFIX + os.path.basename(subdir) + '_' +
+        resliced_ct_file = os.path.join(subdir, constants.RESAMPLED_PREFIX + str(i) + '_' +
+                                        os.path.basename(subdir) + '_' +
                                         os.path.basename(ct_file[0]))
 
         tasks.append((
@@ -74,7 +75,6 @@ def prepare_reslice_tasks(puma_compliant_subjects):
             False
         ))
     return tasks
-
 
 def copy_and_rename_file(src, dst, subdir):
     file_utilities.copy_file(src, dst)
@@ -112,6 +112,7 @@ def preprocess(puma_compliant_subjects: list, num_workers: int = None):
     file_utilities.create_directory(ct_dir)
     file_utilities.create_directory(pt_dir)
 
+    index = 0
     # Move and rename files in parallel
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         for subdir in puma_compliant_subjects:
@@ -120,7 +121,14 @@ def preprocess(puma_compliant_subjects: list, num_workers: int = None):
             executor.submit(copy_and_rename_file, resliced_ct_file, ct_dir, subdir)
 
             pt_file = glob.glob(os.path.join(subdir, 'PET*.nii*'))
-            executor.submit(copy_and_rename_file, pt_file[0], pt_dir, subdir)
+
+            # Generate new filename with unique index
+            new_pt_file = re.sub(r'PET_', f'PET_{index}_', pt_file[0])
+            # rename the actual file
+            os.rename(pt_file[0], new_pt_file)
+
+            index += 1
+            executor.submit(copy_and_rename_file, new_pt_file, pt_dir, subdir)
 
     return puma_working_dir, ct_dir, pt_dir
 
@@ -147,7 +155,7 @@ class ImageRegistration:
     def rigid(self) -> str:
         cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} -ia-image" \
                      f"-centers -dof 6 -o {re.escape(self.transform_files['rigid'])} -n {self.multi_resolution_iterations} -m " \
-                     f"NMI"
+                     f"SSD"
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Rigid alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | Aligned image: "
@@ -157,7 +165,7 @@ class ImageRegistration:
     def affine(self) -> str:
         cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} -ia-image" \
                      f"-centers -dof 12 -o {re.escape(self.transform_files['affine'])} -n {self.multi_resolution_iterations} " \
-                     f"-m NMI"
+                     f"-m SSD"
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Affine alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} |"
@@ -165,16 +173,17 @@ class ImageRegistration:
         return self.transform_files['affine']
 
     def deformable(self) -> tuple:
-        self.affine()
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -m NCC 2x2x2 -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"-it {re.escape(self.transform_files['affine'])} -o {re.escape(self.transform_files['warp'])} -oinv" \
+        self.rigid()
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -m SSD -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
+                     f"-it {re.escape(self.transform_files['rigid'])} -o {re.escape(self.transform_files['warp'])} -oinv" \
                      f" {re.escape(self.transform_files['inverse_warp'])} -sv -n {self.multi_resolution_iterations}"
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Deformable alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | "
-            f"Aligned image: moco-{pathlib.Path(self.moving_img).name} | Initial alignment:{pathlib.Path(self.transform_files['affine']).name}"
+            f"Aligned image: moco-{pathlib.Path(self.moving_img).name} | "
+            f"Initial alignment:{pathlib.Path(self.transform_files['rigid']).name}"
             f" | warp file: {pathlib.Path(self.transform_files['warp']).name}")
-        return self.transform_files['affine'], self.transform_files['warp'], self.transform_files['inverse_warp']
+        return self.transform_files['rigid'], self.transform_files['warp'], self.transform_files['inverse_warp']
 
     def registration(self, registration_type: str) -> None:
         if registration_type == 'rigid':
@@ -195,7 +204,7 @@ class ImageRegistration:
                                          self.transform_files['affine'])
         elif registration_type == 'deformable':
             cmd_to_run = self._build_cmd(resampled_moving_img, segmentation, resampled_seg,
-                                         self.transform_files['warp'], self.transform_files['affine'])
+                                         self.transform_files['warp'], self.transform_files['rigid'])
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
 
     def _build_cmd(self, resampled_moving_img: str, segmentation: str, resampled_seg: str,
@@ -234,13 +243,13 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str):
                              registration_type='deformable')
 
         # clean up transforms to a new folder
-        affine_transform_files = sorted(glob.glob(os.path.join(ct_dir, '*_affine.mat')))
+        rigid_transform_files = sorted(glob.glob(os.path.join(ct_dir, '*_rigid.mat')))
         warp_files = sorted(glob.glob(os.path.join(ct_dir, '*warp.nii.gz')))
         transforms_dir = os.path.join(puma_working_dir, constants.TRANSFORMS_FOLDER)
         file_utilities.create_directory(transforms_dir)
-        # move all the warp files and affine transform files to the transforms folder without zipping
-        for affine_transform_file in affine_transform_files:
-            file_utilities.move_file(affine_transform_file, transforms_dir)
+        # move all the warp files and rigid transform files to the transforms folder without zipping
+        for rigid_transform_file in rigid_transform_files:
+            file_utilities.move_file(rigid_transform_file, transforms_dir)
         for warp_file in warp_files:
             file_utilities.move_file(warp_file, transforms_dir)
 
