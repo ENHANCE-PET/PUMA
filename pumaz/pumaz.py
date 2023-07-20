@@ -112,7 +112,8 @@ def main():
     # -------------------------------------------------
     # RUNNING PREPROCESSING AND REGISTRATION PIPELINE
     # -------------------------------------------------
-
+    # calculate elapsed time for the entire procedure below
+    start_time = time.time()
     print('')
     print(f'{constants.ANSI_VIOLET} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
     print('')
@@ -121,4 +122,9 @@ def main():
     logging.info(' ')
     puma_dir, ct_dir, pt_dir = image_processing.preprocess(puma_compliant_subjects)
     image_processing.align(puma_dir, ct_dir, pt_dir)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    # show elapsed time in minutes and round it to 2 decimal places
+    elapsed_time = round(elapsed_time / 60, 2)
+    print(f'{constants.ANSI_GREEN} Preprocessing and registration complete. Elapsed time: {elapsed_time} minutes!')
 

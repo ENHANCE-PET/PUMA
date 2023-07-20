@@ -35,102 +35,6 @@ import re
 from rich.progress import track
 
 
-class ImageRegistration:
-    def __init__(self, fixed_img: str, moving_img: str, multi_resolution_iterations: str):
-        self.fixed_img = fixed_img
-        self.moving_img = moving_img
-        self.multi_resolution_iterations = multi_resolution_iterations
-
-    def rigid(self) -> str:
-        out_dir = pathlib.Path(self.moving_img).parent
-        moving_img_filename = pathlib.Path(self.moving_img).name
-        rigid_transform_file = os.path.join(out_dir, f"{moving_img_filename}_rigid.mat")
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} -ia-image" \
-                     f"-centers -dof 6 -o {re.escape(rigid_transform_file)} -n {self.multi_resolution_iterations} -m " \
-                     f"NMI"
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
-        logging.info(
-            f"Rigid alignment: {moving_img_filename} -> {pathlib.Path(self.fixed_img).name} | Aligned image: "
-            f"moco-{moving_img_filename} | Transform file: {pathlib.Path(rigid_transform_file).name}")
-        return rigid_transform_file
-
-    def affine(self) -> str:
-        out_dir = pathlib.Path(self.moving_img).parent
-        moving_img_filename = pathlib.Path(self.moving_img).name
-        affine_transform_file = os.path.join(out_dir, f"{moving_img_filename}_affine.mat")
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} -ia-image" \
-                     f"-centers -dof 12 -o {re.escape(affine_transform_file)} -n {self.multi_resolution_iterations} " \
-                     f"-m NMI"
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
-        logging.info(
-            f"Affine alignment: {moving_img_filename} -> {pathlib.Path(self.fixed_img).name} |"
-            f" Aligned image: mock-{moving_img_filename} | Transform file: {pathlib.Path(affine_transform_file).name}")
-        return affine_transform_file
-
-    def deformable(self) -> tuple:
-        out_dir = pathlib.Path(self.moving_img).parent
-        moving_img_filename = pathlib.Path(self.moving_img).name
-        warp_file = os.path.join(out_dir, f"{moving_img_filename}_warp.nii.gz")
-        inverse_warp_file = os.path.join(out_dir, f"{moving_img_filename}_inverse_warp.nii.gz")
-        affine_transform_file = self.affine()
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -m NCC 2x2x2 -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"-it {re.escape(affine_transform_file)} -o {re.escape(warp_file)} -oinv" \
-                     f" {re.escape(inverse_warp_file)} -sv -n {self.multi_resolution_iterations}"
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
-        logging.info(
-            f"Deformable alignment: {moving_img_filename} -> {pathlib.Path(self.fixed_img).name} | "
-            f"Aligned image: moco-{moving_img_filename} | Initial alignment:{pathlib.Path(affine_transform_file).name}"
-            f" | warp file: {pathlib.Path(warp_file).name}")
-        return affine_transform_file, warp_file, inverse_warp_file
-
-    def registration(self, registration_type: str) -> None:
-        if registration_type == 'rigid':
-            self.rigid()
-        elif registration_type == 'affine':
-            self.affine()
-        elif registration_type == 'deformable':
-            self.deformable()
-        else:
-            sys.exit("Registration type not supported!")
-
-    def resample(self, resampled_moving_img: str, registration_type: str, segmentation="", resampled_seg="") -> None:
-        moving_img_file = pathlib.Path(self.moving_img).name
-        out_dir = pathlib.Path(self.moving_img).parent
-        if registration_type == 'rigid':
-            rigid_transform_file = os.path.join(out_dir, f"{moving_img_file}_rigid.mat")
-            if segmentation and resampled_seg:
-                cmd_to_run = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm " \
-                             f"{re.escape(self.moving_img)} {re.escape(resampled_moving_img)} -ri LABEL 0.2vox -rm " \
-                             f"{re.escape(segmentation)} {re.escape(resampled_seg)} -r {re.escape(rigid_transform_file)}"
-            else:
-                cmd_to_run = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm" \
-                             f" {re.escape(self.moving_img)} {re.escape(resampled_moving_img)} -r" \
-                             f" {re.escape(rigid_transform_file)}"
-        elif registration_type == 'affine':
-            affine_transform_file = os.path.join(out_dir, f"{moving_img_file}_affine.mat")
-            if segmentation and resampled_seg:
-                cmd_to_run = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm " \
-                             f"{re.escape(self.moving_img)} {re.escape(resampled_moving_img)} -ri LABEL 0.2vox -rm " \
-                             f"{re.escape(segmentation)} {re.escape(resampled_seg)} -r {re.escape(affine_transform_file)}"
-            else:
-                cmd_to_run = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm " \
-                             f"{re.escape(self.moving_img)} {re.escape(resampled_moving_img)} -r" \
-                             f" {re.escape(affine_transform_file)}"
-        elif registration_type == 'deformable':
-            warp_file = os.path.join(out_dir, f"{moving_img_file}_warp.nii.gz")
-            affine_transform_file = os.path.join(out_dir, f"{moving_img_file}_affine.mat")
-            if segmentation and resampled_seg:
-                cmd_to_run = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm " \
-                             f"{re.escape(self.moving_img)} {re.escape(resampled_moving_img)} -ri LABEL 0.2vox -rm " \
-                             f"{re.escape(segmentation)} {re.escape(resampled_seg)} -r {re.escape(warp_file)}" \
-                             f" {re.escape(affine_transform_file)}"
-            else:
-                cmd_to_run = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm " \
-                             f"{re.escape(self.moving_img)} {re.escape(resampled_moving_img)} -r {re.escape(warp_file)}" \
-                             f" {re.escape(affine_transform_file)}"
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
-
-
 def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
                      output_image_path: str = None, is_label_image: bool = False) -> sitk.Image:
     """
@@ -221,40 +125,150 @@ def preprocess(puma_compliant_subjects: list, num_workers: int = None):
     return puma_working_dir, ct_dir, pt_dir
 
 
+class ImageRegistration:
+    def __init__(self, fixed_img: str, multi_resolution_iterations: str):
+        self.fixed_img = fixed_img
+        self.multi_resolution_iterations = multi_resolution_iterations
+        self.moving_img = None
+        self.transform_files = None
+
+    def set_moving_image(self, moving_img: str, update_transforms: bool = True):
+        self.moving_img = moving_img
+        if update_transforms:
+            out_dir = pathlib.Path(self.moving_img).parent
+            moving_img_filename = pathlib.Path(self.moving_img).name
+            self.transform_files = {
+                'rigid': os.path.join(out_dir, f"{moving_img_filename}_rigid.mat"),
+                'affine': os.path.join(out_dir, f"{moving_img_filename}_affine.mat"),
+                'warp': os.path.join(out_dir, f"{moving_img_filename}_warp.nii.gz"),
+                'inverse_warp': os.path.join(out_dir, f"{moving_img_filename}_inverse_warp.nii.gz")
+            }
+
+    def rigid(self) -> str:
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} -ia-image" \
+                     f"-centers -dof 6 -o {re.escape(self.transform_files['rigid'])} -n {self.multi_resolution_iterations} -m " \
+                     f"NMI"
+        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+        logging.info(
+            f"Rigid alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | Aligned image: "
+            f"moco-{pathlib.Path(self.moving_img).name} | Transform file: {pathlib.Path(self.transform_files['rigid']).name}")
+        return self.transform_files['rigid']
+
+    def affine(self) -> str:
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} -ia-image" \
+                     f"-centers -dof 12 -o {re.escape(self.transform_files['affine'])} -n {self.multi_resolution_iterations} " \
+                     f"-m NMI"
+        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+        logging.info(
+            f"Affine alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} |"
+            f" Aligned image: mock-{pathlib.Path(self.moving_img).name} | Transform file: {pathlib.Path(self.transform_files['affine']).name}")
+        return self.transform_files['affine']
+
+    def deformable(self) -> tuple:
+        self.affine()
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -m NCC 2x2x2 -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
+                     f"-it {re.escape(self.transform_files['affine'])} -o {re.escape(self.transform_files['warp'])} -oinv" \
+                     f" {re.escape(self.transform_files['inverse_warp'])} -sv -n {self.multi_resolution_iterations}"
+        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+        logging.info(
+            f"Deformable alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | "
+            f"Aligned image: moco-{pathlib.Path(self.moving_img).name} | Initial alignment:{pathlib.Path(self.transform_files['affine']).name}"
+            f" | warp file: {pathlib.Path(self.transform_files['warp']).name}")
+        return self.transform_files['affine'], self.transform_files['warp'], self.transform_files['inverse_warp']
+
+    def registration(self, registration_type: str) -> None:
+        if registration_type == 'rigid':
+            self.rigid()
+        elif registration_type == 'affine':
+            self.affine()
+        elif registration_type == 'deformable':
+            self.deformable()
+        else:
+            sys.exit("Registration type not supported!")
+
+    def resample(self, resampled_moving_img: str, registration_type: str, segmentation="", resampled_seg="") -> None:
+        if registration_type == 'rigid':
+            cmd_to_run = self._build_cmd(resampled_moving_img, segmentation, resampled_seg,
+                                         self.transform_files['rigid'])
+        elif registration_type == 'affine':
+            cmd_to_run = self._build_cmd(resampled_moving_img, segmentation, resampled_seg,
+                                         self.transform_files['affine'])
+        elif registration_type == 'deformable':
+            cmd_to_run = self._build_cmd(resampled_moving_img, segmentation, resampled_seg,
+                                         self.transform_files['warp'], self.transform_files['affine'])
+        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
+    def _build_cmd(self, resampled_moving_img: str, segmentation: str, resampled_seg: str,
+                   *transform_files: str) -> str:
+        cmd = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm " \
+              f"{re.escape(self.moving_img)} {re.escape(resampled_moving_img)}"
+        if segmentation and resampled_seg:
+            cmd += f" -ri LABEL 0.2vox -rm {re.escape(segmentation)} {re.escape(resampled_seg)}"
+        for transform_file in transform_files:
+            cmd += f" -r {re.escape(transform_file)}"
+        return cmd
+
+
 def align(puma_working_dir: str, ct_dir: str, pt_dir: str):
-    """
-    Aligns the images in the subject directory
-    :param puma_working_dir: The puma working directory
-    :param ct_dir: The CT directory
-    :param pt_dir: The PET directory
-    """
-    # get the ct files sorted using glob
     ct_files = sorted(glob.glob(os.path.join(ct_dir, '*.nii*')))
-    # the first file will be the reference image and the rest will be the moving images
     reference_image = ct_files[0]
     moving_images = ct_files[1:]
 
-    # align using the first CT image as the reference image
     with Progress() as progress:
-        task = progress.add_task("[cyan] Aligning CT images ", total=len(moving_images))
+        task = progress.add_task("[cyan] Aligning CT and PT images to a common frame ", total=len(moving_images))
 
         for moving_image in moving_images:
-            aligner = ImageRegistration(fixed_img=reference_image, moving_img=moving_image,
+            aligner = ImageRegistration(fixed_img=reference_image,
                                         multi_resolution_iterations=constants.MULTI_RESOLUTION_SCHEME)
+            aligner.set_moving_image(moving_image)
             aligner.registration('deformable')
             aligner.resample(resampled_moving_img=os.path.join(puma_working_dir, constants.ALIGNED_PREFIX +
                                                                os.path.basename(moving_image)),
                              registration_type='deformable')
             progress.update(task, advance=1)
+            pet_image = glob.glob(os.path.join(pt_dir, os.path.basename(moving_image).split('_')[0] + '*.nii*'))[0]
+            aligner.set_moving_image(pet_image, update_transforms=False)
+            resampled_pet_file = os.path.join(puma_working_dir, constants.ALIGNED_PREFIX +
+                                              os.path.basename(pet_image))
+            aligner.resample(resampled_moving_img=resampled_pet_file,
+                             registration_type='deformable')
 
-    # clean up transforms to a new folder
-    affine_transform_files = sorted(glob.glob(os.path.join(ct_dir, '*_affine.mat')))
-    warp_files = sorted(glob.glob(os.path.join(ct_dir, '*warp.nii.gz')))
-    transforms_dir = os.path.join(puma_working_dir, constants.TRANSFORMS_FOLDER)
-    file_utilities.create_directory(transforms_dir)
-    # move all the warp files and affine transform files to the transforms folder without zipping
-    for affine_transform_file in affine_transform_files:
-        file_utilities.move_file(affine_transform_file, transforms_dir)
-    for warp_file in warp_files:
-        file_utilities.move_file(warp_file, transforms_dir)
+        # clean up transforms to a new folder
+        affine_transform_files = sorted(glob.glob(os.path.join(ct_dir, '*_affine.mat')))
+        warp_files = sorted(glob.glob(os.path.join(ct_dir, '*warp.nii.gz')))
+        transforms_dir = os.path.join(puma_working_dir, constants.TRANSFORMS_FOLDER)
+        file_utilities.create_directory(transforms_dir)
+        # move all the warp files and affine transform files to the transforms folder without zipping
+        for affine_transform_file in affine_transform_files:
+            file_utilities.move_file(affine_transform_file, transforms_dir)
+        for warp_file in warp_files:
+            file_utilities.move_file(warp_file, transforms_dir)
+
+        # move the aligned files to a new folder called aligned_CT, this is stored in the puma_working_dir
+        aligned_ct_dir = os.path.join(puma_working_dir, constants.ALIGNED_CT_FOLDER)
+        file_utilities.create_directory(aligned_ct_dir)
+        # get aligned ct files using glob by looking for keyword 'aligned'
+        aligned_ct_files = sorted(glob.glob(os.path.join(puma_working_dir, constants.ALIGNED_PREFIX + '*CT*.nii*')))
+        for aligned_ct_file in aligned_ct_files:
+            file_utilities.move_file(aligned_ct_file, aligned_ct_dir)
+        # copy the reference ct file to the aligned_ct_dir and add an aligned prefix to the copied file
+        file_utilities.copy_file(reference_image, os.path.join(aligned_ct_dir, constants.ALIGNED_PREFIX +
+                                                               os.path.basename(reference_image)))
+
+
+        # move the aligned PET files to a new folder called aligned_PET, this is stored in the puma_working_dir
+        aligned_pet_dir = os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER)
+        file_utilities.create_directory(aligned_pet_dir)
+        # get aligned pet files using glob by looking for keyword 'aligned'
+        aligned_pet_files = sorted(
+            glob.glob(os.path.join(puma_working_dir, constants.ALIGNED_PREFIX + '*PET*.nii*')))
+        for aligned_pet_file in aligned_pet_files:
+            file_utilities.move_file(aligned_pet_file, aligned_pet_dir)
+        # copy the pet file corresponding to the reference ct file to the aligned_pet_dir and add an aligned prefix
+        # to the copied file
+        file_utilities.copy_file(glob.glob(os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0],
+                                    os.path.join(aligned_pet_dir, constants.ALIGNED_PREFIX +
+                                                    os.path.basename(glob.glob(os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0])))
+
+
 

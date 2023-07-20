@@ -48,6 +48,8 @@ ALIGNED_PREFIX = 'aligned_'
 
 PUMA_WORKING_FOLDER = 'PUMAZ-V01'+'-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 TRANSFORMS_FOLDER = 'transforms'
+ALIGNED_CT_FOLDER = 'aligned_CT'
+ALIGNED_PET_FOLDER = 'aligned_PT'
 
 # HYPERPARAMETERS
 
