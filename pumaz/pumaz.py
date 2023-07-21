@@ -24,6 +24,7 @@ import sys
 import time
 from datetime import datetime
 import colorama
+import emoji
 
 from pumaz import display
 from pumaz import constants
@@ -67,7 +68,7 @@ def main():
     logging.info('- Subject directory: ' + subject_folder)
     logging.info(' ')
     print(' ')
-    print(f'{constants.ANSI_VIOLET} NOTE:{constants.ANSI_RESET}')
+    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":memo:")} NOTE:{constants.ANSI_RESET}')
     print(' ')
     display.expectations()
 
@@ -76,7 +77,8 @@ def main():
     # ----------------------------------
 
     print('')
-    print(f'{constants.ANSI_VIOLET} BINARIES DOWNLOAD:{constants.ANSI_RESET}')
+    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":globe_with_meridians:")} BINARIES DOWNLOAD:{constants.ANSI_RESET}')
+
     print('')
     binary_path = constants.BINARY_PATH
     file_utilities.create_directory(binary_path)
@@ -92,7 +94,8 @@ def main():
     # ----------------------------------
 
     print('')
-    print(f'{constants.ANSI_VIOLET} STANDARDIZING INPUT DATA TO NIFTI:{constants.ANSI_RESET}')
+    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":magnifying_glass_tilted_left:")} STANDARDIZING INPUT DATA TO '
+          f'NIFTI:{constants.ANSI_RESET}')
     print('')
     logging.info(' ')
     logging.info(' STANDARDIZING INPUT DATA TO NIFTI:')
@@ -115,7 +118,7 @@ def main():
     # calculate elapsed time for the entire procedure below
     start_time = time.time()
     print('')
-    print(f'{constants.ANSI_VIOLET} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
+    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":rocket:")} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
     print('')
     logging.info(' ')
     logging.info(' RUNNING PREPROCESSING AND REGISTRATION PIPELINE:')
@@ -126,5 +129,5 @@ def main():
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
     elapsed_time = round(elapsed_time / 60, 2)
-    print(f'{constants.ANSI_GREEN} Preprocessing and registration complete. Elapsed time: {elapsed_time} minutes!')
+    print(f'{constants.ANSI_GREEN} {emoji.emojize(":hourglass_done:")} Preprocessing and registration complete. Elapsed time: {elapsed_time} minutes!')
 
