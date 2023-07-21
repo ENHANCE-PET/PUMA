@@ -1,4 +1,4 @@
-
+![Puma-logo](Images/Puma-logo.png)
 
 # PUMA 1.0 🐾 - Agile. Precision-Driven. Empowering 💪
 
