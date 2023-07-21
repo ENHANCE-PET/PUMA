@@ -1,6 +1,6 @@
 ![Puma-logo](Images/Puma-logo.png)
 
-# PUMA 1.0 🐾 - Agile. Precision-Driven. Empowering 💪
+## PUMA 1.0 🐾 - Agile. Precision-Driven. Empowering 💪
 
 Get ready for a leap in the world of Positron Emission Tomography (PET) imaging: introducing PUMA 1.0 🚀
 
