@@ -123,6 +123,13 @@ Parent_Directory
 
 Note: All the PET and CT images related to a tracer should be placed in the same directory named after the tracer.
 
+## 🛠 To do 
+
+**PUMA v.1.0: August release candidate**
+
+- [ ] Train moose to remove the CT bed and patient arms, to improve registration accuracy [@Keyn34](https://github.com/Keyn34)
+- [ ] Implement the generated model to puma as a preprocessing step before initiating the alignment [@LalithShiyam](https://github.com/LalithShiyam)
+
 ## A Note on QIMP Python Packages: The 'Z' Factor 📚🚀
 
 All of our Python packages here at QIMP carry a special signature – a distinctive 'Z' at the end of their names. The 'Z' is more than just a letter to us; it's a symbol of our forward-thinking approach and commitment to continuous innovation.
