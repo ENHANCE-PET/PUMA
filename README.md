@@ -6,9 +6,9 @@ Get ready for a leap in the world of Positron Emission Tomography (PET) imaging:
 
 PUMA 1.0 (PET Universal Multi-tracer Aligner) has been crafted with a strong focus on the challenges of clinical PET imaging.
 
-⚡ It's Agile: PUMA operates across all operating systems and architectures, from x86 to ARM64 (Apple Silicon). It has no specific hardware needs, and with the requirement for Python 3.9 or above, PUMA 1.0 is ready to perform anywhere, anytime. Oh yes and it is blazingly fast? 
+⚡ It's Agile: PUMA operates across all operating systems and architectures, from x86 to ARM64 (Apple Silicon). It has no specific hardware needs, and with the requirement for Python 3.9 or above, PUMA 1.0 is ready to perform anywhere, anytime.
 
-🔍 It's Precision-Driven: Utilizing advanced diffeomorphic imaging techniques, PUMA 1.0 aligns multiplexed tracer images with high precision, offering unrivaled clarity and accuracy in the diagnosis of patient pathology.
+🔍 It's Precision-Driven yet blazingly fast: Borrowing advanced diffeomorphic imaging techniques optimised for speed from greedy, PUMA 1.0 aligns multiplexed tracer images with high precision in less than a minute, offering unrivaled clarity and accuracy in the diagnosis of patient pathology.
 
 🗝️ It's Empowering: PUMA 1.0 enhances diagnostic capabilities with its multiplexed viewing angles, unlocking a new realm of diagnostic possibilities and empowering clinicians.
 
