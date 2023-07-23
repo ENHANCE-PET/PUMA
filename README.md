@@ -123,7 +123,7 @@ Parent_Directory
 
 Note: All the PET and CT images related to a tracer should be placed in the same directory named after the tracer.
 
-## 🛠 To do 
+## To do  🚧
 
 **PUMA v.1.0: August 2023 release candidate**
 
