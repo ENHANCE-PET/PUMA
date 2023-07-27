@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pumaz',
-    version='0.1.0',
+    version='0.2.0',
     author='Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar',
     author_email='Sebastian.Gutschmayer@meduniwien.ac.at, Lalith.shiyamsundar@meduniwien.ac.at',
     description='PUMA (PET Universal Multi-tracer Aligner) is a robust and efficient tool for aligning images from different PET tracers. It leverages advanced diffeomorphic imaging techniques to offer high-precision alignment for multiplexed tracer images. PUMA aims to significantly enhance the accuracy and reproducibility of PET image studies.',
@@ -13,7 +13,7 @@ setup(
     url='https://github.com/QIMP-Team/PUMA',
     license='GPLv3',
     classifiers=[
-        'Development Status :: 4 - alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Healthcare Industry',
         'License :: OSI Approved :: Apache Software License',

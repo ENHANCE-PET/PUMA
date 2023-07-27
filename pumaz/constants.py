@@ -22,8 +22,18 @@ from datetime import datetime
 
 project_root = file_utilities.get_virtual_env_root()
 BINARY_PATH = os.path.join(project_root, 'bin')
-GREEDY_PATH = os.path.join(BINARY_PATH, f'greedy-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
-                           'greedy')
+
+# SET PATHS TO BINARIES
+
+if file_utilities.get_system()[0] == 'windows':
+    GREEDY_PATH = os.path.join(BINARY_PATH, f'greedy-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+                               'greedy.exe')
+elif file_utilities.get_system()[0] in ['linux', 'mac']:
+    GREEDY_PATH = os.path.join(BINARY_PATH, f'greedy-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+                               'greedy')
+else:
+    raise ValueError('Unsupported OS')
+
 
 # COLOR CODES
 ANSI_ORANGE = '\033[38;5;208m'
@@ -31,22 +41,19 @@ ANSI_GREEN = '\033[38;5;40m'
 ANSI_VIOLET = '\033[38;5;141m'
 ANSI_RESET = '\033[0m'
 
-
 # EXPECTED MODALITIES
 
 MODALITIES = ['PET', 'CT']
 MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT']
-
 
 # FILE NAMES
 
 RESAMPLED_PREFIX = 'resampled_'
 ALIGNED_PREFIX = 'aligned_'
 
-
 # FOLDER NAMES
 
-PUMA_WORKING_FOLDER = 'PUMAZ-V01'+'-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+PUMA_WORKING_FOLDER = 'PUMAZ-V01' + '-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 TRANSFORMS_FOLDER = 'transforms'
 ALIGNED_CT_FOLDER = 'aligned_CT'
 ALIGNED_PET_FOLDER = 'aligned_PT'
