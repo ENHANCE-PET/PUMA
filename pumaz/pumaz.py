@@ -123,8 +123,8 @@ def main():
     logging.info(' ')
     logging.info(' RUNNING PREPROCESSING AND REGISTRATION PIPELINE:')
     logging.info(' ')
-    puma_dir, ct_dir, pt_dir = image_processing.preprocess(puma_compliant_subjects)
-    image_processing.align(puma_dir, ct_dir, pt_dir)
+    puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(puma_compliant_subjects)
+    image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
     end_time = time.time()
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
