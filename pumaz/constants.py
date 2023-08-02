@@ -51,12 +51,25 @@ MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT']
 RESAMPLED_PREFIX = 'resampled_'
 ALIGNED_PREFIX = 'aligned_'
 
+# MOOSE PARAMETERS
+
+MOOSE_MODEL = "clin_ct_body"
+MOOSE_PREFIX = 'CT_Body_'
+MOOSE_LABEL_INDEX = {
+        1: "Legs",
+        2: "Body",
+        3: "Head",
+        4: "Arms"
+    }
+ACCELERATOR = 'cuda'
+
 # FOLDER NAMES
 
 PUMA_WORKING_FOLDER = 'PUMAZ-V01' + '-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 TRANSFORMS_FOLDER = 'transforms'
 ALIGNED_CT_FOLDER = 'aligned_CT'
 ALIGNED_PET_FOLDER = 'aligned_PT'
+MASK_FOLDER = 'masks'
 
 # HYPERPARAMETERS
 
