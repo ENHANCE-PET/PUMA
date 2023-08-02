@@ -18,6 +18,7 @@
 # ----------------------------------------------------------------------------------------------------------------------
 
 import SimpleITK as sitk
+import numpy as np
 import glob
 from pumaz import constants
 from pumaz.constants import GREEDY_PATH
@@ -33,6 +34,8 @@ import logging
 import sys
 import re
 from rich.progress import track
+from moosez import moose
+import nibabel as nib
 
 
 def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
@@ -82,6 +85,26 @@ def copy_and_rename_file(src, dst, subdir):
     os.rename(os.path.join(dst, os.path.basename(src)), new_file)
 
 
+def change_mask_labels(mask_file: str, label_map: dict, excluded_labels: list):
+    # Load the image
+    img = nib.load(mask_file)
+
+    # Get the image data (returns a numpy array)
+    data = img.get_fdata()
+
+    # Prepare labels for modification
+    excluded_indices = [idx for idx, lbl in label_map.items() if lbl in excluded_labels]
+    other_indices = [idx for idx, lbl in label_map.items() if lbl not in excluded_labels]
+
+    # Set the labels
+    data[np.isin(data, excluded_indices)] = 0
+    data[np.isin(data, other_indices)] = 1
+
+    # Save the modified image
+    new_img = nib.Nifti1Image(data, img.affine, img.header)
+    nib.save(new_img, mask_file)
+
+
 def preprocess(puma_compliant_subjects: list, num_workers: int = None):
     """
     Preprocesses the images in the subject directory
@@ -109,6 +132,7 @@ def preprocess(puma_compliant_subjects: list, num_workers: int = None):
     # create CT and PET folders
     ct_dir = os.path.join(puma_working_dir, constants.MODALITIES[1])
     pt_dir = os.path.join(puma_working_dir, constants.MODALITIES[0])
+    mask_dir = os.path.join(puma_working_dir, constants.MASK_FOLDER)
     file_utilities.create_directory(ct_dir)
     file_utilities.create_directory(pt_dir)
 
@@ -130,12 +154,24 @@ def preprocess(puma_compliant_subjects: list, num_workers: int = None):
             index += 1
             executor.submit(copy_and_rename_file, new_pt_file, pt_dir, subdir)
 
-    return puma_working_dir, ct_dir, pt_dir
+    # Run moosez to get the masks
+
+    moose(constants.MOOSE_MODEL, ct_dir, mask_dir, constants.ACCELERATOR)
+
+    # remove the prefix from the mask files
+
+    for mask_file in glob.glob(os.path.join(mask_dir, constants.MOOSE_PREFIX + '*')):
+        new_mask_file = re.sub(rf'{constants.MOOSE_PREFIX}', '', mask_file)
+        os.rename(mask_file, new_mask_file)
+        change_mask_labels(new_mask_file, constants.MOOSE_LABEL_INDEX, ["Arms"])
+
+    return puma_working_dir, ct_dir, pt_dir, mask_dir
 
 
 class ImageRegistration:
-    def __init__(self, fixed_img: str, multi_resolution_iterations: str):
+    def __init__(self, fixed_img: str, multi_resolution_iterations: str, fixed_mask: str = None):
         self.fixed_img = fixed_img
+        self.fixed_mask = fixed_mask
         self.multi_resolution_iterations = multi_resolution_iterations
         self.moving_img = None
         self.transform_files = None
@@ -153,9 +189,10 @@ class ImageRegistration:
             }
 
     def rigid(self) -> str:
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} -ia-image" \
-                     f"-centers -dof 6 -o {re.escape(self.transform_files['rigid'])} -n {self.multi_resolution_iterations} -m " \
-                     f"SSD"
+        mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
+                     f"{mask_cmd} -ia-image-centers -dof 6 -o {re.escape(self.transform_files['rigid'])} " \
+                     f"-n {self.multi_resolution_iterations} -m SSD"
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Rigid alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | Aligned image: "
@@ -163,20 +200,22 @@ class ImageRegistration:
         return self.transform_files['rigid']
 
     def affine(self) -> str:
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} -ia-image" \
-                     f"-centers -dof 12 -o {re.escape(self.transform_files['affine'])} -n {self.multi_resolution_iterations} " \
-                     f"-m SSD"
+        mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
+                     f"{mask_cmd} -ia-image-centers -dof 12 -o {re.escape(self.transform_files['affine'])} " \
+                     f"-n {self.multi_resolution_iterations} -m SSD"
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Affine alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} |"
-            f" Aligned image: mock-{pathlib.Path(self.moving_img).name} | Transform file: {pathlib.Path(self.transform_files['affine']).name}")
+            f" Aligned image: moco-{pathlib.Path(self.moving_img).name} | Transform file: {pathlib.Path(self.transform_files['affine']).name}")
         return self.transform_files['affine']
 
     def deformable(self) -> tuple:
         self.rigid()
+        mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
         cmd_to_run = f"{GREEDY_PATH} -d 3 -m SSD -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"-it {re.escape(self.transform_files['rigid'])} -o {re.escape(self.transform_files['warp'])} -oinv" \
-                     f" {re.escape(self.transform_files['inverse_warp'])} -sv -n {self.multi_resolution_iterations}"
+                     f"{mask_cmd} -it {re.escape(self.transform_files['rigid'])} -o {re.escape(self.transform_files['warp'])} " \
+                     f"-oinv {re.escape(self.transform_files['inverse_warp'])} -sv -n {self.multi_resolution_iterations}"
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Deformable alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | "
@@ -218,9 +257,12 @@ class ImageRegistration:
         return cmd
 
 
-def align(puma_working_dir: str, ct_dir: str, pt_dir: str):
+def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
+
     ct_files = sorted(glob.glob(os.path.join(ct_dir, '*.nii*')))
+
     reference_image = ct_files[0]
+    fixed_mask = glob.glob(os.path.join(mask_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0]
     moving_images = ct_files[1:]
 
     with Progress() as progress:
@@ -228,7 +270,8 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str):
 
         for moving_image in moving_images:
             aligner = ImageRegistration(fixed_img=reference_image,
-                                        multi_resolution_iterations=constants.MULTI_RESOLUTION_SCHEME)
+                                        multi_resolution_iterations=constants.MULTI_RESOLUTION_SCHEME,
+                                        fixed_mask=fixed_mask)
             aligner.set_moving_image(moving_image)
             aligner.registration('deformable')
             aligner.resample(resampled_moving_img=os.path.join(puma_working_dir, constants.ALIGNED_PREFIX +
@@ -264,7 +307,6 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str):
         file_utilities.copy_file(reference_image, os.path.join(aligned_ct_dir, constants.ALIGNED_PREFIX +
                                                                os.path.basename(reference_image)))
 
-
         # move the aligned PET files to a new folder called aligned_PET, this is stored in the puma_working_dir
         aligned_pet_dir = os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER)
         file_utilities.create_directory(aligned_pet_dir)
@@ -275,9 +317,11 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str):
             file_utilities.move_file(aligned_pet_file, aligned_pet_dir)
         # copy the pet file corresponding to the reference ct file to the aligned_pet_dir and add an aligned prefix
         # to the copied file
-        file_utilities.copy_file(glob.glob(os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0],
-                                    os.path.join(aligned_pet_dir, constants.ALIGNED_PREFIX +
-                                                    os.path.basename(glob.glob(os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0])))
+        file_utilities.copy_file(
+            glob.glob(os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0],
+            os.path.join(aligned_pet_dir, constants.ALIGNED_PREFIX +
+                         os.path.basename(glob.glob(
+                             os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0])))
 
 
 
