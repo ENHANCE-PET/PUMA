@@ -36,6 +36,39 @@ import re
 from rich.progress import track
 from moosez import moose
 import nibabel as nib
+from pumaz.file_utilities import create_directory, move_file, remove_directory, move_files_to_directory, get_files
+from halo import Halo
+
+
+def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str):
+    # Get all ct_files in the ct_dir
+    ct_files = get_files(ct_dir, '*.nii*')
+
+    for ct_file in ct_files:
+        base_name = os.path.basename(ct_file).split('.')[0]
+
+        ct_file_dir = os.path.join(ct_dir, base_name)
+        create_directory(ct_file_dir)
+        move_file(ct_file, os.path.join(ct_file_dir, os.path.basename(ct_file)))
+
+        mask_file_dir = os.path.join(mask_dir, base_name)
+        create_directory(mask_file_dir)
+
+        # Run moose but don't show any output
+        # show spinner
+        spinner = Halo(text=f'{constants.ANSI_VIOLET} Running moosez on {base_name}...{constants.ANSI_RESET}',
+                       spinner='dots')
+        spinner.start()
+        with open(os.devnull, 'w') as devnull:
+            moose(moose_model, ct_file_dir, mask_file_dir, accelerator)
+
+        spinner.succeed(f'{constants.ANSI_VIOLET} Finished running moosez on {base_name}...{constants.ANSI_RESET}')
+
+        move_files_to_directory(ct_file_dir, ct_dir)
+        move_files_to_directory(mask_file_dir, mask_dir)
+
+        remove_directory(ct_file_dir)
+        remove_directory(mask_file_dir)
 
 
 def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
@@ -78,6 +111,7 @@ def prepare_reslice_tasks(puma_compliant_subjects):
             False
         ))
     return tasks
+
 
 def copy_and_rename_file(src, dst, subdir):
     file_utilities.copy_file(src, dst)
@@ -156,7 +190,7 @@ def preprocess(puma_compliant_subjects: list, num_workers: int = None):
 
     # Run moosez to get the masks
 
-    moose(constants.MOOSE_MODEL, ct_dir, mask_dir, constants.ACCELERATOR)
+    process_and_moose_ct_files(ct_dir, mask_dir, constants.MOOSE_MODEL, constants.ACCELERATOR)
 
     # remove the prefix from the mask files
 
@@ -258,7 +292,6 @@ class ImageRegistration:
 
 
 def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
-
     ct_files = sorted(glob.glob(os.path.join(ct_dir, '*.nii*')))
 
     reference_image = ct_files[0]
@@ -322,6 +355,3 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
             os.path.join(aligned_pet_dir, constants.ALIGNED_PREFIX +
                          os.path.basename(glob.glob(
                              os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0])))
-
-
-

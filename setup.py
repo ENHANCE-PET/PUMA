@@ -44,7 +44,8 @@ setup(
         'pandas',
         'dicom2nifti~=2.4.8',
         'requests',
-        'moosez'
+        'moosez',
+        'halo'
     ],
     entry_points={
         'console_scripts': [

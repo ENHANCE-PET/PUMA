@@ -128,3 +128,15 @@ def organise_files_by_modality(tracer_dirs: list, modalities: list, pumaz_dir) -
 
 def move_file(file, destination):
     shutil.move(file, destination)
+
+
+def move_files_to_directory(src_dir, dest_dir):
+    src_files = get_files(src_dir, '*')
+    for src_file in src_files:
+        move_file(src_file, os.path.join(dest_dir, os.path.basename(src_file)))
+
+
+def remove_directory(directory_path):
+    # Remove the directory only if it is empty
+    if not os.listdir(directory_path):
+        os.rmdir(directory_path)
