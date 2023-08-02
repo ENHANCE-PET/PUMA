@@ -16,7 +16,7 @@
 # The functions in this module can be imported and used in other modules within the pumaz to perform image conversion.
 #
 # ----------------------------------------------------------------------------------------------------------------------
-
+import contextlib
 import SimpleITK as sitk
 import numpy as np
 import glob
@@ -33,42 +33,48 @@ import subprocess
 import logging
 import sys
 import re
-from rich.progress import track
+from rich.progress import track, Progress
 from moosez import moose
 import nibabel as nib
 from pumaz.file_utilities import create_directory, move_file, remove_directory, move_files_to_directory, get_files
 from halo import Halo
+import time
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str):
     # Get all ct_files in the ct_dir
     ct_files = get_files(ct_dir, '*.nii*')
 
-    for ct_file in ct_files:
-        base_name = os.path.basename(ct_file).split('.')[0]
+    with Progress() as progress_bar:
+        task = progress_bar.add_task("[cyan] MOOSE-ing CT files...", total=len(ct_files))
 
-        ct_file_dir = os.path.join(ct_dir, base_name)
-        create_directory(ct_file_dir)
-        move_file(ct_file, os.path.join(ct_file_dir, os.path.basename(ct_file)))
+        for ct_file in ct_files:
+            base_name = os.path.basename(ct_file).split('.')[0]
 
-        mask_file_dir = os.path.join(mask_dir, base_name)
-        create_directory(mask_file_dir)
+            ct_file_dir = os.path.join(ct_dir, base_name)
+            create_directory(ct_file_dir)
+            move_file(ct_file, os.path.join(ct_file_dir, os.path.basename(ct_file)))
 
-        # Run moose but don't show any output
-        # show spinner
-        spinner = Halo(text=f'{constants.ANSI_VIOLET} Running moosez on {base_name}...{constants.ANSI_RESET}',
-                       spinner='dots')
-        spinner.start()
-        with open(os.devnull, 'w') as devnull:
-            moose(moose_model, ct_file_dir, mask_file_dir, accelerator)
+            mask_file_dir = os.path.join(mask_dir, base_name)
+            create_directory(mask_file_dir)
 
-        spinner.succeed(f'{constants.ANSI_VIOLET} Finished running moosez on {base_name}...{constants.ANSI_RESET}')
+            progress_bar.update(task, advance=0, description=f"[cyan] Running MOOSE on {base_name}...")
 
-        move_files_to_directory(ct_file_dir, ct_dir)
-        move_files_to_directory(mask_file_dir, mask_dir)
+            with open(os.devnull, 'w') as devnull:
+                with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
+                    moose(moose_model, ct_file_dir, mask_file_dir, accelerator)
 
-        remove_directory(ct_file_dir)
-        remove_directory(mask_file_dir)
+            progress_bar.update(task, advance=0, description=f"[cyan] Completed MOOSE on {base_name}, cleaning up...")
+
+            move_files_to_directory(ct_file_dir, ct_dir)
+            move_files_to_directory(mask_file_dir, mask_dir)
+
+            remove_directory(ct_file_dir)
+            remove_directory(mask_file_dir)
+
+            progress_bar.update(task, advance=1, description=f"[cyan] Finished processing {base_name}")
+
+            time.sleep(1)  # delay for 1 second
 
 
 def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,

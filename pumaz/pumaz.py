@@ -129,5 +129,7 @@ def main():
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
     elapsed_time = round(elapsed_time / 60, 2)
-    print(f'{constants.ANSI_GREEN} {emoji.emojize(":hourglass_done:")} Preprocessing and registration complete. Elapsed time: {elapsed_time} minutes!')
+    print(f'{constants.ANSI_GREEN} {emoji.emojize(":hourglass_done:")} Preprocessing and registration complete.'
+          f' Elapsed time: {elapsed_time} minutes! {emoji.emojize(":partying_face:")} Aligned images are stored in'
+          f' {puma_dir}! Look for the directories with prefix "aligned"! {constants.ANSI_RESET}')
 
