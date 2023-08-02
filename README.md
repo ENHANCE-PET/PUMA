@@ -127,8 +127,8 @@ Note: All the PET and CT images related to a tracer should be placed in the same
 
 **PUMA v.1.0: August 2023 release candidate**
 
-- [ ] Train moose to remove the CT bed and patient arms, to improve registration accuracy [@Keyn34](https://github.com/Keyn34)
-- [ ] Implement the generated model to puma as a preprocessing step before initiating the alignment [@LalithShiyam](https://github.com/LalithShiyam)
+- [x] Train moose to remove the CT bed and patient arms, to improve registration accuracy [@mprires](https://github.com/mprires)
+- [x] Implement the generated model to puma as a preprocessing step before initiating the alignment [@LalithShiyam](https://github.com/LalithShiyam)
 
 ## A Note on QIMP Python Packages: The 'Z' Factor 📚🚀
 
