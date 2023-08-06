@@ -2,19 +2,33 @@
 # -*- coding: utf-8 -*-
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
+# Authors: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
 # Institution: Medical University of Vienna
 # Research Group: Quantitative Imaging and Medical Physics (QIMP) Team
 # Date: 04.07.2023
 # Version: 0.1.0
-#
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Module: PUMAz (PET Universal Multi-tracer Aligner - Z Edition)
+
 # Description:
-# The main module of the pumaz. It contains the main function that is executed when the pumaz is run.
+# PUMAz (pronounced as PUMA-Zee) is an advanced imaging tool designed to seamlessly align multi-tracer PET/CT 
+# images of the same patient, regardless of when they were acquired or the different tracers used. Born out 
+# of QIMP's tradition of innovative imaging tools, the 'Z' in PUMAz symbolizes the continuation of a legacy 
+# combined with a future-forward vision.
+#
+# This module is the beating heart of PUMAz. It drives the main execution sequence, encompassing everything 
+# from initializing the environment, handling user input, to running the complete image preprocessing and 
+# registration pipeline. Alongside standardizing image data, this module ensures that the processed images 
+# are PUMA-compliant and then aligns them for consistency.
 #
 # Usage:
-# The variables in this module can be imported and used in other modules within the pumaz.
-#
+# This module is designed to be run as the primary script to execute the PUMAz functionalities. Users can 
+# pass their subject directory as a command-line argument to start the process.
+# While the variables in this module are meant for internal use, advanced users or developers can access 
+# them for further extensions or modifications within the PUMAz framework.
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 
 import argparse
