@@ -8,14 +8,23 @@
 # Date: 04.07.2023
 # Version: 0.1.0
 #
+# Module: display
+#
 # Description:
-# This module shows predefined display messages for the pumaz.
+# The `display` module in PUMA-Z is dedicated to presenting user-friendly messages, notifications, and visual cues 
+# that enrich the user experience. This module consolidates essential visual feedback mechanisms, ensuring that 
+# users receive consistent and intuitive responses as they navigate and interact with the PUMA-Z tool.
+# 
+# By externalizing and standardizing these display messages, PUMA-Z achieves a cohesive user interface, 
+# which is particularly vital when guiding users through complex tasks such as aligning multi-tracer PET/CT images.
 #
 # Usage:
-# The functions in this module can be imported and used in other modules within the pumaz to show predefined display
-# messages.
+# Within the PUMA-Z ecosystem, developers and advanced users can readily import and invoke the functions 
+# housed in this module. This ensures that various sections of the tool uniformly present messages and feedback, 
+# maintaining a harmonized user interaction throughout PUMA-Z operations.
 #
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 import pyfiglet
 import logging
