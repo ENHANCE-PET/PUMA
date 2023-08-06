@@ -7,10 +7,10 @@
 # Research Group: Quantitative Imaging and Medical Physics (QIMP) Team
 # Date: 04.07.2023
 # Version: 0.1.0
-# ----------------------------------------------------------------------------------------------------------------------
-
+# 
+#
 # Module: PUMAz (PET Universal Multi-tracer Aligner - Z Edition)
-
+#
 # Description:
 # PUMAz (pronounced as PUMA-Zee) is an advanced imaging tool designed to seamlessly align multi-tracer PET/CT 
 # images of the same patient, regardless of when they were acquired or the different tracers used. Born out 
