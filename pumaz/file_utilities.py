@@ -5,16 +5,25 @@
 # Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
 # Institution: Medical University of Vienna
 # Research Group: Quantitative Imaging and Medical Physics (QIMP) Team
-# Date: 07.006.2023
+# Date: 07.06.2023
 # Version: 1.0.0
 #
+# Module: file_utilities
+#
 # Description:
-# This module contains the functions for performing file operations for the pumaz.
+# The `file_utilities` module acts as the backbone for PUMA-Z's interactions with the file system. From setting 
+# appropriate permissions for smooth operation to pinpointing the environment's root directory, this module 
+# provides an assortment of crucial file-related functionalities. Moreover, with the rising variety in computing 
+# platforms, it can also discern the host system's type and architecture, ensuring that PUMA-Z remains adaptive 
+# and optimized for diverse environments.
 #
 # Usage:
-# The functions in this module can be imported and used in other modules within the pumaz to perform file operations.
+# The rich suite of file management functions in this module are available for import and can be effortlessly 
+# integrated within other PUMA-Z components. These utilities streamline various file operations, ensuring that 
+# PUMA-Z remains responsive, fault-tolerant, and consistent in its operations across varied system configurations.
 #
 # ----------------------------------------------------------------------------------------------------------------------
+
 import os
 import glob
 import shutil
