@@ -20,32 +20,33 @@
 import logging
 import os
 import zipfile
-
 import requests
-
 from pumaz import constants
-
 from rich.console import Console
 from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn, FileSizeColumn, TransferSpeedColumn
-import time
-
 
 def download(item_name, item_path, item_dict):
     """
-    Downloads the item (model or binary) for the current system.
-    :param item_name: The name of the item to download.
-    :param item_path: The path to store the item.
-    :param item_dict: The dictionary containing item info.
+    Downloads the specified item (model or binary) for the current system.
+
+    Parameters:
+        item_name (str): The name of the item to download.
+        item_path (str): The path to store the item.
+        item_dict (dict): The dictionary containing item info.
+
+    Returns:
+        str: The absolute path to the downloaded item.
     """
+
     item_info = item_dict[item_name]
     url = item_info["url"]
     filename = os.path.join(item_path, item_info["filename"])
     directory = os.path.join(item_path, item_info["directory"])
 
     if not os.path.exists(directory):
-        logging.info(f" Downloading {directory}")
+        logging.info(f"Downloading {directory}")
 
-        # show progress using rich
+        # Show download progress using rich library
         response = requests.get(url, stream=True)
         total_size = int(response.headers.get("Content-Length", 0))
         chunk_size = 1024 * 10
@@ -69,7 +70,7 @@ def download(item_name, item_path, item_dict):
                 open(filename, "ab").write(chunk)
                 progress.update(task, advance=chunk_size)
 
-        # Unzip the item
+        # Unzip the downloaded item
         progress = Progress(  # Create new instance for extraction task
             TextColumn("[bold blue]{task.description}"),
             BarColumn(bar_width=None),
@@ -94,15 +95,15 @@ def download(item_name, item_path, item_dict):
                     extracted_size = file.file_size
                     progress.update(task, advance=extracted_size)
 
-        logging.info(f" {os.path.basename(directory)} extracted.")
+        logging.info(f"{os.path.basename(directory)} extracted.")
 
-        # Delete the zip file
+        # Delete the zip file after extraction
         os.remove(filename)
-        print(f"{constants.ANSI_GREEN} Registration binaries - download complete. {constants.ANSI_RESET}")
-        logging.info(f" Registration binaries - download complete.")
+        print(f"{constants.ANSI_GREEN}Registration binaries - download complete.{constants.ANSI_RESET}")
+        logging.info("Registration binaries - download complete.")
     else:
-        print(f"{constants.ANSI_GREEN} A local instance of the system specific registration binary has been detected. "
+        print(f"{constants.ANSI_GREEN}A local instance of the system specific registration binary has been detected."
               f"{constants.ANSI_RESET}")
-        logging.info(f" A local instance of registration binary has been detected.")
+        logging.info("A local instance of registration binary has been detected.")
 
     return os.path.join(item_path, item_name)
