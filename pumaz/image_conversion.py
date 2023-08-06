@@ -31,11 +31,21 @@ from rich.progress import Progress
 
 def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
     """
-    Converts any image format known to ITK to NIFTI
+    Converts an image format known to ITK to the NIFTI format.
 
-    :param input_path: str, Directory OR filename to convert to nii.gz
-    :param output_directory: str, optional output directory to write the image to.
+    Parameters:
+    - `input_path` (str): Path to the input file or directory containing the image(s) to be converted.
+    - `output_directory` (str, optional): The directory where the converted image will be saved. If None, the image
+      will be saved in the same location as the input.
+
+    Note:
+    - If the input_path is a directory, the function will create a lookup for DICOMs and rename NIFTI files accordingly.
+    - If the input_path is a file, it will be converted directly to the NIFTI format.
+
+    Raises:
+    - FileNotFoundError: If the input path does not exist.
     """
+
 
     if not os.path.exists(input_path):
         print(f"Input path {input_path} does not exist.")
@@ -67,8 +77,16 @@ def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
 
 def standardize_to_nifti(parent_dir: str):
     """
-    Converts all images in a parent directory to NIFTI
+    Converts all images within a specified directory (and its sub-directories) to the NIFTI format.
+
+    Parameters:
+    - `parent_dir` (str): The parent directory containing the images or subdirectories with images to be converted.
+
+    Note:
+    - This function traverses through all the subdirectories of the provided parent directory and converts all images 
+      found to the NIFTI format.
     """
+
     # go through the subdirectories
     subjects = os.listdir(parent_dir)
     # get only the directories
@@ -94,10 +112,19 @@ def standardize_to_nifti(parent_dir: str):
 
 def dcm2niix(input_path: str) -> str:
     """
-    Converts DICOM images into Nifti images using dcm2niix
-    :param input_path: Path to the folder with the dicom files to convert
-    :return: str, Path to the folder with the converted nifti files
+    Converts DICOM images to NIFTI images using the dicom2nifti utility.
+
+    Parameters:
+    - `input_path` (str): Path to the folder containing the DICOM files.
+
+    Returns:
+    - `str`: Path to the folder containing the converted NIFTI files.
+
+    Note:
+    - This function utilizes the dcm2niix utility for conversion. Ensure that dcm2niix is properly installed and set up 
+      in your environment.
     """
+
     output_dir = os.path.dirname(input_path)
 
     # redirect standard output and standard error to discard output
@@ -108,6 +135,19 @@ def dcm2niix(input_path: str) -> str:
 
 
 def remove_accents(unicode_filename):
+    """
+    Removes accents from a given string and returns a cleaned version of the filename.
+
+    Parameters:
+    - `unicode_filename` (str): The filename to be cleaned.
+
+    Returns:
+    - `str`: The cleaned filename without any accents and special characters.
+
+    Note:
+    - If any exception occurs during the processing, the original filename will be returned.
+    """
+
     try:
         unicode_filename = str(unicode_filename).replace(" ", "_")
         cleaned_filename = unicodedata.normalize('NFKD', unicode_filename).encode('ASCII', 'ignore').decode('ASCII')
@@ -119,6 +159,16 @@ def remove_accents(unicode_filename):
 
 
 def is_dicom_file(filename):
+    """
+    Determines if the provided file is a valid DICOM file.
+
+    Parameters:
+    - `filename` (str): Path to the file to be checked.
+
+    Returns:
+    - `bool`: True if the file is a valid DICOM file, False otherwise.
+    """
+
     try:
         pydicom.dcmread(filename)
         return True
@@ -127,14 +177,18 @@ def is_dicom_file(filename):
 
 
 def create_dicom_lookup(dicom_dir):
-    """Create a lookup dictionary from DICOM files.
+    """
+    Generates a lookup dictionary from DICOM files.
 
     Parameters:
-    dicom_dir (str): The directory where DICOM files are stored.
+    - `dicom_dir` (str): Directory containing the DICOM files.
 
     Returns:
-    dict: A dictionary where the key is the anticipated filename that dicom2nifti will produce and
-          the value is the modality of the DICOM series.
+    - `dict`: A dictionary where the key is the anticipated filename produced by dicom2nifti and the value is the modality 
+      of the DICOM series.
+
+    Note:
+    - This function is particularly useful when renaming NIFTI files post-conversion.
     """
 
     # a dictionary to store information from the DICOM files
@@ -176,13 +230,18 @@ def create_dicom_lookup(dicom_dir):
 
 
 def rename_nifti_files(nifti_dir, dicom_info):
-    """Rename NIfTI files based on a lookup dictionary.
+    """
+    Renames NIFTI files based on the provided lookup dictionary.
 
     Parameters:
-    nifti_dir (str): The directory where NIfTI files are stored.
-    dicom_info (dict): A dictionary where the key is the anticipated filename that dicom2nifti will produce and
-                       the value is the modality of the DICOM series.
+    - `nifti_dir` (str): Directory containing the NIFTI files.
+    - `dicom_info` (dict): A dictionary where the key is the anticipated filename that dicom2nifti will produce and the 
+      value is the modality of the DICOM series.
+
+    Note:
+    - Only files with a corresponding modality in the dicom_info dictionary will be renamed. Others will be left unchanged.
     """
+
 
     # loop over the NIfTI files
     for filename in os.listdir(nifti_dir):
