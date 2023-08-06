@@ -8,13 +8,23 @@
 # Date: 04.07.2023
 # Version: 0.1.0
 #
+# Module: constants
+#
 # Description:
-# This module contains the constants that are used in the pumaz.
+# The `constants` module of PUMA-Z serves as a centralized location for defining and managing constants 
+# essential to the operation and functionality of the tool. It consolidates various fixed values like paths, 
+# configurations, and platform-specific details, ensuring consistency and maintainability across the PUMA-Z toolset.
+# 
+# Constants play a crucial role in ensuring the standardization and consistent behavior of PUMA-Z, 
+# especially when handling and processing multi-tracer PET/CT images of subjects acquired at different timepoints.
 #
 # Usage:
-# The variables in this module can be imported and used in other modules within the pumaz.
+# This module is a foundational component of the PUMA-Z software package. Developers and users can import 
+# and reference the constants defined here in other modules or scripts within the PUMA-Z ecosystem, 
+# ensuring that any updates or changes to constants are automatically propagated throughout the tool.
 #
-# ----------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
 
 import os
 from pumaz import file_utilities
