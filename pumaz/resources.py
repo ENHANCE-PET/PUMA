@@ -9,7 +9,7 @@
 # Version: 0.1.0
 #
 # Description:
-# This module contains the urls and filenames of the binaries that are required for the pumaz.
+# This module contains the URLs and filenames of the binaries that are required for the pumaz.
 #
 # Usage:
 # The variables in this module can be imported and used in other modules within the pumaz to download the necessary
@@ -39,3 +39,12 @@ GREEDY_BINARIES = {
         "directory": "greedy-mac-arm64",
     },
 }
+
+def get_greedy_binaries():
+    """
+    Get the URLs and filenames of the Greedy binaries for different platforms.
+
+    Returns:
+        dict: A dictionary containing the URLs and filenames of the Greedy binaries for different platforms.
+    """
+    return GREEDY_BINARIES
