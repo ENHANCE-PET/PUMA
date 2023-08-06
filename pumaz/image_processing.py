@@ -3,19 +3,29 @@
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
-#
 # Institution: Medical University of Vienna
 # Research Group: Quantitative Imaging and Medical Physics (QIMP) Team
 # Date: 19.07.2023
 # Version: 1.0.0
 #
+# Module: image_processing
+#
 # Description:
-# This module handles image processing for the pumaz.
+# The `image_processing` module stands as a testament to PUMA-Z's commitment to state-of-the-art medical imaging. 
+# It encapsulates a suite of functions and utilities dedicated to meticulous image processing, ensuring that the data 
+# flows seamlessly and efficiently through various transformations. Whether you're dealing with CT scans, leveraging 
+# the power of the MOOSE model, or managing intricate reslicing tasks, this module has you covered.
+#
+# By tapping into robust tools like SimpleITK, nibabel, and MOOSE, the `image_processing` module seamlessly blends 
+# convenience with functionality, producing the gold standard in medical image processing for PUMA-Z.
 #
 # Usage:
-# The functions in this module can be imported and used in other modules within the pumaz to perform image conversion.
+# This module isn't just a collection of functions; it's the bedrock on which PUMA-Z's image manipulation tasks rest. 
+# From deep within other PUMA-Z modules, the features of the `image_processing` module can be invoked, delivering 
+# consistently high-quality processed images.
 #
 # ----------------------------------------------------------------------------------------------------------------------
+
 import contextlib
 import SimpleITK as sitk
 import numpy as np
