@@ -32,6 +32,8 @@ import platform
 from multiprocessing import Pool
 import stat
 import subprocess
+from typing import List, Tuple
+
 
 
 def set_permissions(file_path: str, system_type: str) -> None:
