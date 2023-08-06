@@ -24,10 +24,11 @@ from . import file_utilities
 from pumaz import file_utilities
 
 
-def logo():
+def logo() -> None:
     """
-    Display PUMA logo
-    :return:
+    Display the PUMA logo along with the ENHANCE community slogan.
+
+    The logo and the slogan are both colored as per the constants defined for them.
     """
     print(' ')
     logo_color_code = constants.ANSI_VIOLET
@@ -41,19 +42,23 @@ def logo():
     print(' ')
 
 
-def citation():
+def citation() -> None:
     """
-    Display manuscript citation
-    :return:
+    Display the manuscript citation for PUMA.
+    
+    Provides information about the authors, title, and the intended submission journal for the PUMA project.
     """
     print(" Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar, PET Universal Multi-tracer Aligner (PUMA) - To be "
           "submitted to Journal of Nuclear Medicine")
     print(" Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna")
 
 
-def expectations():
+def expectations() -> None:
     """
-    Display expected modalities for PUMA. This is used to check if the user has provided the correct set of modalities for each tracer set.
+    Display the expected modalities for PUMA.
+
+    This function informs the user about the modalities PUMA expects, ensuring the correct set is provided for each tracer set.
+    Warnings are displayed regarding non-DICOM formats and potential exclusions from analysis.
     """
     # display the expected modalities
     print(f' Expected modalities: {constants.MODALITIES} | Number of required modalities: {len(constants.MODALITIES)} |'
@@ -68,15 +73,3 @@ def expectations():
                       " These subjects will be excluded from analysis and their data will not be used."
     logging.warning(warning_message)
 
-
-def alignment_strategy():
-    """
-    Display alignment strategy
-    :return:
-    """
-    print(" Step 1: A random PET tracer image will be selected as the reference from the list.")
-    print(" Step 2: Each CT image will be resliced to match its corresponding PET tracer image.")
-    print(" Step 3: The CT image that pairs with the reference PET tracer image will be set as the reference CT image.")
-    print(" Step 4: All other CT images will be aligned to the reference CT image.")
-    print(" Step 5: Using the deformation fields derived from the CT images, the corresponding PET tracer images will "
-          "be aligned to the reference PET tracer image.")
