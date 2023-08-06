@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -8,14 +7,22 @@
 # Date: 04.07.2023
 # Version: 0.1.0
 #
-# Description:
-# This module downloads the necessary binaries and models for the pumaz.
+# Module: download
 #
+# Description:
+# The `download` module serves a critical role in the PUMA-Z ecosystem, ensuring that users have the required 
+# binaries and models at their fingertips. It automates the process of fetching the latest or necessary versions
+# of these resources, sparing the user from the manual and often error-prone process of acquisition. 
+# By centralizing and standardizing this process, PUMA-Z guarantees a smooth, hassle-free setup and execution 
+# experience for its users.
+# 
 # Usage:
-# The functions in this module can be imported and used in other modules within the pumaz to download the necessary
-# binaries and models for the pumaz.
+# Developers and users can seamlessly import and utilize the functions from this module within other components 
+# of PUMA-Z. These functions ensure that every PUMA-Z operation, which requires external binaries or models, 
+# gets access to the right version without any hitches, enhancing the tool's robustness and reliability.
 #
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 import logging
 import os
