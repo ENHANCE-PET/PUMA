@@ -41,29 +41,40 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d
 
 
 def main():
+    """
+    Main execution function for the PUMA-Z program.
+    
+    This function:
+    1. Initializes the colorama and argument parser for command-line inputs.
+    2. Validates and prepares the user-provided subject directory.
+    3. Downloads necessary binaries for the platform.
+    4. Standardizes input image data to NIFTI format.
+    5. Checks for PUMA-compliant tracer directories.
+    6. Runs the preprocessing and registration pipeline.
+    """
+    
+    # Initialize colorama and command-line arguments parser
     colorama.init()
 
     parser = argparse.ArgumentParser()
-
     parser.add_argument("-d", "--subject_directory", type=str,
                         help="Subject directory containing the different PET/CT images of the same subject",
                         required=True)
-
     args = parser.parse_args()
 
+    # Resolve the subject directory path
     subject_folder = os.path.abspath(args.subject_directory)
 
+    # Display the PUMA logo and citation information
     display.logo()
     display.citation()
 
+    # Log the starting of PUMA-Z program
     logging.info('----------------------------------------------------------------------------------------------------')
     logging.info('                                     STARTING PUMA-Z V.1.0.0                                       ')
     logging.info('----------------------------------------------------------------------------------------------------')
 
-    # ----------------------------------
-    # INPUT VALIDATION AND PREPARATION
-    # ----------------------------------
-
+    # Input validation and preparation
     logging.info(' ')
     logging.info('- Subject directory: ' + subject_folder)
     logging.info(' ')
@@ -72,14 +83,9 @@ def main():
     print(' ')
     display.expectations()
 
-    # ----------------------------------
-    # DOWNLOADING THE BINARIES
-    # ----------------------------------
-
+    # Download necessary binaries for the platform
     print('')
     print(f'{constants.ANSI_VIOLET} {emoji.emojize(":globe_with_meridians:")} BINARIES DOWNLOAD:{constants.ANSI_RESET}')
-
-    print('')
     binary_path = constants.BINARY_PATH
     file_utilities.create_directory(binary_path)
     system_os, system_arch = file_utilities.get_system()
@@ -89,47 +95,32 @@ def main():
                       item_dict=resources.GREEDY_BINARIES)
     file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
 
-    # ----------------------------------
-    # INPUT STANDARDIZATION
-    # ----------------------------------
-
+    # Standardize input image data to NIFTI format
     print('')
     print(f'{constants.ANSI_VIOLET} {emoji.emojize(":magnifying_glass_tilted_left:")} STANDARDIZING INPUT DATA TO '
           f'NIFTI:{constants.ANSI_RESET}')
-    print('')
-    logging.info(' ')
     logging.info(' STANDARDIZING INPUT DATA TO NIFTI:')
-    logging.info(' ')
     image_conversion.standardize_to_nifti(subject_folder)
     print(f"{constants.ANSI_GREEN} Standardization complete.{constants.ANSI_RESET}")
     logging.info(" Standardization complete.")
 
-    # --------------------------------------
-    # CHECKING FOR PUMA COMPLIANT SUBJECTS
-    # --------------------------------------
-
+    # Check and filter PUMA-compliant tracer directories
     tracer_dirs = [os.path.join(subject_folder, d) for d in os.listdir(subject_folder) if
                    os.path.isdir(os.path.join(subject_folder, d))]
     puma_compliant_subjects = input_validation.select_puma_compliant_subjects(tracer_dirs, constants.MODALITIES)
 
-    # -------------------------------------------------
-    # RUNNING PREPROCESSING AND REGISTRATION PIPELINE
-    # -------------------------------------------------
-    # calculate elapsed time for the entire procedure below
+    # Run preprocessing and registration pipeline
     start_time = time.time()
     print('')
     print(f'{constants.ANSI_VIOLET} {emoji.emojize(":rocket:")} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
-    print('')
-    logging.info(' ')
     logging.info(' RUNNING PREPROCESSING AND REGISTRATION PIPELINE:')
-    logging.info(' ')
     puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(puma_compliant_subjects)
     image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
     end_time = time.time()
     elapsed_time = end_time - start_time
-    # show elapsed time in minutes and round it to 2 decimal places
     elapsed_time = round(elapsed_time / 60, 2)
     print(f'{constants.ANSI_GREEN} {emoji.emojize(":hourglass_done:")} Preprocessing and registration complete.'
           f' Elapsed time: {elapsed_time} minutes! {emoji.emojize(":partying_face:")} Aligned images are stored in'
           f' {puma_dir}! Look for the directories with prefix "aligned"! {constants.ANSI_RESET}')
+
 
