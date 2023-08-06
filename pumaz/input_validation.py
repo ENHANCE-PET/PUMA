@@ -8,14 +8,24 @@
 # Date: 07.07.2023
 # Version: 1.0.0
 #
+# Module: input_validation
+#
 # Description:
-# This module performs input validation for the pumaz. It verifies that the inputs provided by the user are valid
-# and meet the required specifications.
+# The `input_validation` module stands guard at the gates of PUMA-Z, ensuring that only valid, compliant data enters its realm. 
+# As the name suggests, it is tasked with a critical function—ensuring that every piece of input data adheres to PUMA-Z's stringent 
+# requirements. In the intricate maze of medical imaging data, consistency, accuracy, and standardization are paramount.
+#
+# Leveraging meticulous algorithms and smart logic, this module sifts through the input data, differentiating between compliant and 
+# non-compliant data. Whether it's checking naming conventions or ensuring that data modalities match expected standards, the 
+# `input_validation` module doesn't miss a beat.
 #
 # Usage:
-# The functions in this module can be imported and used in other modules within the pumaz to perform input validation.
+# The primary purpose of this module is to serve as a sentinel, invoked by other PUMA-Z modules whenever data is ingested. By 
+# incorporating this module's functions, developers can be assured that PUMA-Z's internal operations always work on pristine, 
+# compliant data, setting the stage for high-quality outputs.
 #
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 import logging
 import os
