@@ -3,19 +3,27 @@
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
-#
 # Institution: Medical University of Vienna
 # Research Group: Quantitative Imaging and Medical Physics (QIMP) Team
 # Date: 07.07.2023
 # Version: 1.0.0
 #
+# Module: image_conversion
+#
 # Description:
-# This module handles image conversion for the pumaz.
+# The `image_conversion` module is PUMA-Z's trusted bridge for converting between medical image formats. 
+# Leveraging robust libraries like SimpleITK and dicom2nifti, this module ensures that no matter the original 
+# format, the data can be converted to a universally accepted NIFTI format. Whether working with individual 
+# images or an entire directory of medical scans, the utilities within this module guarantee a smooth and 
+# efficient transformation process.
 #
 # Usage:
-# The functions in this module can be imported and used in other modules within the pumaz to perform image conversion.
+# A powerhouse in its own right, the functions in this module can be summoned across PUMA-Z to perform 
+# versatile image conversions. With the ability to handle DICOM, ITK-known formats, and more, these utilities 
+# offer an all-encompassing solution to the challenges posed by diverse medical image types.
 #
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 import contextlib
 import io
