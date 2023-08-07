@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pumaz.display &mdash; PUMA 1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PUMA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PUMA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pumaz.display</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pumaz.display</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+<span class="c1"># Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer</span>
+<span class="c1"># Institution: Medical University of Vienna</span>
+<span class="c1"># Research Group: Quantitative Imaging and Medical Physics (QIMP) Team</span>
+<span class="c1"># Date: 04.07.2023</span>
+<span class="c1"># Version: 0.1.0</span>
+<span class="c1">#</span>
+<span class="c1"># Module: display</span>
+<span class="c1">#</span>
+<span class="c1"># Description:</span>
+<span class="c1"># The `display` module in PUMA-Z is dedicated to presenting user-friendly messages, notifications, and visual cues </span>
+<span class="c1"># that enrich the user experience. This module consolidates essential visual feedback mechanisms, ensuring that </span>
+<span class="c1"># users receive consistent and intuitive responses as they navigate and interact with the PUMA-Z tool.</span>
+<span class="c1"># </span>
+<span class="c1"># By externalizing and standardizing these display messages, PUMA-Z achieves a cohesive user interface, </span>
+<span class="c1"># which is particularly vital when guiding users through complex tasks such as aligning multi-tracer PET/CT images.</span>
+<span class="c1">#</span>
+<span class="c1"># Usage:</span>
+<span class="c1"># Within the PUMA-Z ecosystem, developers and advanced users can readily import and invoke the functions </span>
+<span class="c1"># housed in this module. This ensures that various sections of the tool uniformly present messages and feedback, </span>
+<span class="c1"># maintaining a harmonized user interaction throughout PUMA-Z operations.</span>
+<span class="c1">#</span>
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<span class="kn">import</span> <span class="nn">pyfiglet</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">file_utilities</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">file_utilities</span>
+
+
+<div class="viewcode-block" id="logo"><a class="viewcode-back" href="../../pumaz.html#pumaz.display.logo">[docs]</a><span class="k">def</span> <span class="nf">logo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Display the PUMA logo along with the ENHANCE community slogan.</span>
+
+<span class="sd">    The logo and the slogan are both colored as per the constants defined for them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="n">logo_color_code</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">ANSI_VIOLET</span>
+    <span class="n">slogan_color_code</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">ANSI_VIOLET</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">logo_color_code</span> <span class="o">+</span> <span class="n">pyfiglet</span><span class="o">.</span><span class="n">figlet_format</span><span class="p">(</span><span class="s2">&quot;PUMA 1.0&quot;</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="s2">&quot;speed&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">slogan_color_code</span> <span class="o">+</span> <span class="s2">&quot;A part of the ENHANCE community. Join us at https://enhance.pet to build the future &quot;</span> \
+                               <span class="s2">&quot;of &quot;</span> \
+                               <span class="s2">&quot;PET imaging together.&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="citation"><a class="viewcode-back" href="../../pumaz.html#pumaz.display.citation">[docs]</a><span class="k">def</span> <span class="nf">citation</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Display the manuscript citation for PUMA.</span>
+<span class="sd">    </span>
+<span class="sd">    Provides information about the authors, title, and the intended submission journal for the PUMA project.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar, PET Universal Multi-tracer Aligner (PUMA) - To be &quot;</span>
+          <span class="s2">&quot;submitted to Journal of Nuclear Medicine&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="expectations"><a class="viewcode-back" href="../../pumaz.html#pumaz.display.expectations">[docs]</a><span class="k">def</span> <span class="nf">expectations</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Display the expected modalities for PUMA.</span>
+
+<span class="sd">    This function informs the user about the modalities PUMA expects, ensuring the correct set is provided for each tracer set.</span>
+<span class="sd">    Warnings are displayed regarding non-DICOM formats and potential exclusions from analysis.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># display the expected modalities</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39; Expected modalities: </span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES</span><span class="si">}</span><span class="s1"> | Number of required modalities: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES</span><span class="p">)</span><span class="si">}</span><span class="s1"> |&#39;</span>
+          <span class="sa">f</span><span class="s1">&#39; Required prefix for non-DICOM files: </span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES_PREFIX</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39; Expected modalities: </span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES</span><span class="si">}</span><span class="s1"> | Number of modalities: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES</span><span class="p">)</span><span class="si">}</span><span class="s1"> |  &#39;</span>
+                 <span class="sa">f</span><span class="s1">&#39;Required prefix for non-DICOM files: </span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES_PREFIX</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_ORANGE</span><span class="si">}</span><span class="s2"> Warning: Any subject datasets in a non-DICOM format that lack the required modalities (&quot;</span> \
+        <span class="sa">f</span><span class="s2">&quot;as indicated by the file prefix) will not be included in the analysis. </span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_RESET</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">warning_message</span> <span class="o">=</span> <span class="s2">&quot; Skipping subjects without the required modalities (check file prefix).</span><span class="se">\n</span><span class="s2">&quot;</span> \
+                      <span class="s2">&quot; These subjects will be excluded from analysis and their data will not be used.&quot;</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">warning_message</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer, QIMP.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

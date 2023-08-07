@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pumaz.file_utilities &mdash; PUMA 1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PUMA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PUMA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pumaz.file_utilities</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pumaz.file_utilities</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+<span class="c1"># Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer</span>
+<span class="c1"># Institution: Medical University of Vienna</span>
+<span class="c1"># Research Group: Quantitative Imaging and Medical Physics (QIMP) Team</span>
+<span class="c1"># Date: 07.06.2023</span>
+<span class="c1"># Version: 1.0.0</span>
+<span class="c1">#</span>
+<span class="c1"># Module: file_utilities</span>
+<span class="c1">#</span>
+<span class="c1"># Description:</span>
+<span class="c1"># The `file_utilities` module acts as the backbone for PUMA-Z&#39;s interactions with the file system. From setting </span>
+<span class="c1"># appropriate permissions for smooth operation to pinpointing the environment&#39;s root directory, this module </span>
+<span class="c1"># provides an assortment of crucial file-related functionalities. Moreover, with the rising variety in computing </span>
+<span class="c1"># platforms, it can also discern the host system&#39;s type and architecture, ensuring that PUMA-Z remains adaptive </span>
+<span class="c1"># and optimized for diverse environments.</span>
+<span class="c1">#</span>
+<span class="c1"># Usage:</span>
+<span class="c1"># The rich suite of file management functions in this module are available for import and can be effortlessly </span>
+<span class="c1"># integrated within other PUMA-Z components. These utilities streamline various file operations, ensuring that </span>
+<span class="c1"># PUMA-Z remains responsive, fault-tolerant, and consistent in its operations across varied system configurations.</span>
+<span class="c1">#</span>
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">platform</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+<span class="kn">import</span> <span class="nn">stat</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+
+
+<div class="viewcode-block" id="set_permissions"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.set_permissions">[docs]</a><span class="k">def</span> <span class="nf">set_permissions</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">system_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set permissions on the specified file based on the system type.</span>
+
+<span class="sd">    For Windows systems, this grants full access to &quot;Everyone&quot;.</span>
+<span class="sd">    For Linux and Mac systems, it provides read, write, and execute permissions to </span>
+<span class="sd">    the owner and read permission to others.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - file_path (str): Path to the file whose permissions need to be set.</span>
+<span class="sd">    - system_type (str): The operating system type (e.g., &quot;windows&quot;, &quot;linux&quot;, &quot;mac&quot;).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">    - ValueError: If the provided system_type is unsupported.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">system_type</span> <span class="o">==</span> <span class="s2">&quot;windows&quot;</span><span class="p">:</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">([</span><span class="s2">&quot;icacls&quot;</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;/grant&quot;</span><span class="p">,</span> <span class="s2">&quot;Everyone:(F)&quot;</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">system_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;linux&quot;</span><span class="p">,</span> <span class="s2">&quot;mac&quot;</span><span class="p">]:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IRWXU</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IRGRP</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IROTH</span><span class="p">)</span>  <span class="c1"># equivalent to &#39;chmod u+x&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unsupported OS&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_virtual_env_root"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.get_virtual_env_root">[docs]</a><span class="k">def</span> <span class="nf">get_virtual_env_root</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the root directory of the current Python virtual environment.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - str: Path to the root of the current virtual environment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">python_exe</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">executable</span>
+    <span class="n">virtual_env_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">python_exe</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">virtual_env_root</span></div>
+
+
+<div class="viewcode-block" id="get_system"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.get_system">[docs]</a><span class="k">def</span> <span class="nf">get_system</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Identify the operating system and its architecture.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - Tuple[str, str]: A tuple containing the system type (e.g., &quot;mac&quot;, &quot;windows&quot;, &quot;linux&quot;)</span>
+<span class="sd">                       and the architecture (e.g., &quot;x86_64&quot;, &quot;arm64&quot;).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">    - ValueError: If the detected system type or architecture is unsupported.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">system</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">architecture</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">machine</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="c1"># Convert system output to match your keys</span>
+    <span class="k">if</span> <span class="n">system</span> <span class="o">==</span> <span class="s2">&quot;darwin&quot;</span><span class="p">:</span>
+        <span class="n">system</span> <span class="o">=</span> <span class="s2">&quot;mac&quot;</span>
+    <span class="k">elif</span> <span class="n">system</span> <span class="o">==</span> <span class="s2">&quot;windows&quot;</span><span class="p">:</span>
+        <span class="n">system</span> <span class="o">=</span> <span class="s2">&quot;windows&quot;</span>
+    <span class="k">elif</span> <span class="n">system</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span><span class="p">:</span>
+        <span class="n">system</span> <span class="o">=</span> <span class="s2">&quot;linux&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unsupported OS type&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Convert architecture output to match your keys</span>
+    <span class="k">if</span> <span class="n">architecture</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;x86_64&quot;</span><span class="p">,</span> <span class="s2">&quot;amd64&quot;</span><span class="p">]:</span>
+        <span class="n">architecture</span> <span class="o">=</span> <span class="s2">&quot;x86_64&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;arm&quot;</span> <span class="ow">in</span> <span class="n">architecture</span><span class="p">:</span>
+        <span class="n">architecture</span> <span class="o">=</span> <span class="s2">&quot;arm64&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unsupported architecture&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">system</span><span class="p">,</span> <span class="n">architecture</span></div>
+
+
+<div class="viewcode-block" id="create_directory"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.create_directory">[docs]</a><span class="k">def</span> <span class="nf">create_directory</span><span class="p">(</span><span class="n">directory_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a directory at the specified path if it doesn&#39;t exist.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - directory_path (str): The path where the directory should be created.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">directory_path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">directory_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_files"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.get_files">[docs]</a><span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="n">directory_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">wildcard</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve a list of files from the specified directory that match the given wildcard pattern.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - directory_path (str): The directory from which files should be retrieved.</span>
+<span class="sd">    - wildcard (str): A wildcard pattern to match filenames against.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - List[str]: A list of file paths that match the wildcard pattern.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="n">wildcard</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="copy_file"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.copy_file">[docs]</a><span class="k">def</span> <span class="nf">copy_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Copy a file to the specified destination.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - file (str): Path to the source file.</span>
+<span class="sd">    - destination (str): Path to the destination.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="copy_files_to_destination"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.copy_files_to_destination">[docs]</a><span class="k">def</span> <span class="nf">copy_files_to_destination</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Copy multiple files to a specified destination directory in parallel.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - files (List[str]): A list of file paths to be copied.</span>
+<span class="sd">    - destination (str): Destination directory path.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">))</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="n">pool</span><span class="o">.</span><span class="n">starmap</span><span class="p">(</span><span class="n">copy_file</span><span class="p">,</span> <span class="p">[(</span><span class="n">file</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="select_files_by_modality"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.select_files_by_modality">[docs]</a><span class="k">def</span> <span class="nf">select_files_by_modality</span><span class="p">(</span><span class="n">tracer_dirs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">modality_tag</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Select and retrieve files with the specified modality tag from a list of tracer directories.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - tracer_dirs (List[str]): A list of directories where tracer files are located.</span>
+<span class="sd">    - modality_tag (str): The modality tag used to filter files.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - List[str]: A list of selected file paths with the specified modality tag.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">selected_files</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tracer_dir</span> <span class="ow">in</span> <span class="n">tracer_dirs</span><span class="p">:</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">tracer_dir</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">modality_tag</span><span class="p">)</span> <span class="ow">and</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.nii&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.nii.gz&#39;</span><span class="p">):</span>
+                <span class="n">selected_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tracer_dir</span><span class="p">,</span> <span class="n">file</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">selected_files</span></div>
+
+
+<div class="viewcode-block" id="organise_files_by_modality"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.organise_files_by_modality">[docs]</a><span class="k">def</span> <span class="nf">organise_files_by_modality</span><span class="p">(</span><span class="n">tracer_dirs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">modalities</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">pumaz_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Organize and copy files by modality, segregating them based on specified modalities.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - tracer_dirs (List[str]): A list of directories where tracer files are located.</span>
+<span class="sd">    - modalities (List[str]): A list of modality tags to be used for segregation.</span>
+<span class="sd">    - pumaz_dir (str): The target directory where files should be copied and organized.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">modality</span> <span class="ow">in</span> <span class="n">modalities</span><span class="p">:</span>
+        <span class="n">files_to_copy</span> <span class="o">=</span> <span class="n">select_files_by_modality</span><span class="p">(</span><span class="n">tracer_dirs</span><span class="p">,</span> <span class="n">modality</span><span class="p">)</span>
+        <span class="n">copy_files_to_destination</span><span class="p">(</span><span class="n">files_to_copy</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pumaz_dir</span><span class="p">,</span> <span class="n">modality</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="move_file"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.move_file">[docs]</a><span class="k">def</span> <span class="nf">move_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Move a file to the specified destination.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - file (str): Path to the source file.</span>
+<span class="sd">    - destination (str): Path to the destination.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="move_files_to_directory"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.move_files_to_directory">[docs]</a><span class="k">def</span> <span class="nf">move_files_to_directory</span><span class="p">(</span><span class="n">src_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dest_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Move all files from a source directory to a destination directory.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - src_dir (str): Source directory containing the files to be moved.</span>
+<span class="sd">    - dest_dir (str): Destination directory where files will be moved.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">src_files</span> <span class="o">=</span> <span class="n">get_files</span><span class="p">(</span><span class="n">src_dir</span><span class="p">,</span> <span class="s1">&#39;*&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">src_file</span> <span class="ow">in</span> <span class="n">src_files</span><span class="p">:</span>
+        <span class="n">move_file</span><span class="p">(</span><span class="n">src_file</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dest_dir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">src_file</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="remove_directory"><a class="viewcode-back" href="../../pumaz.html#pumaz.file_utilities.remove_directory">[docs]</a><span class="k">def</span> <span class="nf">remove_directory</span><span class="p">(</span><span class="n">directory_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Remove a directory if it is empty.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - directory_path (str): Path to the directory to be removed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Remove the directory only if it is empty</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">directory_path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">rmdir</span><span class="p">(</span><span class="n">directory_path</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer, QIMP.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

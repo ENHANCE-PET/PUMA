@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pumaz.image_conversion &mdash; PUMA 1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PUMA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PUMA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pumaz.image_conversion</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pumaz.image_conversion</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+<span class="c1"># Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer</span>
+<span class="c1"># Institution: Medical University of Vienna</span>
+<span class="c1"># Research Group: Quantitative Imaging and Medical Physics (QIMP) Team</span>
+<span class="c1"># Date: 07.07.2023</span>
+<span class="c1"># Version: 1.0.0</span>
+<span class="c1">#</span>
+<span class="c1"># Module: image_conversion</span>
+<span class="c1">#</span>
+<span class="c1"># Description:</span>
+<span class="c1"># The `image_conversion` module is PUMA-Z&#39;s trusted bridge for converting between medical image formats. </span>
+<span class="c1"># Leveraging robust libraries like SimpleITK and dicom2nifti, this module ensures that no matter the original </span>
+<span class="c1"># format, the data can be converted to a universally accepted NIFTI format. Whether working with individual </span>
+<span class="c1"># images or an entire directory of medical scans, the utilities within this module guarantee a smooth and </span>
+<span class="c1"># efficient transformation process.</span>
+<span class="c1">#</span>
+<span class="c1"># Usage:</span>
+<span class="c1"># A powerhouse in its own right, the functions in this module can be summoned across PUMA-Z to perform </span>
+<span class="c1"># versatile image conversions. With the ability to handle DICOM, ITK-known formats, and more, these utilities </span>
+<span class="c1"># offer an all-encompassing solution to the challenges posed by diverse medical image types.</span>
+<span class="c1">#</span>
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<span class="kn">import</span> <span class="nn">contextlib</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">unicodedata</span>
+
+<span class="kn">import</span> <span class="nn">SimpleITK</span>
+<span class="kn">import</span> <span class="nn">dicom2nifti</span>
+<span class="kn">import</span> <span class="nn">pydicom</span>
+<span class="kn">from</span> <span class="nn">rich.progress</span> <span class="kn">import</span> <span class="n">Progress</span>
+
+
+<div class="viewcode-block" id="non_nifti_to_nifti"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_conversion.non_nifti_to_nifti">[docs]</a><span class="k">def</span> <span class="nf">non_nifti_to_nifti</span><span class="p">(</span><span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts an image format known to ITK to the NIFTI format.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - `input_path` (str): Path to the input file or directory containing the image(s) to be converted.</span>
+<span class="sd">    - `output_directory` (str, optional): The directory where the converted image will be saved. If None, the image</span>
+<span class="sd">      will be saved in the same location as the input.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">    - If the input_path is a directory, the function will create a lookup for DICOMs and rename NIFTI files accordingly.</span>
+<span class="sd">    - If the input_path is a file, it will be converted directly to the NIFTI format.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">    - FileNotFoundError: If the input path does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">input_path</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input path </span><span class="si">{</span><span class="n">input_path</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Processing a directory</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">input_path</span><span class="p">):</span>
+        <span class="n">dicom_info</span> <span class="o">=</span> <span class="n">create_dicom_lookup</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+        <span class="n">nifti_dir</span> <span class="o">=</span> <span class="n">dcm2niix</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+        <span class="n">rename_nifti_files</span><span class="p">(</span><span class="n">nifti_dir</span><span class="p">,</span> <span class="n">dicom_info</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Processing a file</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">input_path</span><span class="p">):</span>
+        <span class="c1"># Ignore hidden or already processed files</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s1">&#39;.nii.gz&#39;</span><span class="p">,</span> <span class="s1">&#39;.nii&#39;</span><span class="p">)):</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_image</span> <span class="o">=</span> <span class="n">SimpleITK</span><span class="o">.</span><span class="n">ReadImage</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+            <span class="n">output_image_basename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">.nii&quot;</span>
+
+    <span class="k">if</span> <span class="n">output_directory</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">output_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+
+    <span class="n">output_image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_directory</span><span class="p">,</span> <span class="n">output_image_basename</span><span class="p">)</span>
+    <span class="n">SimpleITK</span><span class="o">.</span><span class="n">WriteImage</span><span class="p">(</span><span class="n">output_image</span><span class="p">,</span> <span class="n">output_image_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="standardize_to_nifti"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_conversion.standardize_to_nifti">[docs]</a><span class="k">def</span> <span class="nf">standardize_to_nifti</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts all images within a specified directory (and its sub-directories) to the NIFTI format.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - `parent_dir` (str): The parent directory containing the images or subdirectories with images to be converted.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">    - This function traverses through all the subdirectories of the provided parent directory and converts all images </span>
+<span class="sd">      found to the NIFTI format.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># go through the subdirectories</span>
+    <span class="n">subjects</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">)</span>
+    <span class="c1"># get only the directories</span>
+    <span class="n">subjects</span> <span class="o">=</span> <span class="p">[</span><span class="n">subject</span> <span class="k">for</span> <span class="n">subject</span> <span class="ow">in</span> <span class="n">subjects</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">,</span> <span class="n">subject</span><span class="p">))]</span>
+
+    <span class="k">with</span> <span class="n">Progress</span><span class="p">()</span> <span class="k">as</span> <span class="n">progress</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">progress</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="s2">&quot;[white] Processing subjects...&quot;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">subjects</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">subject</span> <span class="ow">in</span> <span class="n">subjects</span><span class="p">:</span>
+            <span class="n">subject_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">,</span> <span class="n">subject</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">subject_path</span><span class="p">):</span>
+                <span class="n">images</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">subject_path</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_path</span><span class="p">,</span> <span class="n">image</span><span class="p">)):</span>
+                        <span class="n">image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_path</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>
+                        <span class="n">non_nifti_to_nifti</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_path</span><span class="p">,</span> <span class="n">image</span><span class="p">)):</span>
+                        <span class="n">image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_path</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>
+                        <span class="n">non_nifti_to_nifti</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">advance</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[white] Processing </span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="dcm2niix"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_conversion.dcm2niix">[docs]</a><span class="k">def</span> <span class="nf">dcm2niix</span><span class="p">(</span><span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts DICOM images to NIFTI images using the dicom2nifti utility.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - `input_path` (str): Path to the folder containing the DICOM files.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - `str`: Path to the folder containing the converted NIFTI files.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">    - This function utilizes the dcm2niix utility for conversion. Ensure that dcm2niix is properly installed and set up </span>
+<span class="sd">      in your environment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+
+    <span class="c1"># redirect standard output and standard error to discard output</span>
+    <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()),</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stderr</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()):</span>
+        <span class="n">dicom2nifti</span><span class="o">.</span><span class="n">convert_directory</span><span class="p">(</span><span class="n">input_path</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reorient</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">output_dir</span></div>
+
+
+<div class="viewcode-block" id="remove_accents"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_conversion.remove_accents">[docs]</a><span class="k">def</span> <span class="nf">remove_accents</span><span class="p">(</span><span class="n">unicode_filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Removes accents from a given string and returns a cleaned version of the filename.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - `unicode_filename` (str): The filename to be cleaned.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - `str`: The cleaned filename without any accents and special characters.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">    - If any exception occurs during the processing, the original filename will be returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">unicode_filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">unicode_filename</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">cleaned_filename</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFKD&#39;</span><span class="p">,</span> <span class="n">unicode_filename</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;ASCII&#39;</span><span class="p">,</span> <span class="s1">&#39;ignore&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ASCII&#39;</span><span class="p">)</span>
+        <span class="n">cleaned_filename</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^\w\s-]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">cleaned_filename</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">cleaned_filename</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[-\s]+&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">cleaned_filename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cleaned_filename</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">unicode_filename</span></div>
+
+
+<div class="viewcode-block" id="is_dicom_file"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_conversion.is_dicom_file">[docs]</a><span class="k">def</span> <span class="nf">is_dicom_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determines if the provided file is a valid DICOM file.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - `filename` (str): Path to the file to be checked.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - `bool`: True if the file is a valid DICOM file, False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pydicom</span><span class="o">.</span><span class="n">dcmread</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="n">pydicom</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">InvalidDicomError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="create_dicom_lookup"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_conversion.create_dicom_lookup">[docs]</a><span class="k">def</span> <span class="nf">create_dicom_lookup</span><span class="p">(</span><span class="n">dicom_dir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a lookup dictionary from DICOM files.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - `dicom_dir` (str): Directory containing the DICOM files.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - `dict`: A dictionary where the key is the anticipated filename produced by dicom2nifti and the value is the modality </span>
+<span class="sd">      of the DICOM series.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">    - This function is particularly useful when renaming NIFTI files post-conversion.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># a dictionary to store information from the DICOM files</span>
+    <span class="n">dicom_info</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># loop over the DICOM files</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">dicom_dir</span><span class="p">):</span>
+        <span class="n">full_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dicom_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_dicom_file</span><span class="p">(</span><span class="n">full_path</span><span class="p">):</span>
+            <span class="c1"># read the DICOM file</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">pydicom</span><span class="o">.</span><span class="n">dcmread</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span>
+
+            <span class="c1"># extract the necessary information</span>
+            <span class="n">series_number</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">SeriesNumber</span> <span class="k">if</span> <span class="s1">&#39;SeriesNumber&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">series_description</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">SeriesDescription</span> <span class="k">if</span> <span class="s1">&#39;SeriesDescription&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">sequence_name</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">SequenceName</span> <span class="k">if</span> <span class="s1">&#39;SequenceName&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">protocol_name</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ProtocolName</span> <span class="k">if</span> <span class="s1">&#39;ProtocolName&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">series_instance_UID</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">SeriesInstanceUID</span> <span class="k">if</span> <span class="s1">&#39;SeriesInstanceUID&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">Modality</span> <span class="o">==</span> <span class="s1">&#39;PT&#39;</span><span class="p">:</span>
+                <span class="n">modality</span> <span class="o">=</span> <span class="s1">&#39;PET&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">modality</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Modality</span>
+
+            <span class="c1"># anticipate the filename dicom2nifti will produce and store the modality tag with it</span>
+            <span class="k">if</span> <span class="n">series_number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">base_filename</span> <span class="o">=</span> <span class="n">remove_accents</span><span class="p">(</span><span class="n">series_number</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">series_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">anticipated_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_filename</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">remove_accents</span><span class="p">(</span><span class="n">series_description</span><span class="p">)</span><span class="si">}</span><span class="s2">.nii&quot;</span>
+                <span class="k">elif</span> <span class="n">sequence_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">anticipated_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_filename</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">remove_accents</span><span class="p">(</span><span class="n">sequence_name</span><span class="p">)</span><span class="si">}</span><span class="s2">.nii&quot;</span>
+                <span class="k">elif</span> <span class="n">protocol_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">anticipated_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_filename</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">remove_accents</span><span class="p">(</span><span class="n">protocol_name</span><span class="p">)</span><span class="si">}</span><span class="s2">.nii&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">anticipated_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">remove_accents</span><span class="p">(</span><span class="n">series_instance_UID</span><span class="p">)</span><span class="si">}</span><span class="s2">.nii&quot;</span>
+
+            <span class="n">dicom_info</span><span class="p">[</span><span class="n">anticipated_filename</span><span class="p">]</span> <span class="o">=</span> <span class="n">modality</span>
+
+    <span class="k">return</span> <span class="n">dicom_info</span></div>
+
+
+<div class="viewcode-block" id="rename_nifti_files"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_conversion.rename_nifti_files">[docs]</a><span class="k">def</span> <span class="nf">rename_nifti_files</span><span class="p">(</span><span class="n">nifti_dir</span><span class="p">,</span> <span class="n">dicom_info</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Renames NIFTI files based on the provided lookup dictionary.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    - `nifti_dir` (str): Directory containing the NIFTI files.</span>
+<span class="sd">    - `dicom_info` (dict): A dictionary where the key is the anticipated filename that dicom2nifti will produce and the </span>
+<span class="sd">      value is the modality of the DICOM series.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">    - Only files with a corresponding modality in the dicom_info dictionary will be renamed. Others will be left unchanged.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="c1"># loop over the NIfTI files</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">nifti_dir</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.nii&#39;</span><span class="p">):</span>
+            <span class="c1"># get the corresponding DICOM information</span>
+            <span class="n">modality</span> <span class="o">=</span> <span class="n">dicom_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">modality</span><span class="p">:</span>  <span class="c1"># only if the modality is found in the dicom_info dict</span>
+                <span class="c1"># create the new filename</span>
+                <span class="n">new_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">modality</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span>
+
+                <span class="c1"># rename the file</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nifti_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nifti_dir</span><span class="p">,</span> <span class="n">new_filename</span><span class="p">))</span>
+
+                <span class="c1"># delete the old name from the dictionary</span>
+                <span class="k">del</span> <span class="n">dicom_info</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer, QIMP.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

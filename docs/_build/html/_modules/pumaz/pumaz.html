@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pumaz.pumaz &mdash; PUMA 1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PUMA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PUMA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pumaz.pumaz</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pumaz.pumaz</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+<span class="c1"># Authors: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer</span>
+<span class="c1"># Institution: Medical University of Vienna</span>
+<span class="c1"># Research Group: Quantitative Imaging and Medical Physics (QIMP) Team</span>
+<span class="c1"># Date: 04.07.2023</span>
+<span class="c1"># Version: 0.1.0</span>
+<span class="c1"># </span>
+<span class="c1">#</span>
+<span class="c1"># Module: PUMAz (PET Universal Multi-tracer Aligner - Z Edition)</span>
+<span class="c1">#</span>
+<span class="c1"># Description:</span>
+<span class="c1"># PUMAz (pronounced as PUMA-Zee) is an advanced imaging tool designed to seamlessly align multi-tracer PET/CT </span>
+<span class="c1"># images of the same patient, regardless of when they were acquired or the different tracers used. Born out </span>
+<span class="c1"># of QIMP&#39;s tradition of innovative imaging tools, the &#39;Z&#39; in PUMAz symbolizes the continuation of a legacy </span>
+<span class="c1"># combined with a future-forward vision.</span>
+<span class="c1">#</span>
+<span class="c1"># This module is the beating heart of PUMAz. It drives the main execution sequence, encompassing everything </span>
+<span class="c1"># from initializing the environment, handling user input, to running the complete image preprocessing and </span>
+<span class="c1"># registration pipeline. Alongside standardizing image data, this module ensures that the processed images </span>
+<span class="c1"># are PUMA-compliant and then aligns them for consistency.</span>
+<span class="c1">#</span>
+<span class="c1"># Usage:</span>
+<span class="c1"># This module is designed to be run as the primary script to execute the PUMAz functionalities. Users can </span>
+<span class="c1"># pass their subject directory as a command-line argument to start the process.</span>
+<span class="c1"># While the variables in this module are meant for internal use, advanced users or developers can access </span>
+<span class="c1"># them for further extensions or modifications within the PUMAz framework.</span>
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">colorama</span>
+<span class="kn">import</span> <span class="nn">emoji</span>
+
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">file_utilities</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">download</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">resources</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">image_conversion</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">input_validation</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">image_processing</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(levelname)-8s</span><span class="s1"> [</span><span class="si">%(filename)s</span><span class="s1">:</span><span class="si">%(lineno)d</span><span class="s1">] </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+                    <span class="n">filename</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;pumaz-v.1.0.0.%H-%M-</span><span class="si">%d</span><span class="s1">-%m-%Y.log&#39;</span><span class="p">),</span>
+                    <span class="n">filemode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../pumaz.html#pumaz.pumaz.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main execution function for the PUMA-Z program.</span>
+<span class="sd">    </span>
+<span class="sd">    This function:</span>
+<span class="sd">    1. Initializes the colorama and argument parser for command-line inputs.</span>
+<span class="sd">    2. Validates and prepares the user-provided subject directory.</span>
+<span class="sd">    3. Downloads necessary binaries for the platform.</span>
+<span class="sd">    4. Standardizes input image data to NIFTI format.</span>
+<span class="sd">    5. Checks for PUMA-compliant tracer directories.</span>
+<span class="sd">    6. Runs the preprocessing and registration pipeline.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Initialize colorama and command-line arguments parser</span>
+    <span class="n">colorama</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-d&quot;</span><span class="p">,</span> <span class="s2">&quot;--subject_directory&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Subject directory containing the different PET/CT images of the same subject&quot;</span><span class="p">,</span>
+                        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Resolve the subject directory path</span>
+    <span class="n">subject_folder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">subject_directory</span><span class="p">)</span>
+
+    <span class="c1"># Display the PUMA logo and citation information</span>
+    <span class="n">display</span><span class="o">.</span><span class="n">logo</span><span class="p">()</span>
+    <span class="n">display</span><span class="o">.</span><span class="n">citation</span><span class="p">()</span>
+
+    <span class="c1"># Log the starting of PUMA-Z program</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;----------------------------------------------------------------------------------------------------&#39;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;                                     STARTING PUMA-Z V.1.0.0                                       &#39;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;----------------------------------------------------------------------------------------------------&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Input validation and preparation</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;- Subject directory: &#39;</span> <span class="o">+</span> <span class="n">subject_folder</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_VIOLET</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">emoji</span><span class="o">.</span><span class="n">emojize</span><span class="p">(</span><span class="s2">&quot;:memo:&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1"> NOTE:</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_RESET</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="n">display</span><span class="o">.</span><span class="n">expectations</span><span class="p">()</span>
+
+    <span class="c1"># Download necessary binaries for the platform</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_VIOLET</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">emoji</span><span class="o">.</span><span class="n">emojize</span><span class="p">(</span><span class="s2">&quot;:globe_with_meridians:&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1"> BINARIES DOWNLOAD:</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_RESET</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">binary_path</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">BINARY_PATH</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="n">binary_path</span><span class="p">)</span>
+    <span class="n">system_os</span><span class="p">,</span> <span class="n">system_arch</span> <span class="o">=</span> <span class="n">file_utilities</span><span class="o">.</span><span class="n">get_system</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_ORANGE</span><span class="si">}</span><span class="s1"> Detected system: </span><span class="si">{</span><span class="n">system_os</span><span class="si">}</span><span class="s1"> | Detected architecture: </span><span class="si">{</span><span class="n">system_arch</span><span class="si">}</span><span class="s1">&#39;</span>
+          <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_RESET</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">download</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">item_name</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;greedy-</span><span class="si">{</span><span class="n">system_os</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">system_arch</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">item_path</span><span class="o">=</span><span class="n">binary_path</span><span class="p">,</span>
+                      <span class="n">item_dict</span><span class="o">=</span><span class="n">resources</span><span class="o">.</span><span class="n">GREEDY_BINARIES</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">set_permissions</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">GREEDY_PATH</span><span class="p">,</span> <span class="n">system_os</span><span class="p">)</span>
+
+    <span class="c1"># Standardize input image data to NIFTI format</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_VIOLET</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">emoji</span><span class="o">.</span><span class="n">emojize</span><span class="p">(</span><span class="s2">&quot;:magnifying_glass_tilted_left:&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1"> STANDARDIZING INPUT DATA TO &#39;</span>
+          <span class="sa">f</span><span class="s1">&#39;NIFTI:</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_RESET</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39; STANDARDIZING INPUT DATA TO NIFTI:&#39;</span><span class="p">)</span>
+    <span class="n">image_conversion</span><span class="o">.</span><span class="n">standardize_to_nifti</span><span class="p">(</span><span class="n">subject_folder</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_GREEN</span><span class="si">}</span><span class="s2"> Standardization complete.</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_RESET</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; Standardization complete.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Check and filter PUMA-compliant tracer directories</span>
+    <span class="n">tracer_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_folder</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">subject_folder</span><span class="p">)</span> <span class="k">if</span>
+                   <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_folder</span><span class="p">,</span> <span class="n">d</span><span class="p">))]</span>
+    <span class="n">puma_compliant_subjects</span> <span class="o">=</span> <span class="n">input_validation</span><span class="o">.</span><span class="n">select_puma_compliant_subjects</span><span class="p">(</span><span class="n">tracer_dirs</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES</span><span class="p">)</span>
+
+    <span class="c1"># Run preprocessing and registration pipeline</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_VIOLET</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">emoji</span><span class="o">.</span><span class="n">emojize</span><span class="p">(</span><span class="s2">&quot;:rocket:&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1"> RUNNING PREPROCESSING AND REGISTRATION PIPELINE:</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_RESET</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39; RUNNING PREPROCESSING AND REGISTRATION PIPELINE:&#39;</span><span class="p">)</span>
+    <span class="n">puma_dir</span><span class="p">,</span> <span class="n">ct_dir</span><span class="p">,</span> <span class="n">pt_dir</span><span class="p">,</span> <span class="n">mask_dir</span> <span class="o">=</span> <span class="n">image_processing</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">puma_compliant_subjects</span><span class="p">)</span>
+    <span class="n">image_processing</span><span class="o">.</span><span class="n">align</span><span class="p">(</span><span class="n">puma_dir</span><span class="p">,</span> <span class="n">ct_dir</span><span class="p">,</span> <span class="n">pt_dir</span><span class="p">,</span> <span class="n">mask_dir</span><span class="p">)</span>
+    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">elapsed_time</span> <span class="o">=</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span>
+    <span class="n">elapsed_time</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">elapsed_time</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_GREEN</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">emoji</span><span class="o">.</span><span class="n">emojize</span><span class="p">(</span><span class="s2">&quot;:hourglass_done:&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1"> Preprocessing and registration complete.&#39;</span>
+          <span class="sa">f</span><span class="s1">&#39; Elapsed time: </span><span class="si">{</span><span class="n">elapsed_time</span><span class="si">}</span><span class="s1"> minutes! </span><span class="si">{</span><span class="n">emoji</span><span class="o">.</span><span class="n">emojize</span><span class="p">(</span><span class="s2">&quot;:partying_face:&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1"> Aligned images are stored in&#39;</span>
+          <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">puma_dir</span><span class="si">}</span><span class="s1">! Look for the directories with prefix &quot;aligned&quot;! </span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">ANSI_RESET</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer, QIMP.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

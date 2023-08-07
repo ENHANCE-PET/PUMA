@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pumaz.image_processing &mdash; PUMA 1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PUMA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PUMA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pumaz.image_processing</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pumaz.image_processing</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+<span class="c1"># Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer</span>
+<span class="c1"># Institution: Medical University of Vienna</span>
+<span class="c1"># Research Group: Quantitative Imaging and Medical Physics (QIMP) Team</span>
+<span class="c1"># Date: 19.07.2023</span>
+<span class="c1"># Version: 1.0.0</span>
+<span class="c1">#</span>
+<span class="c1"># Module: image_processing</span>
+<span class="c1">#</span>
+<span class="c1"># Description:</span>
+<span class="c1"># The `image_processing` module stands as a testament to PUMA-Z&#39;s commitment to state-of-the-art medical imaging. </span>
+<span class="c1"># It encapsulates a suite of functions and utilities dedicated to meticulous image processing, ensuring that the data </span>
+<span class="c1"># flows seamlessly and efficiently through various transformations. Whether you&#39;re dealing with CT scans, leveraging </span>
+<span class="c1"># the power of the MOOSE model, or managing intricate reslicing tasks, this module has you covered.</span>
+<span class="c1">#</span>
+<span class="c1"># By tapping into robust tools like SimpleITK, nibabel, and MOOSE, the `image_processing` module seamlessly blends </span>
+<span class="c1"># convenience with functionality, producing the gold standard in medical image processing for PUMA-Z.</span>
+<span class="c1">#</span>
+<span class="c1"># Usage:</span>
+<span class="c1"># This module isn&#39;t just a collection of functions; it&#39;s the bedrock on which PUMA-Z&#39;s image manipulation tasks rest. </span>
+<span class="c1"># From deep within other PUMA-Z modules, the features of the `image_processing` module can be invoked, delivering </span>
+<span class="c1"># consistently high-quality processed images.</span>
+<span class="c1">#</span>
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+<span class="kn">import</span> <span class="nn">contextlib</span>
+<span class="kn">import</span> <span class="nn">SimpleITK</span> <span class="k">as</span> <span class="nn">sitk</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">pumaz.constants</span> <span class="kn">import</span> <span class="n">GREEDY_PATH</span>
+<span class="kn">from</span> <span class="nn">mpire</span> <span class="kn">import</span> <span class="n">WorkerPool</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span>
+<span class="kn">from</span> <span class="nn">rich.progress</span> <span class="kn">import</span> <span class="n">Progress</span>
+<span class="kn">from</span> <span class="nn">pumaz</span> <span class="kn">import</span> <span class="n">file_utilities</span>
+<span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">rich.progress</span> <span class="kn">import</span> <span class="n">track</span><span class="p">,</span> <span class="n">Progress</span>
+<span class="kn">from</span> <span class="nn">moosez</span> <span class="kn">import</span> <span class="n">moose</span>
+<span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="kn">from</span> <span class="nn">pumaz.file_utilities</span> <span class="kn">import</span> <span class="n">create_directory</span><span class="p">,</span> <span class="n">move_file</span><span class="p">,</span> <span class="n">remove_directory</span><span class="p">,</span> <span class="n">move_files_to_directory</span><span class="p">,</span> <span class="n">get_files</span>
+<span class="kn">from</span> <span class="nn">halo</span> <span class="kn">import</span> <span class="n">Halo</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<div class="viewcode-block" id="process_and_moose_ct_files"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.process_and_moose_ct_files">[docs]</a><span class="k">def</span> <span class="nf">process_and_moose_ct_files</span><span class="p">(</span><span class="n">ct_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mask_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">moose_model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">accelerator</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Processes and applies the MOOSE model to CT files in the given directory.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    - ct_dir (str): Directory containing the CT files.</span>
+<span class="sd">    - mask_dir (str): Directory for the output mask files.</span>
+<span class="sd">    - moose_model (str): Path to the MOOSE model file.</span>
+<span class="sd">    - accelerator (str): Type of accelerator to be used for MOOSE model.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">    This function iterates over CT files in the ct_dir, applies MOOSE on them, and </span>
+<span class="sd">    handles necessary file/directory operations for smooth processing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get all ct_files in the ct_dir</span>
+    <span class="n">ct_files</span> <span class="o">=</span> <span class="n">get_files</span><span class="p">(</span><span class="n">ct_dir</span><span class="p">,</span> <span class="s1">&#39;*.nii*&#39;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">Progress</span><span class="p">()</span> <span class="k">as</span> <span class="n">progress_bar</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">progress_bar</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="s2">&quot;[cyan] MOOSE-ing CT files...&quot;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">ct_files</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">ct_file</span> <span class="ow">in</span> <span class="n">ct_files</span><span class="p">:</span>
+            <span class="n">base_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">ct_file</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">ct_file_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ct_dir</span><span class="p">,</span> <span class="n">base_name</span><span class="p">)</span>
+            <span class="n">create_directory</span><span class="p">(</span><span class="n">ct_file_dir</span><span class="p">)</span>
+            <span class="n">move_file</span><span class="p">(</span><span class="n">ct_file</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ct_file_dir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">ct_file</span><span class="p">)))</span>
+
+            <span class="n">mask_file_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mask_dir</span><span class="p">,</span> <span class="n">base_name</span><span class="p">)</span>
+            <span class="n">create_directory</span><span class="p">(</span><span class="n">mask_file_dir</span><span class="p">)</span>
+
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">advance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[cyan] Running MOOSE on </span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">devnull</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">devnull</span><span class="p">),</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stderr</span><span class="p">(</span><span class="n">devnull</span><span class="p">):</span>
+                    <span class="n">moose</span><span class="p">(</span><span class="n">moose_model</span><span class="p">,</span> <span class="n">ct_file_dir</span><span class="p">,</span> <span class="n">mask_file_dir</span><span class="p">,</span> <span class="n">accelerator</span><span class="p">)</span>
+
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">advance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[cyan] Completed MOOSE on </span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">, cleaning up...&quot;</span><span class="p">)</span>
+
+            <span class="n">move_files_to_directory</span><span class="p">(</span><span class="n">ct_file_dir</span><span class="p">,</span> <span class="n">ct_dir</span><span class="p">)</span>
+            <span class="n">move_files_to_directory</span><span class="p">(</span><span class="n">mask_file_dir</span><span class="p">,</span> <span class="n">mask_dir</span><span class="p">)</span>
+
+            <span class="n">remove_directory</span><span class="p">(</span><span class="n">ct_file_dir</span><span class="p">)</span>
+            <span class="n">remove_directory</span><span class="p">(</span><span class="n">mask_file_dir</span><span class="p">)</span>
+
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">advance</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[cyan] Finished processing </span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># delay for 1 second</span></div>
+
+
+<div class="viewcode-block" id="reslice_identity"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.reslice_identity">[docs]</a><span class="k">def</span> <span class="nf">reslice_identity</span><span class="p">(</span><span class="n">reference_image</span><span class="p">:</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Image</span><span class="p">,</span> <span class="n">moving_image</span><span class="p">:</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Image</span><span class="p">,</span>
+                     <span class="n">output_image_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">is_label_image</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Image</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reslices the moving image to have the same space as the reference image.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    - reference_image (sitk.Image): The reference image to which moving_image will be aligned.</span>
+<span class="sd">    - moving_image (sitk.Image): Image that needs to be resliced to the reference space.</span>
+<span class="sd">    - output_image_path (str, optional): Path where the resliced image will be saved. If not provided, image won&#39;t be saved.</span>
+<span class="sd">    - is_label_image (bool, optional): Determines if the image is a label image. Default is False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - sitk.Image: Resliced image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">resampler</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">ResampleImageFilter</span><span class="p">()</span>
+    <span class="n">resampler</span><span class="o">.</span><span class="n">SetReferenceImage</span><span class="p">(</span><span class="n">reference_image</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_label_image</span><span class="p">:</span>
+        <span class="n">resampler</span><span class="o">.</span><span class="n">SetInterpolator</span><span class="p">(</span><span class="n">sitk</span><span class="o">.</span><span class="n">sitkNearestNeighbor</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">resampler</span><span class="o">.</span><span class="n">SetInterpolator</span><span class="p">(</span><span class="n">sitk</span><span class="o">.</span><span class="n">sitkLinear</span><span class="p">)</span>
+
+    <span class="n">resampled_image</span> <span class="o">=</span> <span class="n">resampler</span><span class="o">.</span><span class="n">Execute</span><span class="p">(</span><span class="n">moving_image</span><span class="p">)</span>
+    <span class="n">resampled_image</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Cast</span><span class="p">(</span><span class="n">resampled_image</span><span class="p">,</span> <span class="n">sitk</span><span class="o">.</span><span class="n">sitkInt32</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">output_image_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sitk</span><span class="o">.</span><span class="n">WriteImage</span><span class="p">(</span><span class="n">resampled_image</span><span class="p">,</span> <span class="n">output_image_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">resampled_image</span></div>
+
+
+<div class="viewcode-block" id="prepare_reslice_tasks"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.prepare_reslice_tasks">[docs]</a><span class="k">def</span> <span class="nf">prepare_reslice_tasks</span><span class="p">(</span><span class="n">puma_compliant_subjects</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prepares tasks for reslicing CT and PET images.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    - puma_compliant_subjects: List of directories containing compliant subjects.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - list: List of tasks for reslicing. Each task contains details for reslicing operation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">subdir</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">puma_compliant_subjects</span><span class="p">):</span>
+        <span class="n">ct_file</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subdir</span><span class="p">,</span> <span class="s1">&#39;CT*.nii*&#39;</span><span class="p">))</span>
+        <span class="n">pt_file</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subdir</span><span class="p">,</span> <span class="s1">&#39;PET*.nii*&#39;</span><span class="p">))</span>
+        <span class="n">resliced_ct_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subdir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">RESAMPLED_PREFIX</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span>
+                                        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">subdir</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span>
+                                        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">ct_file</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">((</span>
+            <span class="n">sitk</span><span class="o">.</span><span class="n">ReadImage</span><span class="p">(</span><span class="n">pt_file</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">sitk</span><span class="o">.</span><span class="n">ReadImage</span><span class="p">(</span><span class="n">ct_file</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">resliced_ct_file</span><span class="p">,</span>
+            <span class="kc">False</span>
+        <span class="p">))</span>
+    <span class="k">return</span> <span class="n">tasks</span></div>
+
+
+<div class="viewcode-block" id="copy_and_rename_file"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.copy_and_rename_file">[docs]</a><span class="k">def</span> <span class="nf">copy_and_rename_file</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">subdir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Copies the file from source to destination and renames it using the base name of the subdir.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    - src (str): Source file path to copy from.</span>
+<span class="sd">    - dst (str): Destination directory path to copy to.</span>
+<span class="sd">    - subdir (str): Sub-directory name used to generate the new file name.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">    This function is especially useful when trying to organize files from multiple sub-directories </span>
+<span class="sd">    into a common directory with distinct naming.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">copy_file</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
+    <span class="n">new_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">subdir</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">src</span><span class="p">)),</span> <span class="n">new_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="change_mask_labels"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.change_mask_labels">[docs]</a><span class="k">def</span> <span class="nf">change_mask_labels</span><span class="p">(</span><span class="n">mask_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">excluded_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Modifies the label values in a mask image.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    - mask_file (str): Path to the mask file to be modified.</span>
+<span class="sd">    - label_map (dict): Dictionary containing label indices and their corresponding names.</span>
+<span class="sd">    - excluded_labels (list): List of label names to be excluded.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">    This function sets the pixel values of excluded labels to 0 and other labels to 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Load the image</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">mask_file</span><span class="p">)</span>
+
+    <span class="c1"># Get the image data (returns a numpy array)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_fdata</span><span class="p">()</span>
+
+    <span class="c1"># Prepare labels for modification</span>
+    <span class="n">excluded_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">label_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">excluded_labels</span><span class="p">]</span>
+    <span class="n">other_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">label_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">lbl</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excluded_labels</span><span class="p">]</span>
+
+    <span class="c1"># Set the labels</span>
+    <span class="n">data</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">excluded_indices</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">data</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">other_indices</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># Save the modified image</span>
+    <span class="n">new_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">,</span> <span class="n">img</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+    <span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">new_img</span><span class="p">,</span> <span class="n">mask_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="preprocess"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.preprocess">[docs]</a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="n">puma_compliant_subjects</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">num_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Preprocesses images for puma compliant subjects.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    - puma_compliant_subjects (list): List of directories containing compliant subjects&#39; images.</span>
+<span class="sd">    - num_workers (int, optional): Number of worker processes for parallel processing. Default is the system&#39;s CPU count.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - tuple: Contains directories for PUMA working, CT, PT, and mask.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">    This function takes care of reslicing, file organization, MOOSE processing, and mask label changes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">num_workers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">num_workers</span> <span class="o">=</span> <span class="n">cpu_count</span><span class="p">()</span>
+
+    <span class="n">tasks</span> <span class="o">=</span> <span class="n">prepare_reslice_tasks</span><span class="p">(</span><span class="n">puma_compliant_subjects</span><span class="p">)</span>
+
+    <span class="c1"># Process tasks in parallel using mpire</span>
+    <span class="k">with</span> <span class="n">WorkerPool</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">num_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">Progress</span><span class="p">()</span> <span class="k">as</span> <span class="n">progress</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">progress</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="s2">&quot;[cyan] Preprocessing PUMA compliant subjects &quot;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">reslice_identity</span><span class="p">,</span> <span class="n">tasks</span><span class="p">):</span>
+                <span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">advance</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># set puma working directory</span>
+    <span class="n">parent_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">puma_compliant_subjects</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">puma_working_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">PUMA_WORKING_FOLDER</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">)</span>
+
+    <span class="c1"># create CT and PET folders</span>
+    <span class="n">ct_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">pt_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">MODALITIES</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">mask_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">MASK_FOLDER</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="n">ct_dir</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="n">pt_dir</span><span class="p">)</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Move and rename files in parallel</span>
+    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">subdir</span> <span class="ow">in</span> <span class="n">puma_compliant_subjects</span><span class="p">:</span>
+            <span class="n">ct_file</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subdir</span><span class="p">,</span> <span class="s1">&#39;CT*.nii*&#39;</span><span class="p">))</span>
+            <span class="n">resliced_ct_file</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subdir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">RESAMPLED_PREFIX</span> <span class="o">+</span> <span class="s1">&#39;*CT*.nii*&#39;</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">copy_and_rename_file</span><span class="p">,</span> <span class="n">resliced_ct_file</span><span class="p">,</span> <span class="n">ct_dir</span><span class="p">,</span> <span class="n">subdir</span><span class="p">)</span>
+
+            <span class="n">pt_file</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subdir</span><span class="p">,</span> <span class="s1">&#39;PET*.nii*&#39;</span><span class="p">))</span>
+
+            <span class="c1"># Generate new filename with unique index</span>
+            <span class="n">new_pt_file</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;PET_&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;PET_</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s1">_&#39;</span><span class="p">,</span> <span class="n">pt_file</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c1"># rename the actual file</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">pt_file</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">new_pt_file</span><span class="p">)</span>
+
+            <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">copy_and_rename_file</span><span class="p">,</span> <span class="n">new_pt_file</span><span class="p">,</span> <span class="n">pt_dir</span><span class="p">,</span> <span class="n">subdir</span><span class="p">)</span>
+
+    <span class="c1"># Run moosez to get the masks</span>
+    <span class="n">process_and_moose_ct_files</span><span class="p">(</span><span class="n">ct_dir</span><span class="p">,</span> <span class="n">mask_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">MOOSE_MODEL</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ACCELERATOR</span><span class="p">)</span>
+
+    <span class="c1"># remove the prefix from the mask files</span>
+    <span class="k">for</span> <span class="n">mask_file</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mask_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">MOOSE_PREFIX</span> <span class="o">+</span> <span class="s1">&#39;*&#39;</span><span class="p">)):</span>
+        <span class="n">new_mask_file</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">rf</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">constants</span><span class="o">.</span><span class="n">MOOSE_PREFIX</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">mask_file</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">mask_file</span><span class="p">,</span> <span class="n">new_mask_file</span><span class="p">)</span>
+        <span class="n">change_mask_labels</span><span class="p">(</span><span class="n">new_mask_file</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">MOOSE_LABEL_INDEX</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Arms&quot;</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">ct_dir</span><span class="p">,</span> <span class="n">pt_dir</span><span class="p">,</span> <span class="n">mask_dir</span></div>
+
+
+<div class="viewcode-block" id="ImageRegistration"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.ImageRegistration">[docs]</a><span class="k">class</span> <span class="nc">ImageRegistration</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class for performing image registration using the Greedy method.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    fixed_img : str</span>
+<span class="sd">        Path to the fixed/target image for registration.</span>
+<span class="sd">    multi_resolution_iterations : str</span>
+<span class="sd">        String specifying the number of iterations at each resolution level.</span>
+<span class="sd">    fixed_mask : str, optional</span>
+<span class="sd">        Path to a mask for the fixed image. If provided, only the masked region of the fixed image will be used in the registration.</span>
+<span class="sd">    moving_img : str, optional</span>
+<span class="sd">        Path to the moving/source image to be registered to the fixed image.</span>
+<span class="sd">    transform_files : dict, optional</span>
+<span class="sd">        Dictionary containing paths to the output transformation files for each registration type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fixed_img</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">multi_resolution_iterations</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fixed_mask</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the ImageRegistration class.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        -----------</span>
+<span class="sd">        fixed_img : str</span>
+<span class="sd">            Path to the fixed/target image.</span>
+<span class="sd">        multi_resolution_iterations : str</span>
+<span class="sd">            String specifying the number of iterations at each resolution level.</span>
+<span class="sd">        fixed_mask : str, optional</span>
+<span class="sd">            Path to the mask of the fixed image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixed_img</span> <span class="o">=</span> <span class="n">fixed_img</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixed_mask</span> <span class="o">=</span> <span class="n">fixed_mask</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">multi_resolution_iterations</span> <span class="o">=</span> <span class="n">multi_resolution_iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="ImageRegistration.set_moving_image"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.ImageRegistration.set_moving_image">[docs]</a>    <span class="k">def</span> <span class="nf">set_moving_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">moving_img</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">update_transforms</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the moving image for registration and updates the transform files if specified.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        -----------</span>
+<span class="sd">        moving_img : str</span>
+<span class="sd">            Path to the moving/source image.</span>
+<span class="sd">        update_transforms : bool, default=True</span>
+<span class="sd">            If True, will update the paths for the transformation files based on the moving image name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span> <span class="o">=</span> <span class="n">moving_img</span>
+        <span class="k">if</span> <span class="n">update_transforms</span><span class="p">:</span>
+            <span class="n">out_dir</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+            <span class="n">moving_img_filename</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;rigid&#39;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">moving_img_filename</span><span class="si">}</span><span class="s2">_rigid.mat&quot;</span><span class="p">),</span>
+                <span class="s1">&#39;affine&#39;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">moving_img_filename</span><span class="si">}</span><span class="s2">_affine.mat&quot;</span><span class="p">),</span>
+                <span class="s1">&#39;warp&#39;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">moving_img_filename</span><span class="si">}</span><span class="s2">_warp.nii.gz&quot;</span><span class="p">),</span>
+                <span class="s1">&#39;inverse_warp&#39;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">moving_img_filename</span><span class="si">}</span><span class="s2">_inverse_warp.nii.gz&quot;</span><span class="p">)</span>
+            <span class="p">}</span></div>
+
+    
+<div class="viewcode-block" id="ImageRegistration.rigid"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.ImageRegistration.rigid">[docs]</a>    <span class="k">def</span> <span class="nf">rigid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform rigid registration between the moving and fixed images.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        --------</span>
+<span class="sd">        str</span>
+<span class="sd">            Path to the resulting rigid transformation file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mask_cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;-gm </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_mask</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixed_mask</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">cmd_to_run</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">GREEDY_PATH</span><span class="si">}</span><span class="s2"> -d 3 -a -i </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_img</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span> \
+                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mask_cmd</span><span class="si">}</span><span class="s2"> -ia-image-centers -dof 6 -o </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;rigid&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> &quot;</span> \
+                     <span class="sa">f</span><span class="s2">&quot;-n </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">multi_resolution_iterations</span><span class="si">}</span><span class="s2"> -m SSD&quot;</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd_to_run</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Rigid alignment: </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> | Aligned image: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;moco-</span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> | Transform file: </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;rigid&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;rigid&#39;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ImageRegistration.affine"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.ImageRegistration.affine">[docs]</a>    <span class="k">def</span> <span class="nf">affine</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform affine registration between the moving and fixed images.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        --------</span>
+<span class="sd">        str</span>
+<span class="sd">            Path to the resulting affine transformation file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mask_cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;-gm </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_mask</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixed_mask</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">cmd_to_run</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">GREEDY_PATH</span><span class="si">}</span><span class="s2"> -d 3 -a -i </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_img</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span> \
+                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mask_cmd</span><span class="si">}</span><span class="s2"> -ia-image-centers -dof 12 -o </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;affine&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> &quot;</span> \
+                     <span class="sa">f</span><span class="s2">&quot;-n </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">multi_resolution_iterations</span><span class="si">}</span><span class="s2"> -m SSD&quot;</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd_to_run</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Affine alignment: </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> |&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot; Aligned image: moco-</span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> | Transform file: </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;affine&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;affine&#39;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ImageRegistration.deformable"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.ImageRegistration.deformable">[docs]</a>    <span class="k">def</span> <span class="nf">deformable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform deformable registration between the moving and fixed images.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        --------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            A tuple containing paths to the resulting rigid, warp, and inverse warp transformation files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rigid</span><span class="p">()</span>
+        <span class="n">mask_cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;-gm </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_mask</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixed_mask</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">cmd_to_run</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">GREEDY_PATH</span><span class="si">}</span><span class="s2"> -d 3 -m SSD -i </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_img</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span> \
+                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mask_cmd</span><span class="si">}</span><span class="s2"> -it </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;rigid&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> -o </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;warp&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> &quot;</span> \
+                     <span class="sa">f</span><span class="s2">&quot;-oinv </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;inverse_warp&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> -sv -n </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">multi_resolution_iterations</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd_to_run</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Deformable alignment: </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> | &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Aligned image: moco-</span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> | &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Initial alignment: </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;rigid&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot; | warp file: </span><span class="si">{</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;warp&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;rigid&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;warp&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;inverse_warp&#39;</span><span class="p">]</span></div>
+
+    
+<div class="viewcode-block" id="ImageRegistration.registration"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.ImageRegistration.registration">[docs]</a>    <span class="k">def</span> <span class="nf">registration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">registration_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register the moving image to the fixed image using the specified registration type.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        -----------</span>
+<span class="sd">        registration_type : str</span>
+<span class="sd">            Type of registration to perform. Supported values are &#39;rigid&#39;, &#39;affine&#39;, and &#39;deformable&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">registration_type</span> <span class="o">==</span> <span class="s1">&#39;rigid&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rigid</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">registration_type</span> <span class="o">==</span> <span class="s1">&#39;affine&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">registration_type</span> <span class="o">==</span> <span class="s1">&#39;deformable&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">deformable</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;Registration type not supported!&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ImageRegistration.resample"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.ImageRegistration.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resampled_moving_img</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">registration_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">segmentation</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">resampled_seg</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resample the moving image based on the computed transformation.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        -----------</span>
+<span class="sd">        resampled_moving_img : str</span>
+<span class="sd">            Path to save the resampled moving image.</span>
+<span class="sd">        registration_type : str</span>
+<span class="sd">            Type of registration used. Supported values are &#39;rigid&#39;, &#39;affine&#39;, and &#39;deformable&#39;.</span>
+<span class="sd">        segmentation : str, optional</span>
+<span class="sd">            Path to the segmentation of the moving image.</span>
+<span class="sd">        resampled_seg : str, optional</span>
+<span class="sd">            Path to save the resampled segmentation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">registration_type</span> <span class="o">==</span> <span class="s1">&#39;rigid&#39;</span><span class="p">:</span>
+            <span class="n">cmd_to_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_cmd</span><span class="p">(</span><span class="n">resampled_moving_img</span><span class="p">,</span> <span class="n">segmentation</span><span class="p">,</span> <span class="n">resampled_seg</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;rigid&#39;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">registration_type</span> <span class="o">==</span> <span class="s1">&#39;affine&#39;</span><span class="p">:</span>
+            <span class="n">cmd_to_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_cmd</span><span class="p">(</span><span class="n">resampled_moving_img</span><span class="p">,</span> <span class="n">segmentation</span><span class="p">,</span> <span class="n">resampled_seg</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;affine&#39;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">registration_type</span> <span class="o">==</span> <span class="s1">&#39;deformable&#39;</span><span class="p">:</span>
+            <span class="n">cmd_to_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_cmd</span><span class="p">(</span><span class="n">resampled_moving_img</span><span class="p">,</span> <span class="n">segmentation</span><span class="p">,</span> <span class="n">resampled_seg</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;warp&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_files</span><span class="p">[</span><span class="s1">&#39;rigid&#39;</span><span class="p">])</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd_to_run</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_build_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resampled_moving_img</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">segmentation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resampled_seg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">transform_files</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build the command for the greedy registration tool.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        -----------</span>
+<span class="sd">        resampled_moving_img : str</span>
+<span class="sd">            Path to save the resampled moving image.</span>
+<span class="sd">        segmentation : str</span>
+<span class="sd">            Path to the segmentation of the moving image.</span>
+<span class="sd">        resampled_seg : str</span>
+<span class="sd">            Path to save the resampled segmentation.</span>
+<span class="sd">        *transform_files : str</span>
+<span class="sd">            Paths to the transformation files used for resampling.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        --------</span>
+<span class="sd">        str</span>
+<span class="sd">            The command string to run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">GREEDY_PATH</span><span class="si">}</span><span class="s2"> -d 3 -rf </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_img</span><span class="p">)</span><span class="si">}</span><span class="s2"> -ri LINEAR -rm &quot;</span> \
+              <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moving_img</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">resampled_moving_img</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">segmentation</span> <span class="ow">and</span> <span class="n">resampled_seg</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; -ri LABEL 0.2vox -rm </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">segmentation</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">resampled_seg</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">transform_file</span> <span class="ow">in</span> <span class="n">transform_files</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; -r </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">transform_file</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">cmd</span></div>
+
+
+<div class="viewcode-block" id="align"><a class="viewcode-back" href="../../pumaz.html#pumaz.image_processing.align">[docs]</a><span class="k">def</span> <span class="nf">align</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ct_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pt_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mask_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Aligns CT and PT images to a common frame using deformable image registration.</span>
+
+<span class="sd">    Given directories of CT, PT, and mask files, this function aligns all CT images to </span>
+<span class="sd">    the first CT image (reference) using a deformable registration. The PT images </span>
+<span class="sd">    corresponding to each CT are then resampled based on the computed transformations </span>
+<span class="sd">    from the CT alignment. The function utilizes the `ImageRegistration` class </span>
+<span class="sd">    (defined previously) for alignment.</span>
+
+<span class="sd">    After alignment, the function organizes the output in the `puma_working_dir` by </span>
+<span class="sd">    creating separate folders for aligned CTs, aligned PETs, and the transformation files.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    puma_working_dir : str</span>
+<span class="sd">        The main working directory where aligned images and transforms will be saved.</span>
+<span class="sd">    ct_dir : str</span>
+<span class="sd">        Directory containing the CT images.</span>
+<span class="sd">    pt_dir : str</span>
+<span class="sd">        Directory containing the PT images.</span>
+<span class="sd">    mask_dir : str</span>
+<span class="sd">        Directory containing the mask for the reference CT image.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    None</span>
+<span class="sd">        The function organizes the aligned images and transformation files in the </span>
+<span class="sd">        provided `puma_working_dir`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Fetch the list of CT files and identify the reference CT image.</span>
+    <span class="n">ct_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ct_dir</span><span class="p">,</span> <span class="s1">&#39;*.nii*&#39;</span><span class="p">)))</span>
+    <span class="n">reference_image</span> <span class="o">=</span> <span class="n">ct_files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">fixed_mask</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mask_dir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">reference_image</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;*.nii*&#39;</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">moving_images</span> <span class="o">=</span> <span class="n">ct_files</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    
+    <span class="c1"># Initialize the progress bar.</span>
+    <span class="k">with</span> <span class="n">Progress</span><span class="p">()</span> <span class="k">as</span> <span class="n">progress</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">progress</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="s2">&quot;[cyan] Aligning CT and PT images to a common frame &quot;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">moving_images</span><span class="p">))</span>
+
+        <span class="c1"># Loop through each moving CT image for alignment.</span>
+        <span class="k">for</span> <span class="n">moving_image</span> <span class="ow">in</span> <span class="n">moving_images</span><span class="p">:</span>
+            <span class="n">aligner</span> <span class="o">=</span> <span class="n">ImageRegistration</span><span class="p">(</span><span class="n">fixed_img</span><span class="o">=</span><span class="n">reference_image</span><span class="p">,</span>
+                                        <span class="n">multi_resolution_iterations</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">MULTI_RESOLUTION_SCHEME</span><span class="p">,</span>
+                                        <span class="n">fixed_mask</span><span class="o">=</span><span class="n">fixed_mask</span><span class="p">)</span>
+            <span class="n">aligner</span><span class="o">.</span><span class="n">set_moving_image</span><span class="p">(</span><span class="n">moving_image</span><span class="p">)</span>
+            <span class="n">aligner</span><span class="o">.</span><span class="n">registration</span><span class="p">(</span><span class="s1">&#39;deformable&#39;</span><span class="p">)</span>
+            <span class="n">aligner</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">resampled_moving_img</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ALIGNED_PREFIX</span> <span class="o">+</span>
+                                                               <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">moving_image</span><span class="p">)),</span>
+                             <span class="n">registration_type</span><span class="o">=</span><span class="s1">&#39;deformable&#39;</span><span class="p">)</span>
+            <span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">advance</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># Align the corresponding PT image.</span>
+            <span class="n">pet_image</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pt_dir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">moving_image</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;*.nii*&#39;</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">aligner</span><span class="o">.</span><span class="n">set_moving_image</span><span class="p">(</span><span class="n">pet_image</span><span class="p">,</span> <span class="n">update_transforms</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">resampled_pet_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ALIGNED_PREFIX</span> <span class="o">+</span>
+                                              <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">pet_image</span><span class="p">))</span>
+            <span class="n">aligner</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">resampled_moving_img</span><span class="o">=</span><span class="n">resampled_pet_file</span><span class="p">,</span>
+                             <span class="n">registration_type</span><span class="o">=</span><span class="s1">&#39;deformable&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Organize and store the transformation files.</span>
+    <span class="n">rigid_transform_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ct_dir</span><span class="p">,</span> <span class="s1">&#39;*_rigid.mat&#39;</span><span class="p">)))</span>
+    <span class="n">warp_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ct_dir</span><span class="p">,</span> <span class="s1">&#39;*warp.nii.gz&#39;</span><span class="p">)))</span>
+    <span class="n">transforms_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">TRANSFORMS_FOLDER</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="n">transforms_dir</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">rigid_transform_file</span> <span class="ow">in</span> <span class="n">rigid_transform_files</span><span class="p">:</span>
+        <span class="n">file_utilities</span><span class="o">.</span><span class="n">move_file</span><span class="p">(</span><span class="n">rigid_transform_file</span><span class="p">,</span> <span class="n">transforms_dir</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">warp_file</span> <span class="ow">in</span> <span class="n">warp_files</span><span class="p">:</span>
+        <span class="n">file_utilities</span><span class="o">.</span><span class="n">move_file</span><span class="p">(</span><span class="n">warp_file</span><span class="p">,</span> <span class="n">transforms_dir</span><span class="p">)</span>
+
+    <span class="c1"># Organize and store the aligned CT images.</span>
+    <span class="n">aligned_ct_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ALIGNED_CT_FOLDER</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="n">aligned_ct_dir</span><span class="p">)</span>
+    <span class="n">aligned_ct_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ALIGNED_PREFIX</span> <span class="o">+</span> <span class="s1">&#39;*CT*.nii*&#39;</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">aligned_ct_file</span> <span class="ow">in</span> <span class="n">aligned_ct_files</span><span class="p">:</span>
+        <span class="n">file_utilities</span><span class="o">.</span><span class="n">move_file</span><span class="p">(</span><span class="n">aligned_ct_file</span><span class="p">,</span> <span class="n">aligned_ct_dir</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">copy_file</span><span class="p">(</span><span class="n">reference_image</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">aligned_ct_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ALIGNED_PREFIX</span> <span class="o">+</span>
+                                                           <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">reference_image</span><span class="p">)))</span>
+
+    <span class="c1"># Organize and store the aligned PET images.</span>
+    <span class="n">aligned_pet_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ALIGNED_PET_FOLDER</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="n">aligned_pet_dir</span><span class="p">)</span>
+    <span class="n">aligned_pet_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">puma_working_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ALIGNED_PREFIX</span> <span class="o">+</span> <span class="s1">&#39;*PET*.nii*&#39;</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">aligned_pet_file</span> <span class="ow">in</span> <span class="n">aligned_pet_files</span><span class="p">:</span>
+        <span class="n">file_utilities</span><span class="o">.</span><span class="n">move_file</span><span class="p">(</span><span class="n">aligned_pet_file</span><span class="p">,</span> <span class="n">aligned_pet_dir</span><span class="p">)</span>
+    <span class="n">file_utilities</span><span class="o">.</span><span class="n">copy_file</span><span class="p">(</span>
+        <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pt_dir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">reference_image</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;*.nii*&#39;</span><span class="p">))[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">aligned_pet_dir</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">ALIGNED_PREFIX</span> <span class="o">+</span>
+                     <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span>
+                         <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pt_dir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">reference_image</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;*.nii*&#39;</span><span class="p">))[</span><span class="mi">0</span><span class="p">])))</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer, QIMP.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

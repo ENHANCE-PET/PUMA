@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pumaz.resources &mdash; PUMA 1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PUMA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PUMA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pumaz.resources</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pumaz.resources</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+<span class="c1"># Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer</span>
+<span class="c1"># Institution: Medical University of Vienna</span>
+<span class="c1"># Research Group: Quantitative Imaging and Medical Physics (QIMP) Team</span>
+<span class="c1"># Date: 04.07.2023</span>
+<span class="c1"># Version: 0.1.0</span>
+<span class="c1">#</span>
+<span class="c1"># Module: binaries</span>
+<span class="c1">#</span>
+<span class="c1"># Description:</span>
+<span class="c1"># Amidst the labyrinth of PUMA-Z&#39;s infrastructure, the `binaries` module serves as a beacon. This module is the cornerstone </span>
+<span class="c1"># of PUMA-Z&#39;s functionality, ensuring every component has the tools it needs to execute flawlessly. Like the supply chain </span>
+<span class="c1"># of an intricate machine, it houses the URLs and filenames of the vital binaries, making sure that other modules don&#39;t </span>
+<span class="c1"># run astray in search of them.</span>
+<span class="c1">#</span>
+<span class="c1"># Akin to a quartermaster in a grand ship, this module ensures the steady flow of essential resources. Whether a module </span>
+<span class="c1"># requires the Greedy binaries for Windows or Mac, the `binaries` module holds the keys. It&#39;s not just about availability; </span>
+<span class="c1"># it&#39;s about precision, making certain that every binary is exactly where it&#39;s supposed to be.</span>
+<span class="c1">#</span>
+<span class="c1"># Usage:</span>
+<span class="c1"># Developers and modules alike, when in need of critical binaries, turn to this module. It&#39;s a straightforward endeavor. </span>
+<span class="c1"># By importing and invoking the contained variables and functions, one ensures that PUMA-Z&#39;s operations are fueled by </span>
+<span class="c1"># the exact resources they demand, enabling the seamless delivery of unparalleled medical imaging services.</span>
+<span class="c1">#</span>
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<span class="n">GREEDY_BINARIES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;greedy-windows-x86_64&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://greedy.s3.eu.cloud-object-storage.appdomain.cloud/greedy-windows-x86_64.zip&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="s2">&quot;greedy-windows-x86_64.zip&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;directory&quot;</span><span class="p">:</span> <span class="s2">&quot;greedy-windows-x86_64&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;greedy-linux-x86_64&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://greedy.s3.eu.cloud-object-storage.appdomain.cloud/greedy-linux-x86_64.zip&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="s2">&quot;greedy-linux-x86_64.zip&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;directory&quot;</span><span class="p">:</span> <span class="s2">&quot;greedy-linux-x86_64&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;greedy-mac-x86_64&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://greedy.s3.eu.cloud-object-storage.appdomain.cloud/greedy-mac-x86_64.zip&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="s2">&quot;greedy-mac-x86_64.zip&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;directory&quot;</span><span class="p">:</span> <span class="s2">&quot;greedy-mac-x86_64&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;greedy-mac-arm64&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://greedy.s3.eu.cloud-object-storage.appdomain.cloud/greedy-mac-arm64.zip&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="s2">&quot;greedy-mac-arm64.zip&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;directory&quot;</span><span class="p">:</span> <span class="s2">&quot;greedy-mac-arm64&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<div class="viewcode-block" id="get_greedy_binaries"><a class="viewcode-back" href="../../pumaz.html#pumaz.resources.get_greedy_binaries">[docs]</a><span class="k">def</span> <span class="nf">get_greedy_binaries</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the URLs and filenames of the Greedy binaries for different platforms.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary containing the URLs and filenames of the Greedy binaries for different platforms.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">GREEDY_BINARIES</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer, QIMP.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
