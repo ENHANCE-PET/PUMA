@@ -41,6 +41,38 @@ from halo import Halo
 import time
 
 
+def get_fov(mask_data, label):
+    """
+    Calculate the field of view for a given label in a 3D mask.
+    """
+    indices = np.argwhere(mask_data == label)
+    if indices.size == 0:
+        return 0
+    min_idx = indices.min(axis=0)
+    max_idx = indices.max(axis=0)
+    fov = np.prod(max_idx - min_idx + 1)
+    return fov
+
+
+def find_mask_with_smallest_fov(mask_files, label_dict):
+    """
+    Find the mask with the smallest combined field of view across all regions.
+    """
+    smallest_fov = float('inf')
+    smallest_fov_file = None
+
+    for mask_file in mask_files:
+        mask_data = nib.load(mask_file).get_fdata()
+
+        total_fov = sum(get_fov(mask_data, label) for label in label_dict.keys())
+
+        if total_fov < smallest_fov:
+            smallest_fov = total_fov
+            smallest_fov_file = mask_file
+
+    return smallest_fov_file
+
+
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str):
     # Get all ct_files in the ct_dir
     ct_files = get_files(ct_dir, '*.nii*')
@@ -204,6 +236,11 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
 
     process_and_moose_ct_files(ct_dir, mask_dir, constants.MOOSE_MODEL, constants.ACCELERATOR)
 
+    # Find the mask with the smallest field of view
+
+    mask_files = glob.glob(os.path.join(mask_dir, constants.MOOSE_PREFIX + '*nii*'))
+    smallest_fov_mask_filename = find_mask_with_smallest_fov(mask_files, constants.MOOSE_LABEL_INDEX)
+    smallest_fov_mask_filename = re.sub(rf'{constants.MOOSE_PREFIX}', '', smallest_fov_mask_filename)
     # remove the prefix from the mask files
 
     for mask_file in glob.glob(os.path.join(mask_dir, constants.MOOSE_PREFIX + '*')):
@@ -211,7 +248,7 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
         os.rename(mask_file, new_mask_file)
         change_mask_labels(new_mask_file, constants.MOOSE_LABEL_INDEX, regions_to_ignore)
 
-    return puma_working_dir, ct_dir, pt_dir, mask_dir
+    return puma_working_dir, ct_dir, pt_dir, mask_dir, smallest_fov_mask_filename
 
 
 class ImageRegistration:
@@ -303,12 +340,11 @@ class ImageRegistration:
         return cmd
 
 
-def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
+def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str, smallest_fov_mask_image_file: str):
     ct_files = sorted(glob.glob(os.path.join(ct_dir, '*.nii*')))
-
-    reference_image = ct_files[0]
-    fixed_mask = glob.glob(os.path.join(mask_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0]
-    moving_images = ct_files[1:]
+    reference_image = glob.glob(os.path.join(ct_dir, os.path.basename(smallest_fov_mask_image_file).split('_')[0] + '*.nii*'))[0]
+    fixed_mask = smallest_fov_mask_image_file
+    moving_images = [ct_file for ct_file in ct_files if ct_file != reference_image]
 
     with Progress() as progress:
         task = progress.add_task("[cyan] Aligning CT and PT images to a common frame ", total=len(moving_images))
