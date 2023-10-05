@@ -343,6 +343,8 @@ class ImageRegistration:
 def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str, smallest_fov_mask_image_file: str):
     ct_files = sorted(glob.glob(os.path.join(ct_dir, '*.nii*')))
     reference_image = glob.glob(os.path.join(ct_dir, os.path.basename(smallest_fov_mask_image_file).split('_')[0] + '*.nii*'))[0]
+    logging.info(f"Reference image: {pathlib.Path(reference_image).name}")
+    logging.info(f"Small FOV mask image: {pathlib.Path(smallest_fov_mask_image_file).name}")
     fixed_mask = smallest_fov_mask_image_file
     moving_images = [ct_file for ct_file in ct_files if ct_file != reference_image]
 
