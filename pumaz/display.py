@@ -8,23 +8,14 @@
 # Date: 04.07.2023
 # Version: 0.1.0
 #
-# Module: display
-#
 # Description:
-# The `display` module in PUMA-Z is dedicated to presenting user-friendly messages, notifications, and visual cues 
-# that enrich the user experience. This module consolidates essential visual feedback mechanisms, ensuring that 
-# users receive consistent and intuitive responses as they navigate and interact with the PUMA-Z tool.
-# 
-# By externalizing and standardizing these display messages, PUMA-Z achieves a cohesive user interface, 
-# which is particularly vital when guiding users through complex tasks such as aligning multi-tracer PET/CT images.
+# This module shows predefined display messages for the pumaz.
 #
 # Usage:
-# Within the PUMA-Z ecosystem, developers and advanced users can readily import and invoke the functions 
-# housed in this module. This ensures that various sections of the tool uniformly present messages and feedback, 
-# maintaining a harmonized user interaction throughout PUMA-Z operations.
+# The functions in this module can be imported and used in other modules within the pumaz to show predefined display
+# messages.
 #
 # ----------------------------------------------------------------------------------------------------------------------
-
 
 import pyfiglet
 import logging
@@ -33,11 +24,10 @@ from . import file_utilities
 from pumaz import file_utilities
 
 
-def logo() -> None:
+def logo():
     """
-    Display the PUMA logo along with the ENHANCE community slogan.
-
-    The logo and the slogan are both colored as per the constants defined for them.
+    Display PUMA logo
+    :return:
     """
     print(' ')
     logo_color_code = constants.ANSI_VIOLET
@@ -51,23 +41,19 @@ def logo() -> None:
     print(' ')
 
 
-def citation() -> None:
+def citation():
     """
-    Display the manuscript citation for PUMA.
-    
-    Provides information about the authors, title, and the intended submission journal for the PUMA project.
+    Display manuscript citation
+    :return:
     """
     print(" Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar, PET Universal Multi-tracer Aligner (PUMA) - To be "
           "submitted to Journal of Nuclear Medicine")
     print(" Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna")
 
 
-def expectations() -> None:
+def expectations():
     """
-    Display the expected modalities for PUMA.
-
-    This function informs the user about the modalities PUMA expects, ensuring the correct set is provided for each tracer set.
-    Warnings are displayed regarding non-DICOM formats and potential exclusions from analysis.
+    Display expected modalities for PUMA. This is used to check if the user has provided the correct set of modalities for each tracer set.
     """
     # display the expected modalities
     print(f' Expected modalities: {constants.MODALITIES} | Number of required modalities: {len(constants.MODALITIES)} |'
@@ -82,3 +68,15 @@ def expectations() -> None:
                       " These subjects will be excluded from analysis and their data will not be used."
     logging.warning(warning_message)
 
+
+def alignment_strategy():
+    """
+    Display alignment strategy
+    :return:
+    """
+    print(" Step 1: A random PET tracer image will be selected as the reference from the list.")
+    print(" Step 2: Each CT image will be resliced to match its corresponding PET tracer image.")
+    print(" Step 3: The CT image that pairs with the reference PET tracer image will be set as the reference CT image.")
+    print(" Step 4: All other CT images will be aligned to the reference CT image.")
+    print(" Step 5: Using the deformation fields derived from the CT images, the corresponding PET tracer images will "
+          "be aligned to the reference PET tracer image.")

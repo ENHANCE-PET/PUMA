@@ -5,25 +5,16 @@
 # Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
 # Institution: Medical University of Vienna
 # Research Group: Quantitative Imaging and Medical Physics (QIMP) Team
-# Date: 07.06.2023
+# Date: 07.006.2023
 # Version: 1.0.0
 #
-# Module: file_utilities
-#
 # Description:
-# The `file_utilities` module acts as the backbone for PUMA-Z's interactions with the file system. From setting 
-# appropriate permissions for smooth operation to pinpointing the environment's root directory, this module 
-# provides an assortment of crucial file-related functionalities. Moreover, with the rising variety in computing 
-# platforms, it can also discern the host system's type and architecture, ensuring that PUMA-Z remains adaptive 
-# and optimized for diverse environments.
+# This module contains the functions for performing file operations for the pumaz.
 #
 # Usage:
-# The rich suite of file management functions in this module are available for import and can be effortlessly 
-# integrated within other PUMA-Z components. These utilities streamline various file operations, ensuring that 
-# PUMA-Z remains responsive, fault-tolerant, and consistent in its operations across varied system configurations.
+# The functions in this module can be imported and used in other modules within the pumaz to perform file operations.
 #
 # ----------------------------------------------------------------------------------------------------------------------
-
 import os
 import glob
 import shutil
@@ -32,27 +23,9 @@ import platform
 from multiprocessing import Pool
 import stat
 import subprocess
-from typing import List, Tuple
 
 
-
-def set_permissions(file_path: str, system_type: str) -> None:
-    
-    """
-    Set permissions on the specified file based on the system type.
-
-    For Windows systems, this grants full access to "Everyone".
-    For Linux and Mac systems, it provides read, write, and execute permissions to 
-    the owner and read permission to others.
-
-    Parameters:
-    - file_path (str): Path to the file whose permissions need to be set.
-    - system_type (str): The operating system type (e.g., "windows", "linux", "mac").
-
-    Raises:
-    - ValueError: If the provided system_type is unsupported.
-    """
-    
+def set_permissions(file_path, system_type):
     if system_type == "windows":
         subprocess.check_call(["icacls", file_path, "/grant", "Everyone:(F)"])
     elif system_type in ["linux", "mac"]:
@@ -61,32 +34,13 @@ def set_permissions(file_path: str, system_type: str) -> None:
         raise ValueError("Unsupported OS")
 
 
-def get_virtual_env_root() -> str:
-    
-    """
-    Get the root directory of the current Python virtual environment.
-
-    Returns:
-    - str: Path to the root of the current virtual environment.
-    """
-    
+def get_virtual_env_root():
     python_exe = sys.executable
     virtual_env_root = os.path.dirname(os.path.dirname(python_exe))
     return virtual_env_root
 
 
-def get_system() -> Tuple[str, str]:
-    """
-    Identify the operating system and its architecture.
-
-    Returns:
-    - Tuple[str, str]: A tuple containing the system type (e.g., "mac", "windows", "linux")
-                       and the architecture (e.g., "x86_64", "arm64").
-
-    Raises:
-    - ValueError: If the detected system type or architecture is unsupported.
-    """
-    
+def get_system():
     system = platform.system().lower()
     architecture = platform.machine().lower()
 
@@ -111,64 +65,45 @@ def get_system() -> Tuple[str, str]:
     return system, architecture
 
 
-def create_directory(directory_path: str) -> None:
+def create_directory(directory_path: str):
     """
-    Create a directory at the specified path if it doesn't exist.
-
-    Parameters:
-    - directory_path (str): The path where the directory should be created.
+    Creates a directory at the specified path.
+    :param directory_path: The path to the directory.
     """
     if not os.path.isdir(directory_path):
         os.makedirs(directory_path)
 
 
-def get_files(directory_path: str, wildcard: str) -> List[str]:
+def get_files(directory_path: str, wildcard: str):
     """
-    Retrieve a list of files from the specified directory that match the given wildcard pattern.
-
-    Parameters:
-    - directory_path (str): The directory from which files should be retrieved.
-    - wildcard (str): A wildcard pattern to match filenames against.
-
-    Returns:
-    - List[str]: A list of file paths that match the wildcard pattern.
+    Gets the files from the specified directory using the wildcard.
+    :param directory_path: The path to the directory.
+    :param wildcard: The wildcard to be used.
+    :return: The list of files.
     """
     return glob.glob(os.path.join(directory_path, wildcard))
 
 
-def copy_file(file: str, destination: str) -> None:
-    """
-    Copy a file to the specified destination.
-
-    Parameters:
-    - file (str): Path to the source file.
-    - destination (str): Path to the destination.
-    """
+def copy_file(file, destination):
     shutil.copy(file, destination)
 
 
-def copy_files_to_destination(files: List[str], destination: str) -> None:
+def copy_files_to_destination(files: list, destination: str):
     """
-    Copy multiple files to a specified destination directory in parallel.
-
-    Parameters:
-    - files (List[str]): A list of file paths to be copied.
-    - destination (str): Destination directory path.
+    Copies the files inside the list to the destination directory in a parallel fashion.
+    :param files: The list of files to be copied.
+    :param destination: The path to the destination directory.
     """
     with Pool(processes=len(files)) as pool:
         pool.starmap(copy_file, [(file, destination) for file in files])
 
 
-def select_files_by_modality(tracer_dirs: List[str], modality_tag: str) -> List[str]:
+def select_files_by_modality(tracer_dirs: list, modality_tag: str) -> list:
     """
-    Select and retrieve files with the specified modality tag from a list of tracer directories.
-
-    Parameters:
-    - tracer_dirs (List[str]): A list of directories where tracer files are located.
-    - modality_tag (str): The modality tag used to filter files.
-
-    Returns:
-    - List[str]: A list of selected file paths with the specified modality tag.
+    Selects the files with the selected modality tag from the tracer directory.
+    :param tracer_dirs: Path to the tracer directory.
+    :param modality_tag: The modality tag to be selected.
+    :return: The list of selected files.
     """
     selected_files = []
     for tracer_dir in tracer_dirs:
@@ -179,51 +114,29 @@ def select_files_by_modality(tracer_dirs: List[str], modality_tag: str) -> List[
     return selected_files
 
 
-def organise_files_by_modality(tracer_dirs: List[str], modalities: List[str], pumaz_dir: str) -> None:
+def organise_files_by_modality(tracer_dirs: list, modalities: list, pumaz_dir) -> None:
     """
-    Organize and copy files by modality, segregating them based on specified modalities.
-
-    Parameters:
-    - tracer_dirs (List[str]): A list of directories where tracer files are located.
-    - modalities (List[str]): A list of modality tags to be used for segregation.
-    - pumaz_dir (str): The target directory where files should be copied and organized.
+    Organises the files by modality.
+    :param tracer_dirs: The list of tracer directories
+    :param modalities: The list of modalities.
+    :param pumaz_dir: The path to the pumaz directory.
     """
     for modality in modalities:
         files_to_copy = select_files_by_modality(tracer_dirs, modality)
         copy_files_to_destination(files_to_copy, os.path.join(pumaz_dir, modality))
 
 
-def move_file(file: str, destination: str) -> None:
-    """
-    Move a file to the specified destination.
-
-    Parameters:
-    - file (str): Path to the source file.
-    - destination (str): Path to the destination.
-    """
+def move_file(file, destination):
     shutil.move(file, destination)
 
 
-def move_files_to_directory(src_dir: str, dest_dir: str) -> None:
-    """
-    Move all files from a source directory to a destination directory.
-
-    Parameters:
-    - src_dir (str): Source directory containing the files to be moved.
-    - dest_dir (str): Destination directory where files will be moved.
-    """
+def move_files_to_directory(src_dir, dest_dir):
     src_files = get_files(src_dir, '*')
     for src_file in src_files:
         move_file(src_file, os.path.join(dest_dir, os.path.basename(src_file)))
 
 
-def remove_directory(directory_path: str) -> None:
-    """
-    Remove a directory if it is empty.
-
-    Parameters:
-    - directory_path (str): Path to the directory to be removed.
-    """
+def remove_directory(directory_path):
     # Remove the directory only if it is empty
     if not os.listdir(directory_path):
         os.rmdir(directory_path)

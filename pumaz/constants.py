@@ -8,35 +8,23 @@
 # Date: 04.07.2023
 # Version: 0.1.0
 #
-# Module: constants
-#
 # Description:
-# The `constants` module of PUMA-Z serves as a centralized location for defining and managing constants 
-# essential to the operation and functionality of the tool. It consolidates various fixed values like paths, 
-# configurations, and platform-specific details, ensuring consistency and maintainability across the PUMA-Z toolset.
-# 
-# Constants play a crucial role in ensuring the standardization and consistent behavior of PUMA-Z, 
-# especially when handling and processing multi-tracer PET/CT images of subjects acquired at different timepoints.
+# This module contains the constants that are used in the pumaz.
 #
 # Usage:
-# This module is a foundational component of the PUMA-Z software package. Developers and users can import 
-# and reference the constants defined here in other modules or scripts within the PUMA-Z ecosystem, 
-# ensuring that any updates or changes to constants are automatically propagated throughout the tool.
+# The variables in this module can be imported and used in other modules within the pumaz.
 #
-# ----------------------------------------------------------------------------------------------------------------------
-
+# ----------------------------------------------------------------------------------------------------------
 
 import os
 from pumaz import file_utilities
 from datetime import datetime
 
-# Root path of the project
 project_root = file_utilities.get_virtual_env_root()
-
-# Path to the binary files within the project
 BINARY_PATH = os.path.join(project_root, 'bin')
 
-# Set the appropriate path for the Greedy binary based on the operating system
+# SET PATHS TO BINARIES
+
 if file_utilities.get_system()[0] == 'windows':
     GREEDY_PATH = os.path.join(BINARY_PATH, f'greedy-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                                'greedy.exe')
@@ -46,39 +34,43 @@ elif file_utilities.get_system()[0] in ['linux', 'mac']:
 else:
     raise ValueError('Unsupported OS')
 
-# ANSI color codes for terminal display
+
+# COLOR CODES
 ANSI_ORANGE = '\033[38;5;208m'
 ANSI_GREEN = '\033[38;5;40m'
 ANSI_VIOLET = '\033[38;5;141m'
 ANSI_RESET = '\033[0m'
 
-# List of expected imaging modalities
-MODALITIES = ['PET', 'CT']
+# EXPECTED MODALITIES
 
-# Prefixes used to denote each imaging modality
+MODALITIES = ['PET', 'CT']
 MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT']
 
-# Prefixes for file naming
+# FILE NAMES
+
 RESAMPLED_PREFIX = 'resampled_'
 ALIGNED_PREFIX = 'aligned_'
 
-# MOOSE parameters for image registration
-MOOSE_MODEL = "clin_ct_body"          # MOOSE model name
-MOOSE_PREFIX = 'CT_Body_'             # Prefix for MOOSE model
-MOOSE_LABEL_INDEX = {                 # Index for MOOSE labels
-        1: "Legs",
-        2: "Body",
-        3: "Head",
-        4: "Arms"
-    }
-ACCELERATOR = 'cuda'                 # Hardware accelerator
+# MOOSE PARAMETERS
 
-# Folder names for storing outputs
+MOOSE_MODEL = "clin_ct_body"
+MOOSE_PREFIX = 'CT_Body_'
+MOOSE_LABEL_INDEX = {
+        1: "legs",
+        2: "body",
+        3: "head",
+        4: "arms"
+    }
+ACCELERATOR = 'cuda'
+
+# FOLDER NAMES
+
 PUMA_WORKING_FOLDER = 'PUMAZ-V01' + '-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 TRANSFORMS_FOLDER = 'transforms'
 ALIGNED_CT_FOLDER = 'aligned_CT'
 ALIGNED_PET_FOLDER = 'aligned_PT'
 MASK_FOLDER = 'masks'
 
-# Hyperparameters for image registration
+# HYPERPARAMETERS
+
 MULTI_RESOLUTION_SCHEME = '100x25x10'
