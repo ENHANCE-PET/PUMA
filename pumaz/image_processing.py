@@ -110,14 +110,17 @@ def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, acc
 
 
 def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
-                     output_image_path: str = None, is_label_image: bool = False) -> sitk.Image:
+                     output_image_path: str = None, is_label_image: bool = False,
+                     align_centers: bool = False) -> sitk.Image:
     """
     Reslice an image to the same space as another image
     :param reference_image: The reference image
     :param moving_image: The image to reslice to the reference image
     :param output_image_path: Path to the resliced image
     :param is_label_image: Determines if the image is a label image. Default is False
+    :param align_centers: Determines if the images should be aligned by their centers. Default is False
     """
+
     resampler = sitk.ResampleImageFilter()
     resampler.SetReferenceImage(reference_image)
 
@@ -126,10 +129,21 @@ def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
     else:
         resampler.SetInterpolator(sitk.sitkLinear)
 
+    if align_centers:
+        if (reference_image.GetSize() != moving_image.GetSize() or
+                reference_image.GetSpacing() != moving_image.GetSpacing() or
+                reference_image.GetOrigin() != moving_image.GetOrigin()):
+            center_transform = sitk.CenteredTransformInitializer(reference_image, moving_image,
+                                                                 sitk.Euler3DTransform(),
+                                                                 sitk.CenteredTransformInitializerFilter.GEOMETRY)
+            resampler.SetTransform(center_transform)
+
     resampled_image = resampler.Execute(moving_image)
     resampled_image = sitk.Cast(resampled_image, sitk.sitkInt32)
+
     if output_image_path is not None:
         sitk.WriteImage(resampled_image, output_image_path)
+
     return resampled_image
 
 
@@ -146,6 +160,7 @@ def prepare_reslice_tasks(puma_compliant_subjects):
             sitk.ReadImage(pt_file[0]),
             sitk.ReadImage(ct_file[0]),
             resliced_ct_file,
+            False,
             False
         ))
     return tasks
@@ -236,19 +251,17 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
 
     process_and_moose_ct_files(ct_dir, mask_dir, constants.MOOSE_MODEL, constants.ACCELERATOR)
 
-    # Find the mask with the smallest field of view
+    # Generate mask with common field of view
 
     mask_files = glob.glob(os.path.join(mask_dir, constants.MOOSE_PREFIX + '*nii*'))
-    smallest_fov_mask_filename = find_mask_with_smallest_fov(mask_files, constants.MOOSE_LABEL_INDEX)
-    smallest_fov_mask_filename = re.sub(rf'{constants.MOOSE_PREFIX}', '', smallest_fov_mask_filename)
-    # remove the prefix from the mask files
+    generate_and_apply_common_fov(mask_files, os.path.join(puma_working_dir, constants.COMMON_FOV_MASK_FOLDER))
 
     for mask_file in glob.glob(os.path.join(mask_dir, constants.MOOSE_PREFIX + '*')):
         new_mask_file = re.sub(rf'{constants.MOOSE_PREFIX}', '', mask_file)
         os.rename(mask_file, new_mask_file)
         change_mask_labels(new_mask_file, constants.MOOSE_LABEL_INDEX, regions_to_ignore)
 
-    return puma_working_dir, ct_dir, pt_dir, mask_dir, smallest_fov_mask_filename
+    return puma_working_dir, ct_dir, pt_dir, mask_dir
 
 
 class ImageRegistration:
@@ -340,12 +353,11 @@ class ImageRegistration:
         return cmd
 
 
-def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str, smallest_fov_mask_image_file: str):
+def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
     ct_files = sorted(glob.glob(os.path.join(ct_dir, '*.nii*')))
-    reference_image = glob.glob(os.path.join(ct_dir, os.path.basename(smallest_fov_mask_image_file).split('_')[0] + '*.nii*'))[0]
+    reference_image = ct_files[0]
     logging.info(f"Reference image: {pathlib.Path(reference_image).name}")
-    logging.info(f"Small FOV mask image: {pathlib.Path(smallest_fov_mask_image_file).name}")
-    fixed_mask = smallest_fov_mask_image_file
+    fixed_mask = glob.glob(os.path.join(mask_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0]
     moving_images = [ct_file for ct_file in ct_files if ct_file != reference_image]
 
     with Progress() as progress:
@@ -405,3 +417,53 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str, smalle
             os.path.join(aligned_pet_dir, constants.ALIGNED_PREFIX +
                          os.path.basename(glob.glob(
                              os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0])))
+
+
+def calculate_bbox(mask_np):
+    coords = np.array(np.where(mask_np > 0))
+    return coords.min(axis=1), coords.max(axis=1)
+
+
+def generate_and_apply_common_fov(mask_files: list, output_dir: str):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Step 1: Initialize common bounding box with the first mask
+    reference_mask_file = mask_files[0]
+    reference_mask = sitk.ReadImage(reference_mask_file)
+    first_mask_np = sitk.GetArrayFromImage(reference_mask)
+    min_coords, max_coords = calculate_bbox(first_mask_np)
+
+    for mask_file in mask_files[1:]:
+        mask = sitk.ReadImage(mask_file)
+        resampled_mask_file = os.path.join(output_dir, 'RESAMPLED-' + os.path.basename(mask_file))
+        resampled_mask = reslice_identity(reference_mask, mask, resampled_mask_file, True, True)
+        mask_np = sitk.GetArrayFromImage(resampled_mask)
+        cur_min_coords, cur_max_coords = calculate_bbox(mask_np)
+
+        # Update the common bounding box by taking intersection
+        min_coords = np.maximum(min_coords, cur_min_coords)
+        max_coords = np.minimum(max_coords, cur_max_coords)
+
+    # Create the common FOV mask based on these coordinates
+    common_fov_mask_np = np.zeros_like(first_mask_np)
+    common_fov_mask_np[min_coords[0]:max_coords[0] + 1,
+    min_coords[1]:max_coords[1] + 1,
+    min_coords[2]:max_coords[2] + 1] = 1
+
+    common_fov_mask = sitk.GetImageFromArray(common_fov_mask_np)
+    common_fov_mask.CopyInformation(reference_mask)
+    common_fov_mask_file = os.path.join(output_dir, 'common_fov_mask.nii.gz')
+    sitk.WriteImage(common_fov_mask, common_fov_mask_file)
+
+    # Step 2: Apply the common FOV mask to original mask files
+    for mask_file in mask_files:
+        original_mask = sitk.ReadImage(mask_file)
+        resampled_common_fov_file = os.path.join(output_dir, 'RESAMPLED-bb-' + os.path.basename(mask_file))
+        resampled_common_fov = reslice_identity(original_mask, common_fov_mask, resampled_common_fov_file, True, True)
+        original_mask_np = sitk.GetArrayFromImage(original_mask)
+        resampled_common_fov_np = sitk.GetArrayFromImage(resampled_common_fov)
+        modified_mask_np = original_mask_np * resampled_common_fov_np
+        modified_mask = sitk.GetImageFromArray(modified_mask_np)
+        modified_mask.CopyInformation(original_mask)
+        sitk.WriteImage(modified_mask, mask_file)

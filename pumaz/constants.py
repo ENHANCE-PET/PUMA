@@ -70,6 +70,7 @@ TRANSFORMS_FOLDER = 'transforms'
 ALIGNED_CT_FOLDER = 'aligned_CT'
 ALIGNED_PET_FOLDER = 'aligned_PT'
 MASK_FOLDER = 'masks'
+COMMON_FOV_MASK_FOLDER = 'common_fov_masks'
 
 # HYPERPARAMETERS
 
