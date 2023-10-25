@@ -26,8 +26,12 @@ from pumaz import file_utilities
 
 def logo():
     """
-    Display PUMA logo
-    :return:
+    Display the PUMA logo.
+
+    :return: None
+    :rtype: None
+    :Example:
+        >>> logo()
     """
     print(' ')
     logo_color_code = constants.ANSI_VIOLET
@@ -40,11 +44,14 @@ def logo():
     print(text)
     print(' ')
 
-
 def citation():
     """
-    Display manuscript citation
-    :return:
+    Display the manuscript citation for PUMA.
+
+    :return: None
+    :rtype: None
+    :Example:
+        >>> citation()
     """
     print(" Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar, PET Universal Multi-tracer Aligner (PUMA) - To be "
           "submitted to Journal of Nuclear Medicine")
@@ -53,7 +60,14 @@ def citation():
 
 def expectations():
     """
-    Display expected modalities for PUMA. This is used to check if the user has provided the correct set of modalities for each tracer set.
+    Display the expected modalities for PUMA.
+
+    This function is used to check if the user has provided the correct set of modalities for each tracer set.
+
+    :return: None
+    :rtype: None
+    :Example:
+        >>> expectations()
     """
     # display the expected modalities
     print(f' Expected modalities: {constants.MODALITIES} | Number of required modalities: {len(constants.MODALITIES)} |'
@@ -71,8 +85,14 @@ def expectations():
 
 def alignment_strategy():
     """
-    Display alignment strategy
-    :return:
+    Display the alignment strategy for PUMA.
+
+    This function describes the steps involved in aligning PET and CT images in PUMA.
+
+    :return: None
+    :rtype: None
+    :Example:
+        >>> alignment_strategy()
     """
     print(" Step 1: A random PET tracer image will be selected as the reference from the list.")
     print(" Step 2: Each CT image will be resliced to match its corresponding PET tracer image.")

@@ -41,40 +41,23 @@ from halo import Halo
 import time
 
 
-def get_fov(mask_data, label):
+def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
     """
-    Calculate the field of view for a given label in a 3D mask.
+    Process CT files using MOOSE.
+
+    :param ct_dir: The directory containing the CT files.
+    :type ct_dir: str
+    :param mask_dir: The directory to save the MOOSE masks.
+    :type mask_dir: str
+    :param moose_model: The path to the MOOSE model.
+    :type moose_model: str
+    :param accelerator: The accelerator to use for MOOSE.
+    :type accelerator: str
+    :return: None
+    :rtype: None
+    :Example:
+        >>> process_and_moose_ct_files('/path/to/ct_dir', '/path/to/mask_dir', '/path/to/moose_model', 'cpu')
     """
-    indices = np.argwhere(mask_data == label)
-    if indices.size == 0:
-        return 0
-    min_idx = indices.min(axis=0)
-    max_idx = indices.max(axis=0)
-    fov = np.prod(max_idx - min_idx + 1)
-    return fov
-
-
-def find_mask_with_smallest_fov(mask_files, label_dict):
-    """
-    Find the mask with the smallest combined field of view across all regions.
-    """
-    smallest_fov = float('inf')
-    smallest_fov_file = None
-
-    for mask_file in mask_files:
-        mask_data = nib.load(mask_file).get_fdata()
-
-        total_fov = sum(get_fov(mask_data, label) for label in label_dict.keys())
-
-        if total_fov < smallest_fov:
-            smallest_fov = total_fov
-            smallest_fov_file = mask_file
-
-    return smallest_fov_file
-
-
-def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str):
-    # Get all ct_files in the ct_dir
     ct_files = get_files(ct_dir, '*.nii*')
 
     with Progress() as progress_bar:
@@ -113,14 +96,25 @@ def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
                      output_image_path: str = None, is_label_image: bool = False,
                      align_centers: bool = False) -> sitk.Image:
     """
-    Reslice an image to the same space as another image
-    :param reference_image: The reference image
-    :param moving_image: The image to reslice to the reference image
-    :param output_image_path: Path to the resliced image
-    :param is_label_image: Determines if the image is a label image. Default is False
-    :param align_centers: Determines if the images should be aligned by their centers. Default is False
-    """
+    Reslice an image to the same space as another image.
 
+    :param reference_image: The reference image.
+    :type reference_image: sitk.Image
+    :param moving_image: The image to reslice to the reference image.
+    :type moving_image: sitk.Image
+    :param output_image_path: Path to the resliced image.
+    :type output_image_path: str
+    :param is_label_image: Determines if the image is a label image. Default is False.
+    :type is_label_image: bool
+    :param align_centers: Determines if the images should be aligned by their centers. Default is False.
+    :type align_centers: bool
+    :return: The resliced image.
+    :rtype: sitk.Image
+    :Example:
+        >>> reference_image = sitk.ReadImage('/path/to/reference_image.nii.gz')
+        >>> moving_image = sitk.ReadImage('/path/to/moving_image.nii.gz')
+        >>> reslice_identity(reference_image, moving_image, '/path/to/output_image.nii.gz')
+    """
     resampler = sitk.ResampleImageFilter()
     resampler.SetReferenceImage(reference_image)
 
@@ -148,6 +142,17 @@ def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
 
 
 def prepare_reslice_tasks(puma_compliant_subjects):
+    """
+    Prepare a list of reslicing tasks for a set of PUMA-compliant subjects.
+
+    :param puma_compliant_subjects: A list of directories containing PUMA-compliant subject data.
+    :type puma_compliant_subjects: list
+    :return: A list of tuples representing reslicing tasks.
+    :rtype: list
+    :Example:
+        >>> puma_compliant_subjects = ['/path/to/subject1', '/path/to/subject2']
+        >>> prepare_reslice_tasks(puma_compliant_subjects)
+    """
     tasks = []
     for i, subdir in enumerate(puma_compliant_subjects):
         ct_file = glob.glob(os.path.join(subdir, 'CT*.nii*'))
@@ -166,13 +171,43 @@ def prepare_reslice_tasks(puma_compliant_subjects):
     return tasks
 
 
-def copy_and_rename_file(src, dst, subdir):
+def copy_and_rename_file(src: str, dst: str, subdir: str) -> None:
+    """
+    Copy a file from the source directory to the destination directory and rename it.
+
+    :param src: The path to the source file.
+    :type src: str
+    :param dst: The path to the destination directory.
+    :type dst: str
+    :param subdir: The name of the subdirectory containing the file.
+    :type subdir: str
+    :return: None
+    :rtype: None
+    :Example:
+        >>> copy_and_rename_file('/path/to/src/file.nii.gz', '/path/to/dst', 'subdir')
+    """
     file_utilities.copy_file(src, dst)
     new_file = os.path.join(dst, os.path.basename(subdir) + '_' + os.path.basename(src))
     os.rename(os.path.join(dst, os.path.basename(src)), new_file)
 
 
 def change_mask_labels(mask_file: str, label_map: dict, excluded_labels: list):
+    """
+    Change the labels of a mask image.
+
+    :param mask_file: The path to the mask image file.
+    :type mask_file: str
+    :param label_map: A dictionary mapping label indices to label names.
+    :type label_map: dict
+    :param excluded_labels: A list of label names to exclude from the mask.
+    :type excluded_labels: list
+    :return: None
+    :rtype: None
+    :Example:
+        >>> label_map = {0: 'background', 1: 'tumor', 2: 'necrosis'}
+        >>> excluded_labels = ['necrosis']
+        >>> change_mask_labels('/path/to/mask.nii.gz', label_map, excluded_labels)
+    """
     # Load the image
     img = nib.load(mask_file)
 
@@ -198,11 +233,21 @@ def change_mask_labels(mask_file: str, label_map: dict, excluded_labels: list):
 
 def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_workers: int = None) -> tuple:
     """
-    Preprocesses the images in the subject directory
-    :param puma_compliant_subjects: The puma compliant subjects
-    :param regions_to_ignore: The regions to ignore during registration
+    Preprocesses the images in the subject directory.
 
-    :param num_workers: The number of worker processes for parallel processing
+    :param puma_compliant_subjects: A list of paths to PUMA compliant subjects.
+    :type puma_compliant_subjects: list
+    :param regions_to_ignore: A list of regions to ignore during registration.
+    :type regions_to_ignore: list
+    :param num_workers: The number of worker processes for parallel processing.
+    :type num_workers: int, optional
+    :return: A tuple containing the paths to the PUMA working directory, CT directory, PET directory, and mask directory.
+    :rtype: tuple
+    :Example:
+        >>> puma_compliant_subjects = ['/path/to/subject1', '/path/to/subject2']
+        >>> regions_to_ignore = ['region1', 'region2']
+        >>> preprocess(puma_compliant_subjects, regions_to_ignore)
+        ('/path/to/puma_working_dir', '/path/to/ct_dir', '/path/to/pt_dir', '/path/to/mask_dir')
     """
     if num_workers is None:
         num_workers = multiprocessing.cpu_count()
@@ -265,6 +310,17 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
 
 
 class ImageRegistration:
+    """
+    A class for performing image registration using the GREEDY algorithm.
+
+    :param fixed_img: The path to the fixed image.
+    :type fixed_img: str
+    :param multi_resolution_iterations: The number of multi-resolution iterations to perform.
+    :type multi_resolution_iterations: str
+    :param fixed_mask: The path to the fixed mask (optional).
+    :type fixed_mask: str
+    """
+
     def __init__(self, fixed_img: str, multi_resolution_iterations: str, fixed_mask: str = None):
         self.fixed_img = fixed_img
         self.fixed_mask = fixed_mask
@@ -273,6 +329,14 @@ class ImageRegistration:
         self.transform_files = None
 
     def set_moving_image(self, moving_img: str, update_transforms: bool = True):
+        """
+        Set the moving image and update the transform files.
+
+        :param moving_img: The path to the moving image.
+        :type moving_img: str
+        :param update_transforms: Whether to update the transform files (default is True).
+        :type update_transforms: bool
+        """
         self.moving_img = moving_img
         if update_transforms:
             out_dir = pathlib.Path(self.moving_img).parent
@@ -285,6 +349,12 @@ class ImageRegistration:
             }
 
     def rigid(self) -> str:
+        """
+        Perform rigid alignment.
+
+        :return: The path to the rigid transform file.
+        :rtype: str
+        """
         mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
         cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
                      f"{mask_cmd} -ia-image-centers -dof 6 -o {re.escape(self.transform_files['rigid'])} " \
@@ -296,6 +366,12 @@ class ImageRegistration:
         return self.transform_files['rigid']
 
     def affine(self) -> str:
+        """
+        Perform affine alignment.
+
+        :return: The path to the affine transform file.
+        :rtype: str
+        """
         mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
         cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
                      f"{mask_cmd} -ia-image-centers -dof 12 -o {re.escape(self.transform_files['affine'])} " \
@@ -307,6 +383,12 @@ class ImageRegistration:
         return self.transform_files['affine']
 
     def deformable(self) -> tuple:
+        """
+        Perform deformable alignment.
+
+        :return: A tuple containing the paths to the rigid, warp, and inverse warp transform files.
+        :rtype: tuple
+        """
         self.rigid()
         mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
         cmd_to_run = f"{GREEDY_PATH} -d 3 -m SSD -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
@@ -321,6 +403,12 @@ class ImageRegistration:
         return self.transform_files['rigid'], self.transform_files['warp'], self.transform_files['inverse_warp']
 
     def registration(self, registration_type: str) -> None:
+        """
+        Perform image registration.
+
+        :param registration_type: The type of registration to perform ('rigid', 'affine', or 'deformable').
+        :type registration_type: str
+        """
         if registration_type == 'rigid':
             self.rigid()
         elif registration_type == 'affine':
@@ -331,6 +419,18 @@ class ImageRegistration:
             sys.exit("Registration type not supported!")
 
     def resample(self, resampled_moving_img: str, registration_type: str, segmentation="", resampled_seg="") -> None:
+        """
+        Resample the moving image.
+
+        :param resampled_moving_img: The path to the resampled moving image.
+        :type resampled_moving_img: str
+        :param registration_type: The type of registration used to generate the transform files.
+        :type registration_type: str
+        :param segmentation: The path to the segmentation image (optional).
+        :type segmentation: str
+        :param resampled_seg: The path to the resampled segmentation image (optional).
+        :type resampled_seg: str
+        """
         if registration_type == 'rigid':
             cmd_to_run = self._build_cmd(resampled_moving_img, segmentation, resampled_seg,
                                          self.transform_files['rigid'])
@@ -344,6 +444,20 @@ class ImageRegistration:
 
     def _build_cmd(self, resampled_moving_img: str, segmentation: str, resampled_seg: str,
                    *transform_files: str) -> str:
+        """
+        Build the command to resample the moving image.
+
+        :param resampled_moving_img: The path to the resampled moving image.
+        :type resampled_moving_img: str
+        :param segmentation: The path to the segmentation image (optional).
+        :type segmentation: str
+        :param resampled_seg: The path to the resampled segmentation image (optional).
+        :type resampled_seg: str
+        :param transform_files: The paths to the transform files.
+        :type transform_files: str
+        :return: The command to resample the moving image.
+        :rtype: str
+        """
         cmd = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm " \
               f"{re.escape(self.moving_img)} {re.escape(resampled_moving_img)}"
         if segmentation and resampled_seg:
@@ -354,6 +468,26 @@ class ImageRegistration:
 
 
 def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
+    """
+    Align CT and PET images to a common frame using deformable registration.
+
+    :param puma_working_dir: The working directory for PUMA.
+    :type puma_working_dir: str
+    :param ct_dir: The directory containing the CT images.
+    :type ct_dir: str
+    :param pt_dir: The directory containing the PET images.
+    :type pt_dir: str
+    :param mask_dir: The directory containing the binary masks.
+    :type mask_dir: str
+    :return: None
+    :rtype: None
+    :Example:
+        >>> puma_working_dir = '/path/to/puma/working/dir'
+        >>> ct_dir = '/path/to/ct/dir'
+        >>> pt_dir = '/path/to/pt/dir'
+        >>> mask_dir = '/path/to/mask/dir'
+        >>> align(puma_working_dir, ct_dir, pt_dir, mask_dir)
+    """
     ct_files = sorted(glob.glob(os.path.join(ct_dir, '*.nii*')))
     reference_image = ct_files[0]
     logging.info(f"Reference image: {pathlib.Path(reference_image).name}")
@@ -418,13 +552,42 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
                          os.path.basename(glob.glob(
                              os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0])))
 
-
 def calculate_bbox(mask_np):
+    """
+    Calculate the bounding box of a binary mask.
+
+    :param mask_np: A binary mask represented as a NumPy array.
+    :type mask_np: numpy.ndarray
+    :return: A tuple containing the minimum and maximum coordinates of the bounding box in the format (min_coords, max_coords).
+    :rtype: tuple
+    :Example:
+        >>> mask = np.array([[0, 0, 0, 0, 0],
+        ...                  [0, 1, 1, 0, 0],
+        ...                  [0, 1, 1, 0, 0],
+        ...                  [0, 0, 0, 0, 0]])
+        >>> calculate_bbox(mask)
+        (array([1, 1]), array([2, 2]))
+    """
     coords = np.array(np.where(mask_np > 0))
     return coords.min(axis=1), coords.max(axis=1)
 
 
 def generate_and_apply_common_fov(mask_files: list, output_dir: str):
+    """
+    Generate a common field of view (FOV) mask based on the intersection of the bounding boxes of multiple binary masks,
+    and apply the common FOV mask to the original masks.
+
+    :param mask_files: A list of file paths to binary masks represented as NIfTI files.
+    :type mask_files: list
+    :param output_dir: The directory to save the output files.
+    :type output_dir: str
+    :return: None
+    :rtype: None
+    :Example:
+        >>> mask_files = ['mask1.nii.gz', 'mask2.nii.gz', 'mask3.nii.gz']
+        >>> output_dir = 'output'
+        >>> generate_and_apply_common_fov(mask_files, output_dir)
+    """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 

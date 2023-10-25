@@ -30,12 +30,27 @@ from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn, 
 import time
 
 
-def download(item_name, item_path, item_dict):
+def download(item_name: str, item_path: str, item_dict: dict) -> str:
     """
     Downloads the item (model or binary) for the current system.
+
     :param item_name: The name of the item to download.
+    :type item_name: str
     :param item_path: The path to store the item.
+    :type item_path: str
     :param item_dict: The dictionary containing item info.
+    :type item_dict: dict
+    :return: The path to the downloaded item.
+    :rtype: str
+    :raises: None
+
+    This function downloads the item specified by `item_name` from the URL specified in the `item_dict` dictionary. It
+    shows the download progress using the `rich` library and extracts the downloaded zip file using the `zipfile`
+    library. If the item has already been downloaded, it skips the download and returns the path to the local copy of
+    the item.
+
+    :Example:
+        >>> download('registration_binaries', '/path/to/item', {'registration_binaries': {'url': 'http://example.com/binaries.zip', 'filename': 'binaries.zip', 'directory': 'binaries'}})
     """
     item_info = item_dict[item_name]
     url = item_info["url"]
@@ -43,6 +58,7 @@ def download(item_name, item_path, item_dict):
     directory = os.path.join(item_path, item_info["directory"])
 
     if not os.path.exists(directory):
+        # Download the item
         logging.info(f" Downloading {directory}")
 
         # show progress using rich

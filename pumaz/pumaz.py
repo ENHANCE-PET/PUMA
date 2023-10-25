@@ -41,6 +41,17 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d
 
 
 def main():
+    """
+    Run the PUMA-Z preprocessing and registration pipeline.
+
+    This function standardizes input data to NIFTI format, checks for PUMA-compliant subjects, and runs the preprocessing
+    and registration pipeline. It also downloads the necessary binaries and sets the appropriate permissions.
+
+    :return: None
+    :rtype: None
+    :Example:
+        >>> main()
+    """
     colorama.init()
 
     parser = argparse.ArgumentParser()
@@ -143,7 +154,6 @@ def main():
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
     elapsed_time = round(elapsed_time / 60, 2)
-    print(f'{constants.ANSI_GREEN} {emoji.emojize(":black_cat:")} Preprocessing and registration complete.'
-          f' Elapsed time: {elapsed_time} minutes! {emoji.emojize(":partying_face:")} Aligned images are stored in'
-          f' {puma_dir}! Look for the directories with prefix "aligned"! {constants.ANSI_RESET}')
+    print(f'{constants.ANSI_GREEN}{emoji.emojize(":black_cat:")} Done in {elapsed_time} mins. Check results in {puma_dir}{constants.ANSI_RESET}')
+
 
