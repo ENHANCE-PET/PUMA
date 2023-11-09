@@ -1,7 +1,6 @@
-from . import file_utilities
-from . import display
 from . import constants
-
+from . import display
+from . import file_utilities
 
 '''
 Try this in __init__.py

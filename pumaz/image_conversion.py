@@ -17,15 +17,14 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
+import SimpleITK
 import contextlib
+import dicom2nifti
 import io
 import os
+import pydicom
 import re
 import unicodedata
-
-import SimpleITK
-import dicom2nifti
-import pydicom
 from rich.progress import Progress
 
 

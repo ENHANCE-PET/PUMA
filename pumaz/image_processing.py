@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import GPUtil
+import SimpleITK as sitk
 # ----------------------------------------------------------------------------------------------------------------------
 # Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
 #
@@ -17,55 +19,49 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 import contextlib
-import SimpleITK as sitk
-import numpy as np
 import glob
-from pumaz import constants
-from pumaz.constants import GREEDY_PATH
-from mpire import WorkerPool
+import logging
 import multiprocessing
-from rich.progress import Progress
-from pumaz import file_utilities
-from concurrent.futures import ThreadPoolExecutor
+import nibabel as nib
+import numpy as np
 import os
 import pathlib
-import subprocess
-import logging
-import sys
+import psutil
 import re
-from rich.progress import track, Progress
-from moosez import moose
-import nibabel as nib
-from pumaz.file_utilities import create_directory, move_file, remove_directory, move_files_to_directory, get_files
-from halo import Halo
+import subprocess
+import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
+from moosez import moose
+from mpire import WorkerPool
+from rich.progress import Progress, BarColumn, TimeElapsedColumn, Task
+
+from pumaz import constants
+from pumaz import file_utilities
+from pumaz.constants import GREEDY_PATH
+from pumaz.file_utilities import create_directory, move_file, remove_directory, move_files_to_directory, get_files
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
-    """
-    Process CT files using MOOSE.
-
-    :param ct_dir: The directory containing the CT files.
-    :type ct_dir: str
-    :param mask_dir: The directory to save the MOOSE masks.
-    :type mask_dir: str
-    :param moose_model: The path to the MOOSE model.
-    :type moose_model: str
-    :param accelerator: The accelerator to use for MOOSE.
-    :type accelerator: str
-    :return: None
-    :rtype: None
-    :Example:
-        >>> process_and_moose_ct_files('/path/to/ct_dir', '/path/to/mask_dir', '/path/to/moose_model', 'cpu')
-    """
     ct_files = get_files(ct_dir, '*.nii*')
 
-    with Progress() as progress_bar:
-        task = progress_bar.add_task("[cyan] MOOSE-ing CT files...", total=len(ct_files))
+    with Progress(
+            "[progress.description]{task.description}",
+            BarColumn(),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            "[{task.completed}/{task.total}]",
+            "• Time elapsed:",
+            TimeElapsedColumn(),
+            "• CPU Load: [cyan]{task.fields[cpu]}%",
+            "• Memory Load: [cyan]{task.fields[memory]}%",
+            "• GPU Load: [cyan]{task.fields[gpu]}%",
+            expand=False
+    ) as progress:
+        task_description = f"[cyan] MOOSE-ing CT files | Model: {moose_model} | Accelerator: {accelerator}"
+        task = progress.add_task(task_description, total=len(ct_files), cpu="0", memory="0", gpu="N/A")
 
         for ct_file in ct_files:
             base_name = os.path.basename(ct_file).split('.')[0]
-
             ct_file_dir = os.path.join(ct_dir, base_name)
             create_directory(ct_file_dir)
             move_file(ct_file, os.path.join(ct_file_dir, os.path.basename(ct_file)))
@@ -73,23 +69,25 @@ def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, acc
             mask_file_dir = os.path.join(mask_dir, base_name)
             create_directory(mask_file_dir)
 
-            progress_bar.update(task, advance=0, description=f"[cyan] Running MOOSE on {base_name}...")
-
+            # Redirect moose output to null to avoid cluttering the console
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
                     moose(moose_model, ct_file_dir, mask_file_dir, accelerator)
 
-            progress_bar.update(task, advance=0, description=f"[cyan] Completed MOOSE on {base_name}, cleaning up...")
-
+            # Clean up intermediate directories and move files back
             move_files_to_directory(ct_file_dir, ct_dir)
             move_files_to_directory(mask_file_dir, mask_dir)
-
             remove_directory(ct_file_dir)
             remove_directory(mask_file_dir)
 
-            progress_bar.update(task, advance=1, description=f"[cyan] Finished processing {base_name}")
+            # Update the progress bar with system loads after each file is processed
+            cpu_load = psutil.cpu_percent(interval=None)
+            memory_load = psutil.virtual_memory().percent
+            gpus = GPUtil.getGPUs()
+            gpu_load = f"{gpus[0].load * 100:.1f}" if gpus else "N/A"
 
-            time.sleep(1)  # delay for 1 second
+            progress.update(task, advance=1, refresh=True,
+                            cpu=f"{cpu_load}", memory=f"{memory_load}", gpu=gpu_load)
 
 
 def reslice_identity(reference_image: sitk.Image, moving_image: sitk.Image,
@@ -247,7 +245,7 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
         >>> puma_compliant_subjects = ['/path/to/subject1', '/path/to/subject2']
         >>> regions_to_ignore = ['region1', 'region2']
         >>> preprocess(puma_compliant_subjects, regions_to_ignore)
-        ('/path/to/puma_working_dir', '/path/to/ct_dir', '/path/to/pt_dir', '/path/to/mask_dir')
+        ('/path/to/puma_working_dir', '/path/to/ct_dir', '/path/to/pt_dir', '/path/to/body_mask_dir')
     """
     if num_workers is None:
         num_workers = multiprocessing.cpu_count()
@@ -270,7 +268,8 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
     # create CT and PET folders
     ct_dir = os.path.join(puma_working_dir, constants.MODALITIES[1])
     pt_dir = os.path.join(puma_working_dir, constants.MODALITIES[0])
-    mask_dir = os.path.join(puma_working_dir, constants.MASK_FOLDER)
+    body_mask_dir = os.path.join(puma_working_dir, constants.BODY_MASK_FOLDER)
+    puma_mask_dir = os.path.join(puma_working_dir, constants.PUMA_MASK_FOLDER)
     file_utilities.create_directory(ct_dir)
     file_utilities.create_directory(pt_dir)
 
@@ -294,19 +293,28 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
 
     # Run moosez to get the masks
 
-    process_and_moose_ct_files(ct_dir, mask_dir, constants.MOOSE_MODEL, constants.ACCELERATOR)
+    process_and_moose_ct_files(ct_dir, body_mask_dir, constants.MOOSE_MODEL_BODY, constants.ACCELERATOR)
+    process_and_moose_ct_files(ct_dir, puma_mask_dir, constants.MOOSE_MODEL_PUMA, constants.ACCELERATOR)
 
     # Generate mask with common field of view
 
-    mask_files = glob.glob(os.path.join(mask_dir, constants.MOOSE_PREFIX + '*nii*'))
-    generate_and_apply_common_fov(mask_files, os.path.join(puma_working_dir, constants.COMMON_FOV_MASK_FOLDER))
+    body_mask_files = glob.glob(os.path.join(body_mask_dir, constants.MOOSE_PREFIX_BODY + '*nii*'))
+    # generate_and_apply_common_fov(body_mask_files, os.path.join(puma_working_dir, constants.COMMON_FOV_MASK_FOLDER))
 
-    for mask_file in glob.glob(os.path.join(mask_dir, constants.MOOSE_PREFIX + '*')):
-        new_mask_file = re.sub(rf'{constants.MOOSE_PREFIX}', '', mask_file)
+    for mask_file in body_mask_files:
+        new_mask_file = re.sub(rf'{constants.MOOSE_PREFIX_BODY}', '', mask_file)
         os.rename(mask_file, new_mask_file)
         change_mask_labels(new_mask_file, constants.MOOSE_LABEL_INDEX, regions_to_ignore)
 
-    return puma_working_dir, ct_dir, pt_dir, mask_dir
+    # remove arms from the puma masks
+
+    puma_mask_files = glob.glob(os.path.join(puma_mask_dir, constants.MOOSE_PREFIX_PUMA + '*nii*'))
+    for puma_mask_file in puma_mask_files:
+        new_mask_file = re.sub(rf'{constants.MOOSE_PREFIX_PUMA}', '', puma_mask_file)
+        os.rename(puma_mask_file, new_mask_file)
+        apply_mask(new_mask_file, os.path.join(body_mask_dir, os.path.basename(new_mask_file)), new_mask_file)
+
+    return puma_working_dir, ct_dir, pt_dir, puma_mask_dir
 
 
 class ImageRegistration:
@@ -321,9 +329,11 @@ class ImageRegistration:
     :type fixed_mask: str
     """
 
-    def __init__(self, fixed_img: str, multi_resolution_iterations: str, fixed_mask: str = None):
+    def __init__(self, fixed_img: str, multi_resolution_iterations: str, fixed_mask: str = None,
+                 moving_mask: str = None):
         self.fixed_img = fixed_img
         self.fixed_mask = fixed_mask
+        self.moving_mask = moving_mask
         self.multi_resolution_iterations = multi_resolution_iterations
         self.moving_img = None
         self.transform_files = None
@@ -355,10 +365,13 @@ class ImageRegistration:
         :return: The path to the rigid transform file.
         :rtype: str
         """
-        mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
+        mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
+        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+
         cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"{mask_cmd} -ia-image-centers -dof 6 -o {re.escape(self.transform_files['rigid'])} " \
+                     f"{combined_mask_cmd} -ia-image-centers -dof 6 -o {re.escape(self.transform_files['rigid'])} " \
                      f"-n {self.multi_resolution_iterations} -m SSD"
+
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Rigid alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | Aligned image: "
@@ -372,10 +385,13 @@ class ImageRegistration:
         :return: The path to the affine transform file.
         :rtype: str
         """
-        mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
+        mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
+        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+
         cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"{mask_cmd} -ia-image-centers -dof 12 -o {re.escape(self.transform_files['affine'])} " \
+                     f"{combined_mask_cmd} -ia-image-centers -dof 12 -o {re.escape(self.transform_files['affine'])} " \
                      f"-n {self.multi_resolution_iterations} -m SSD"
+
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Affine alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} |"
@@ -386,21 +402,25 @@ class ImageRegistration:
         """
         Perform deformable alignment.
 
-        :return: A tuple containing the paths to the rigid, warp, and inverse warp transform files.
+        :return: A tuple containing the paths to the affine, warp, and inverse warp transform files.
         :rtype: tuple
         """
-        self.rigid()
-        mask_cmd = f"-gm {re.escape(self.fixed_mask)}" if self.fixed_mask else ""
+        self.affine()
+        mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
+        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+
         cmd_to_run = f"{GREEDY_PATH} -d 3 -m SSD -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"{mask_cmd} -it {re.escape(self.transform_files['rigid'])} -o {re.escape(self.transform_files['warp'])} " \
-                     f"-oinv {re.escape(self.transform_files['inverse_warp'])} -sv -n {self.multi_resolution_iterations}"
+                     f"{combined_mask_cmd} -it {re.escape(self.transform_files['affine'])} " \
+                     f"-o {re.escape(self.transform_files['warp'])} -oinv {re.escape(self.transform_files['inverse_warp'])} " \
+                     f"-sv -n {self.multi_resolution_iterations}"
+
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Deformable alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | "
             f"Aligned image: moco-{pathlib.Path(self.moving_img).name} | "
-            f"Initial alignment:{pathlib.Path(self.transform_files['rigid']).name}"
+            f"Initial alignment:{pathlib.Path(self.transform_files['affine']).name}"
             f" | warp file: {pathlib.Path(self.transform_files['warp']).name}")
-        return self.transform_files['rigid'], self.transform_files['warp'], self.transform_files['inverse_warp']
+        return self.transform_files['affine'], self.transform_files['warp'], self.transform_files['inverse_warp']
 
     def registration(self, registration_type: str) -> None:
         """
@@ -439,7 +459,7 @@ class ImageRegistration:
                                          self.transform_files['affine'])
         elif registration_type == 'deformable':
             cmd_to_run = self._build_cmd(resampled_moving_img, segmentation, resampled_seg,
-                                         self.transform_files['warp'], self.transform_files['rigid'])
+                                         self.transform_files['warp'], self.transform_files['affine'])
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
 
     def _build_cmd(self, resampled_moving_img: str, segmentation: str, resampled_seg: str,
@@ -467,90 +487,116 @@ class ImageRegistration:
         return cmd
 
 
-def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
+def find_images(directory, pattern='*.nii*'):
     """
-    Align CT and PET images to a common frame using deformable registration.
-
-    :param puma_working_dir: The working directory for PUMA.
-    :type puma_working_dir: str
-    :param ct_dir: The directory containing the CT images.
-    :type ct_dir: str
-    :param pt_dir: The directory containing the PET images.
-    :type pt_dir: str
-    :param mask_dir: The directory containing the binary masks.
-    :type mask_dir: str
-    :return: None
-    :rtype: None
-    :Example:
-        >>> puma_working_dir = '/path/to/puma/working/dir'
-        >>> ct_dir = '/path/to/ct/dir'
-        >>> pt_dir = '/path/to/pt/dir'
-        >>> mask_dir = '/path/to/mask/dir'
-        >>> align(puma_working_dir, ct_dir, pt_dir, mask_dir)
+    Find image files in a directory matching the pattern.
     """
-    ct_files = sorted(glob.glob(os.path.join(ct_dir, '*.nii*')))
-    reference_image = ct_files[0]
-    logging.info(f"Reference image: {pathlib.Path(reference_image).name}")
-    fixed_mask = glob.glob(os.path.join(mask_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0]
-    moving_images = [ct_file for ct_file in ct_files if ct_file != reference_image]
+    return sorted(glob.glob(os.path.join(directory, pattern)))
 
-    with Progress() as progress:
-        task = progress.add_task("[cyan] Aligning CT and PT images to a common frame ", total=len(moving_images))
+
+def setup_aligner(reference_image):
+    """
+    Initialize the image registration aligner with the reference image.
+    """
+    return ImageRegistration(fixed_img=reference_image, multi_resolution_iterations=constants.MULTI_RESOLUTION_SCHEME)
+
+
+def align_image(aligner, moving_image, output_path):
+    """
+    Align a moving image to the fixed image using the aligner.
+    """
+    aligner.set_moving_image(moving_image)
+    aligner.registration('deformable')
+    aligner.resample(resampled_moving_img=output_path, registration_type='deformable')
+
+
+def find_corresponding_image(modality_dir, reference_basename):
+    """
+    Find the corresponding modality image for a given reference image basename.
+    """
+    pattern = reference_basename.split('_')[0] + '*.nii*'
+    corresponding_images = glob.glob(os.path.join(modality_dir, pattern))
+    if corresponding_images:
+        return corresponding_images[0]
+    else:
+        logging.error(f"No corresponding image found in {modality_dir} for {reference_basename}")
+        raise FileNotFoundError(f"No corresponding image found in {modality_dir} for {reference_basename}")
+
+
+def move_files(source_dir, destination_dir, pattern):
+    """
+    Move files from source to destination directory based on a pattern.
+    """
+    file_utilities.create_directory(destination_dir)
+    for file_path in find_images(source_dir, pattern):
+        file_utilities.move_file(file_path, destination_dir)
+        logging.info(f"Moved {file_path} to {destination_dir}")
+
+
+def copy_reference_image(source_image, destination_dir, prefix):
+    """
+    Copy reference image to the destination directory with a prefix.
+    """
+    destination_path = os.path.join(destination_dir, prefix + os.path.basename(source_image))
+    file_utilities.copy_file(source_image, destination_path)
+    logging.info(f"Copied {source_image} to {destination_path}")
+
+
+def align(puma_working_dir, ct_dir, pt_dir, mask_dir):
+    reference_image = find_images(mask_dir)[0]
+    logging.info(f"Reference image selected: {os.path.basename(reference_image)}")
+
+    aligner = setup_aligner(reference_image)
+    moving_images = find_images(mask_dir)
+    moving_images.remove(reference_image)
+
+    with Progress(
+            "[progress.description]{task.description}",
+            BarColumn(),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            "[{task.completed}/{task.total}]",
+            "• Time elapsed:",
+            TimeElapsedColumn(),
+            "• CPU Load: [cyan]{task.fields[cpu]}%",
+            "• Memory Load: [cyan]{task.fields[memory]}%",
+            expand=False
+    ) as progress:
+        task_description = "[cyan] Aligning images..."
+        task = progress.add_task(task_description, total=len(moving_images), cpu="0", memory="0")
 
         for moving_image in moving_images:
-            aligner = ImageRegistration(fixed_img=reference_image,
-                                        multi_resolution_iterations=constants.MULTI_RESOLUTION_SCHEME,
-                                        fixed_mask=fixed_mask)
-            aligner.set_moving_image(moving_image)
-            aligner.registration('deformable')
-            aligner.resample(resampled_moving_img=os.path.join(puma_working_dir, constants.ALIGNED_PREFIX +
-                                                               os.path.basename(moving_image)),
-                             registration_type='deformable')
-            progress.update(task, advance=1)
-            pet_image = glob.glob(os.path.join(pt_dir, os.path.basename(moving_image).split('_')[0] + '*.nii*'))[0]
-            aligner.set_moving_image(pet_image, update_transforms=False)
-            resampled_pet_file = os.path.join(puma_working_dir, constants.ALIGNED_PREFIX +
-                                              os.path.basename(pet_image))
-            aligner.resample(resampled_moving_img=resampled_pet_file,
-                             registration_type='deformable')
+            output_path = os.path.join(puma_working_dir, constants.ALIGNED_PREFIX_MASK + os.path.basename(moving_image))
+            align_image(aligner, moving_image, output_path)
 
-        # clean up transforms to a new folder
-        rigid_transform_files = sorted(glob.glob(os.path.join(ct_dir, '*_rigid.mat')))
-        warp_files = sorted(glob.glob(os.path.join(ct_dir, '*warp.nii.gz')))
-        transforms_dir = os.path.join(puma_working_dir, constants.TRANSFORMS_FOLDER)
-        file_utilities.create_directory(transforms_dir)
-        # move all the warp files and rigid transform files to the transforms folder without zipping
-        for rigid_transform_file in rigid_transform_files:
-            file_utilities.move_file(rigid_transform_file, transforms_dir)
-        for warp_file in warp_files:
-            file_utilities.move_file(warp_file, transforms_dir)
+            # Update system loads
+            cpu_load = psutil.cpu_percent(interval=None)
+            memory_load = psutil.virtual_memory().percent
 
-        # move the aligned files to a new folder called aligned_CT, this is stored in the puma_working_dir
-        aligned_ct_dir = os.path.join(puma_working_dir, constants.ALIGNED_CT_FOLDER)
-        file_utilities.create_directory(aligned_ct_dir)
-        # get aligned ct files using glob by looking for keyword 'aligned'
-        aligned_ct_files = sorted(glob.glob(os.path.join(puma_working_dir, constants.ALIGNED_PREFIX + '*CT*.nii*')))
-        for aligned_ct_file in aligned_ct_files:
-            file_utilities.move_file(aligned_ct_file, aligned_ct_dir)
-        # copy the reference ct file to the aligned_ct_dir and add an aligned prefix to the copied file
-        file_utilities.copy_file(reference_image, os.path.join(aligned_ct_dir, constants.ALIGNED_PREFIX +
-                                                               os.path.basename(reference_image)))
+            progress.update(task, advance=1, refresh=True, cpu=f"{cpu_load}", memory=f"{memory_load}")
+            progress.refresh()
+            logging.info(f"Aligned and resampled {moving_image}")
 
-        # move the aligned PET files to a new folder called aligned_PET, this is stored in the puma_working_dir
-        aligned_pet_dir = os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER)
-        file_utilities.create_directory(aligned_pet_dir)
-        # get aligned pet files using glob by looking for keyword 'aligned'
-        aligned_pet_files = sorted(
-            glob.glob(os.path.join(puma_working_dir, constants.ALIGNED_PREFIX + '*PET*.nii*')))
-        for aligned_pet_file in aligned_pet_files:
-            file_utilities.move_file(aligned_pet_file, aligned_pet_dir)
-        # copy the pet file corresponding to the reference ct file to the aligned_pet_dir and add an aligned prefix
-        # to the copied file
-        file_utilities.copy_file(
-            glob.glob(os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0],
-            os.path.join(aligned_pet_dir, constants.ALIGNED_PREFIX +
-                         os.path.basename(glob.glob(
-                             os.path.join(pt_dir, os.path.basename(reference_image).split('_')[0] + '*.nii*'))[0])))
+            # Reuse the transforms for PET and CT images
+            for modality_dir, modality_prefix in [(pt_dir, constants.ALIGNED_PREFIX_PT),
+                                                  (ct_dir, constants.ALIGNED_PREFIX_CT)]:
+                modality_image = find_corresponding_image(modality_dir, os.path.basename(moving_image))
+                output_path = os.path.join(puma_working_dir, modality_prefix + os.path.basename(modality_image))
+                aligner.set_moving_image(modality_image, update_transforms=False)
+                aligner.resample(resampled_moving_img=output_path, registration_type='deformable')
+                logging.info(f"Resampled {modality_prefix} image: {modality_image}")
+
+    # Organizing files into their respective directories
+    move_files(mask_dir, os.path.join(puma_working_dir, constants.TRANSFORMS_FOLDER), '*_affine.mat')
+    move_files(mask_dir, os.path.join(puma_working_dir, constants.TRANSFORMS_FOLDER), '*warp.nii.gz')
+    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_MASK_FOLDER),
+               constants.ALIGNED_PREFIX_MASK + '*.nii*')
+    copy_reference_image(reference_image, os.path.join(puma_working_dir, constants.ALIGNED_MASK_FOLDER),
+                         constants.ALIGNED_PREFIX)
+    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_CT_FOLDER),
+               constants.ALIGNED_PREFIX_CT + '*.nii*')
+    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
+               constants.ALIGNED_PREFIX_PT + '*.nii*')
+
 
 def calculate_bbox(mask_np):
     """
@@ -630,3 +676,23 @@ def generate_and_apply_common_fov(mask_files: list, output_dir: str):
         modified_mask = sitk.GetImageFromArray(modified_mask_np)
         modified_mask.CopyInformation(original_mask)
         sitk.WriteImage(modified_mask, mask_file)
+
+
+def apply_mask(image_file, mask_file, masked_img_file):
+    """
+    Apply a boolean mask to an image to extract the original regions.
+
+    Parameters:
+    - image_file (str): The path to the image file.
+    - mask_file (str): The path to the mask file.
+    - masked_img_file (str): The path to the masked image file.
+
+    Returns:
+    - masked_img_file (str): The path to the masked image file.
+    """
+    image_data = nib.load(image_file).get_fdata()
+    mask = nib.load(mask_file).get_fdata()
+    masked_img = image_data * mask
+    # save the masked image with the header of the original image
+    nib.save(nib.Nifti1Image(masked_img, nib.load(image_file).affine, nib.load(image_file).header), masked_img_file)
+    return masked_img_file

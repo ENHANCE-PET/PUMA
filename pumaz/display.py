@@ -17,11 +17,10 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
-import pyfiglet
 import logging
+import pyfiglet
+
 from pumaz import constants
-from . import file_utilities
-from pumaz import file_utilities
 
 
 def logo():

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import glob
+import logging
 # ----------------------------------------------------------------------------------------------------------------------
 # Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
 # Institution: Medical University of Vienna
@@ -16,58 +18,55 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 import os
-import glob
-import shutil
-import sys
 import platform
-from multiprocessing import Pool
+import shutil
 import stat
 import subprocess
-import logging 
+import sys
+from multiprocessing import Pool
 
 
-def set_permissions(file_path, system_type):
+def set_permissions(file_path: str, system_type: str) -> None:
     """
-    Set permissions for a file based on the operating system.
+    Sets the permissions of a file based on the operating system.
 
-    :param file_path: The path to the file.
-    :type file_path: str
-    :param system_type: The type of the operating system.
-    :type system_type: str
+    :param str file_path: The absolute or relative path to the file.
+    :param str system_type: The type of the operating system ('windows', 'linux', 'mac').
     :return: None
     :rtype: None
-    :raises: ValueError if the operating system is not supported.
+    :raises FileNotFoundError: If the file specified by 'file_path' does not exist.
+    :raises ValueError: If the provided operating system type is not supported.
+    :raises subprocess.CalledProcessError: If the 'icacls' command fails on Windows.
+    :raises PermissionError: If the 'chmod' command fails on Linux or macOS.
 
-    This function sets permissions for a file based on the operating system. If the operating system is Windows, it uses
-    the `icacls` command to grant full access to everyone. If the operating system is Linux or Mac, it uses the `chmod`
-    command to add execute permission for the owner, read permission for the group, and read permission for others. If
-    the operating system is not supported, it raises a ValueError.
+    **Example**
 
-    :raises: ValueError if the operating system is not supported.
-    :raises: subprocess.CalledProcessError if the `icacls` command fails on Windows.
-    :raises: PermissionError if the `chmod` command fails on Linux or Mac.
-    :raises: Exception if an unknown error occurs.
+    .. code-block:: python
 
-    :Example:
         >>> set_permissions('/path/to/file', 'linux')
+
     """
+    if not os.path.exists(file_path):
+        logging.error(f"File not found: {file_path}")
+        raise FileNotFoundError(f"File not found: {file_path}")
+
     try:
-        if system_type == "windows":
-            subprocess.check_call(["icacls", file_path, "/grant", "Everyone:(F)"])
-        elif system_type in ["linux", "mac"]:
+        if system_type.lower() == 'windows':
+            subprocess.check_call(["icacls", file_path, "/grant", "Everyone:(F)"], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        elif system_type.lower() in ['linux', 'mac']:
             os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
         else:
-            logging.error("Unsupported OS")
-            raise ValueError("Unsupported OS")
-    except subprocess.CalledProcessError:
-        logging.error(f"Could not set permissions for {file_path} on Windows")
-        exit(1)
-    except PermissionError:
-        logging.error(f"No permission to set {file_path} as executable")
-        exit(1)
+            logging.error(f"Unsupported operating system type provided: {system_type}")
+            raise ValueError(f"Unsupported operating system type: {system_type}")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to set permissions for file '{file_path}' on a Windows system. Subprocess error: {e}")
+        raise e
+    except PermissionError as e:
+        logging.error(f"Insufficient permissions to change file permissions for '{file_path}' on a {system_type} system. Error: {e}")
+        raise e
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
-        exit(1)
+        logging.error(f"An unexpected error occurred while setting permissions for file '{file_path}'. Error details: {e}")
+        raise e
 
 
 def get_virtual_env_root():

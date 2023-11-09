@@ -19,15 +19,12 @@
 
 import logging
 import os
-import zipfile
-
 import requests
+import zipfile
+from rich.console import Console
+from rich.progress import Progress, TextColumn, BarColumn, FileSizeColumn, TransferSpeedColumn, TimeRemainingColumn
 
 from pumaz import constants
-
-from rich.console import Console
-from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn, FileSizeColumn, TransferSpeedColumn
-import time
 
 
 def download(item_name: str, item_path: str, item_dict: dict) -> str:

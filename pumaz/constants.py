@@ -17,8 +17,9 @@
 # ----------------------------------------------------------------------------------------------------------
 
 import os
-from pumaz import file_utilities
 from datetime import datetime
+
+from pumaz import file_utilities
 
 project_root = file_utilities.get_virtual_env_root()
 BINARY_PATH = os.path.join(project_root, 'bin')
@@ -50,11 +51,16 @@ MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT']
 
 RESAMPLED_PREFIX = 'resampled_'
 ALIGNED_PREFIX = 'aligned_'
+ALIGNED_PREFIX_PT = 'aligned_PT_'
+ALIGNED_PREFIX_CT = 'aligned_CT_'
+ALIGNED_PREFIX_MASK = 'aligned_MASK_'
 
 # MOOSE PARAMETERS
 
-MOOSE_MODEL = "clin_ct_body"
-MOOSE_PREFIX = 'CT_Body_'
+MOOSE_MODEL_BODY = "clin_ct_body"
+MOOSE_MODEL_PUMA = "clin_ct_PUMA"
+MOOSE_PREFIX_BODY = 'CT_Body_'
+MOOSE_PREFIX_PUMA = 'Clin_CT_PUMA_'
 MOOSE_LABEL_INDEX = {
         1: "legs",
         2: "body",
@@ -67,11 +73,13 @@ ACCELERATOR = 'cuda'
 
 PUMA_WORKING_FOLDER = 'PUMAZ-V01' + '-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 TRANSFORMS_FOLDER = 'transforms'
+ALIGNED_MASK_FOLDER = 'aligned_MASK'
 ALIGNED_CT_FOLDER = 'aligned_CT'
 ALIGNED_PET_FOLDER = 'aligned_PT'
-MASK_FOLDER = 'masks'
+BODY_MASK_FOLDER = 'body_masks'
+PUMA_MASK_FOLDER = 'puma_masks'
 COMMON_FOV_MASK_FOLDER = 'common_fov_masks'
 
 # HYPERPARAMETERS
 
-MULTI_RESOLUTION_SCHEME = '100x25x10'
+MULTI_RESOLUTION_SCHEME = '100x50x25'

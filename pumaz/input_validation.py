@@ -18,10 +18,9 @@
 # ----------------------------------------------------------------------------------------------------------------------
 
 import logging
-import multiprocessing
 import os
+
 from pumaz import constants
-import nibabel as nib
 
 
 def select_puma_compliant_subjects(tracer_paths: list, modality_tags: list) -> list:

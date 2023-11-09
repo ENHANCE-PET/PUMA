@@ -18,22 +18,21 @@
 
 
 import argparse
-import logging
-import os
-import sys
-import time
-from datetime import datetime
 import colorama
 import emoji
+import logging
+import os
+import time
+from datetime import datetime
 
-from pumaz import display
 from pumaz import constants
-from pumaz import file_utilities
+from pumaz import display
 from pumaz import download
-from pumaz import resources
+from pumaz import file_utilities
 from pumaz import image_conversion
-from pumaz import input_validation
 from pumaz import image_processing
+from pumaz import input_validation
+from pumaz import resources
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
                     filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'),
@@ -154,6 +153,10 @@ def main():
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
     elapsed_time = round(elapsed_time / 60, 2)
-    print(f'{constants.ANSI_GREEN}{emoji.emojize(":black_cat:")} Done in {elapsed_time} mins. Check results in {puma_dir}{constants.ANSI_RESET}')
+    print(
+        f"{constants.ANSI_GREEN} 🐾 PUMA has successfully completed the hunt in {elapsed_time} minutes."
+        f" Track down your results in the directory: {puma_dir} 🐾{constants.ANSI_RESET}"
+    )
+
 
 
