@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import GPUtil
-import SimpleITK as sitk
 # ----------------------------------------------------------------------------------------------------------------------
 # Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
 #
@@ -22,19 +20,21 @@ import contextlib
 import glob
 import logging
 import multiprocessing
-import nibabel as nib
-import numpy as np
 import os
 import pathlib
-import psutil
 import re
 import subprocess
 import sys
-import time
 from concurrent.futures import ThreadPoolExecutor
+
+import GPUtil
+import SimpleITK as sitk
+import nibabel as nib
+import numpy as np
+import psutil
 from moosez import moose
 from mpire import WorkerPool
-from rich.progress import Progress, BarColumn, TimeElapsedColumn, Task
+from rich.progress import Progress, BarColumn, TimeElapsedColumn
 
 from pumaz import constants
 from pumaz import file_utilities
@@ -43,6 +43,21 @@ from pumaz.file_utilities import create_directory, move_file, remove_directory, 
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
+    """
+    Process CT files using the MOOSE model with the specified accelerator.
+
+    This function takes a directory of CT files and applies the MOOSE model to them. The results are saved
+    in the specified mask directory. It is designed to work with a specific accelerator, such as a CPU or GPU.
+
+    :param ct_dir: The directory containing the CT files.
+    :type ct_dir: str
+    :param mask_dir: The directory where the MOOSE masks should be saved.
+    :type mask_dir: str
+    :param moose_model: The path to the MOOSE model file.
+    :type moose_model: str
+    :param accelerator: The type of accelerator to use ('cpu' or 'gpu').
+    :type accelerator: str
+    """
     ct_files = get_files(ct_dir, '*.nii*')
 
     with Progress(
@@ -487,23 +502,37 @@ class ImageRegistration:
         return cmd
 
 
-def find_images(directory, pattern='*.nii*'):
+def find_images(directory: str, pattern='*.nii*'):
     """
-    Find image files in a directory matching the pattern.
+    Find images in a directory based on a pattern.
+    :param directory: The directory to search.
+    :type directory: str
+    :param pattern: The pattern to search for.
+    :type pattern: str
+    :return: The list of images found.
+    :rtype: list
     """
     return sorted(glob.glob(os.path.join(directory, pattern)))
 
 
-def setup_aligner(reference_image):
+def setup_aligner(reference_image: str):
     """
-    Initialize the image registration aligner with the reference image.
+    Setup the image aligner.
+    :param reference_image: The reference image.
+    :type reference_image: str
+    :return: The image aligner object.
+    :rtype: ImageRegistration Object
     """
     return ImageRegistration(fixed_img=reference_image, multi_resolution_iterations=constants.MULTI_RESOLUTION_SCHEME)
 
 
 def align_image(aligner, moving_image, output_path):
     """
-    Align a moving image to the fixed image using the aligner.
+    Align and resample an image.
+    :param aligner: The image aligner object.
+    :param moving_image: The moving image.
+    :param output_path: The path to the resampled image.
+    :return: None
     """
     aligner.set_moving_image(moving_image)
     aligner.registration('deformable')
@@ -512,7 +541,10 @@ def align_image(aligner, moving_image, output_path):
 
 def find_corresponding_image(modality_dir, reference_basename):
     """
-    Find the corresponding modality image for a given reference image basename.
+    Find the corresponding image in a modality directory.
+    :param modality_dir: The modality directory.
+    :param reference_basename: The basename of the reference image.
+    :return: The path to the corresponding image.
     """
     pattern = reference_basename.split('_')[0] + '*.nii*'
     corresponding_images = glob.glob(os.path.join(modality_dir, pattern))
@@ -525,7 +557,11 @@ def find_corresponding_image(modality_dir, reference_basename):
 
 def move_files(source_dir, destination_dir, pattern):
     """
-    Move files from source to destination directory based on a pattern.
+    Move files from a source directory to a destination directory based on a pattern.
+    :param source_dir: The source directory.
+    :param destination_dir: The destination directory.
+    :param pattern: The pattern to search for.
+    :return: None
     """
     file_utilities.create_directory(destination_dir)
     for file_path in find_images(source_dir, pattern):
@@ -535,14 +571,26 @@ def move_files(source_dir, destination_dir, pattern):
 
 def copy_reference_image(source_image, destination_dir, prefix):
     """
-    Copy reference image to the destination directory with a prefix.
+    Copy the reference image to the destination directory.
+    :param source_image: The path to the source image.
+    :param destination_dir: The path to the destination directory.
+    :param prefix: The prefix to prepend to the image name.
+    :return: None
     """
     destination_path = os.path.join(destination_dir, prefix + os.path.basename(source_image))
     file_utilities.copy_file(source_image, destination_path)
     logging.info(f"Copied {source_image} to {destination_path}")
 
 
-def align(puma_working_dir, ct_dir, pt_dir, mask_dir):
+def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
+    """
+    Align the images in the PUMA working directory.
+    :param puma_working_dir: The path to the PUMA working directory.
+    :param ct_dir: The path to the CT directory.
+    :param pt_dir: The path to the PET directory.
+    :param mask_dir: The path to the mask directory.
+    :return: None
+    """
     reference_image = find_images(mask_dir)[0]
     logging.info(f"Reference image selected: {os.path.basename(reference_image)}")
 
