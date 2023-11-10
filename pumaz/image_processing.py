@@ -650,18 +650,18 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
                constants.ALIGNED_PREFIX_MASK + '*.nii*')
     copy_reference_image(reference_image, os.path.join(puma_working_dir, constants.ALIGNED_MASK_FOLDER),
                          constants.ALIGNED_PREFIX_MASK)
+    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_CT_FOLDER),
+               constants.ALIGNED_PREFIX_CT + '*.nii*')
     # get the corresponding ct for the reference_image
     reference_ct = find_corresponding_image(ct_dir, os.path.basename(reference_image))
     copy_reference_image(reference_ct, os.path.join(puma_working_dir, constants.ALIGNED_CT_FOLDER),
                          constants.ALIGNED_PREFIX_CT)
+    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
+               constants.ALIGNED_PREFIX_PT + '*.nii*')
     # get the corresponding pt for the reference_image
     reference_pt = find_corresponding_image(pt_dir, os.path.basename(reference_image))
     copy_reference_image(reference_pt, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
                          constants.ALIGNED_PREFIX_PT)
-    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_CT_FOLDER),
-               constants.ALIGNED_PREFIX_CT + '*.nii*')
-    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
-               constants.ALIGNED_PREFIX_PT + '*.nii*')
 
 
 def calculate_bbox(mask_np):
