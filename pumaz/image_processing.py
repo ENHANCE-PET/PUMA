@@ -383,8 +383,10 @@ class ImageRegistration:
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
         combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"{combined_mask_cmd} -ia-image-centers -dof 6 -o {re.escape(self.transform_files['rigid'])} " \
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
+                     fr"{self.fixed_img} {self.moving_img} " \
+                     f"{combined_mask_cmd} -ia-image-centers -dof 6 -o " \
+                     fr"{self.transform_files['rigid']} " \
                      f"-n {self.multi_resolution_iterations} -m SSD"
 
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
@@ -403,8 +405,10 @@ class ImageRegistration:
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
         combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"{combined_mask_cmd} -ia-image-centers -dof 12 -o {re.escape(self.transform_files['affine'])} " \
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
+                     fr"{self.fixed_img} {self.moving_img} " \
+                     f"{combined_mask_cmd} -ia-image-centers -dof 12 -o " \
+                     fr"{self.transform_files['affine']} " \
                      f"-n {self.multi_resolution_iterations} -m SSD"
 
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
@@ -424,9 +428,12 @@ class ImageRegistration:
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
         combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -m SSD -i {re.escape(self.fixed_img)} {re.escape(self.moving_img)} " \
-                     f"{combined_mask_cmd} -it {re.escape(self.transform_files['affine'])} " \
-                     f"-o {re.escape(self.transform_files['warp'])} -oinv {re.escape(self.transform_files['inverse_warp'])} " \
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -m SSD -i " \
+                     fr"{self.fixed_img} {self.moving_img} " \
+                     f"{combined_mask_cmd} -it " \
+                     fr"{self.transform_files['affine']} " \
+                     f"-o " \
+                     fr"{self.transform_files['warp']} -oinv {self.transform_files['inverse_warp']} " \
                      f"-sv -n {self.multi_resolution_iterations}"
 
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
@@ -493,12 +500,15 @@ class ImageRegistration:
         :return: The command to resample the moving image.
         :rtype: str
         """
-        cmd = f"{GREEDY_PATH} -d 3 -rf {re.escape(self.fixed_img)} -ri LINEAR -rm " \
-              f"{re.escape(self.moving_img)} {re.escape(resampled_moving_img)}"
+        cmd = f"{GREEDY_PATH} -d 3 -rf " \
+              fr"{self.fixed_img} -ri LINEAR -rm " \
+              fr"{self.moving_img} {resampled_moving_img}"
         if segmentation and resampled_seg:
-            cmd += f" -ri LABEL 0.2vox -rm {re.escape(segmentation)} {re.escape(resampled_seg)}"
+            cmd += f" -ri LABEL 0.2vox -rm " \
+                   fr"{segmentation} {resampled_seg}"
         for transform_file in transform_files:
-            cmd += f" -r {re.escape(transform_file)}"
+            cmd += f" -r " \
+                   fr"{transform_file}"
         return cmd
 
 

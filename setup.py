@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pumaz',
-    version='1.1.0',
+    version='1.1.1',
     author='Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar',
     author_email='Sebastian.Gutschmayer@meduniwien.ac.at, Lalith.shiyamsundar@meduniwien.ac.at',
     description='PUMA (PET Universal Multi-tracer Aligner) is a robust and efficient tool for aligning images from different PET tracers. It leverages advanced diffeomorphic imaging techniques to offer high-precision alignment for multiplexed tracer images. PUMA aims to significantly enhance the accuracy and reproducibility of PET image studies.',
@@ -32,7 +32,7 @@ setup(
         'SimpleITK~=2.2.1',
         'pydicom~=2.2.2',
         'argparse~=1.4.0',
-        'numpy~=1.22.3',
+        'numpy',
         'mpire~=2.3.3',
         'openpyxl~=3.0.9',
         'matplotlib',
@@ -42,7 +42,7 @@ setup(
         'colorama~=0.4.6',
         'rich',
         'pandas',
-        'dicom2nifti~=2.4.8',
+        'dicom2nifti',
         'requests',
         'moosez',
         'halo',
