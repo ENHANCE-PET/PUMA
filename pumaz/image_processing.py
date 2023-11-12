@@ -240,6 +240,7 @@ def change_mask_labels(mask_file: str, label_map: dict, excluded_labels: list):
         data[np.isin(data, other_indices)] = 1
 
     # Save the modified image
+    data = data.astype(np.int16)
     new_img = nib.Nifti1Image(data, img.affine, img.header)
     nib.save(new_img, mask_file)
 
@@ -760,5 +761,6 @@ def apply_mask(image_file, mask_file, masked_img_file):
     mask = nib.load(mask_file).get_fdata()
     masked_img = image_data * mask
     # save the masked image with the header of the original image
+    masked_img = masked_img.astype(np.int16)
     nib.save(nib.Nifti1Image(masked_img, nib.load(image_file).affine, nib.load(image_file).header), masked_img_file)
     return masked_img_file
