@@ -18,13 +18,13 @@
 
 
 import argparse
-import colorama
-import emoji
 import logging
 import os
 import time
 from datetime import datetime
 
+import colorama
+import emoji
 from pumaz import constants
 from pumaz import display
 from pumaz import download
@@ -71,10 +71,14 @@ def main():
                         help="Comma-separated list of regions to ignore during registration e.g. arms,legs,"
                              "none. 'none' indicates no regions to ignore.", required=True)
 
+    parser.add_argument("-m", "--multiplex", type=bool,
+                        help="Multiplex the aligned PT images", required=False)
+
     args = parser.parse_args()
 
     subject_folder = os.path.abspath(args.subject_directory)
     regions_to_ignore = args.ignore_regions
+    multiplex = args.multiplex
 
     display.logo()
     display.citation()
@@ -94,6 +98,7 @@ def main():
     print(f'{constants.ANSI_VIOLET} {emoji.emojize(":memo:")} NOTE:{constants.ANSI_RESET}')
     print(' ')
     display.expectations()
+    print(f'{constants.ANSI_ORANGE} Multiplexing: {multiplex}{constants.ANSI_RESET}')
 
     # ----------------------------------
     # DOWNLOADING THE BINARIES
@@ -149,6 +154,22 @@ def main():
     puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(puma_compliant_subjects=puma_compliant_subjects,
                                                                      regions_to_ignore=regions_to_ignore)
     image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
+
+    # ----------------------------------
+    # MULTIPLEXING
+    # ----------------------------------
+
+    if multiplex:
+        print('')
+        print(f'{constants.ANSI_VIOLET} {emoji.emojize(":artist_palette:")} MULTIPLEXING:{constants.ANSI_RESET}')
+        print('')
+        logging.info(' ')
+        logging.info(' MULTIPLEXING:')
+        logging.info(' ')
+        aligned_pt_dir = os.path.join(puma_dir, constants.ALIGNED_PET_FOLDER)
+        image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET', os.path.join(aligned_pt_dir,
+                                                                                constants.MULTIPLEXED_COMPOSITE_IMAGE))
+
     end_time = time.time()
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
@@ -157,6 +178,3 @@ def main():
         f"{constants.ANSI_GREEN} 🐾 PUMA has successfully completed the hunt in {elapsed_time} minutes."
         f" Track down your results in the directory: {puma_dir} 🐾{constants.ANSI_RESET}"
     )
-
-
-

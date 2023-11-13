@@ -34,12 +34,13 @@ import numpy as np
 import psutil
 from moosez import moose
 from mpire import WorkerPool
-from rich.progress import Progress, BarColumn, TimeElapsedColumn
-
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz.constants import GREEDY_PATH
 from pumaz.file_utilities import create_directory, move_file, remove_directory, move_files_to_directory, get_files
+from rich.console import Console
+from rich.progress import Progress, BarColumn, TimeElapsedColumn
+from rich.table import Table
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
@@ -665,6 +666,7 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
                          constants.ALIGNED_PREFIX_PT)
 
 
+
 def calculate_bbox(mask_np):
     """
     Calculate the bounding box of a binary mask.
@@ -764,3 +766,94 @@ def apply_mask(image_file, mask_file, masked_img_file):
     masked_img = masked_img.astype(np.int16)
     nib.save(nib.Nifti1Image(masked_img, nib.load(image_file).affine, nib.load(image_file).header), masked_img_file)
     return masked_img_file
+
+
+def normalize_data(data):
+    """
+    Normalize the image data to the [0, 1] range.
+
+    :param data: The image data array.
+    :type data: numpy.ndarray
+    :return: The normalized image data.
+    :rtype: numpy.ndarray
+    """
+    return data / np.max(data)
+
+
+def blend_images(image_paths, modality_names, output_path):
+    """
+    Blend up to three NIfTI images into a single composite RGB image and create a summary table.
+    """
+    # Validate the input
+    if not (1 <= len(image_paths) <= 3):
+        raise ValueError(" Provide between one to three image paths.")
+    if len(image_paths) != len(modality_names):
+        raise ValueError(" The number of image paths and modality names must match.")
+
+    images = []
+    channel_colors = ['Red', 'Green', 'Blue']
+    console = Console()
+
+    with Progress() as progress:
+        load_task = progress.add_task("[cyan] Loading images...", total=len(image_paths))
+
+        # Load, normalize, and verify image shapes
+        for path in image_paths:
+            img = nib.load(path).get_fdata()
+            img_normalized = normalize_data(img)
+            images.append(img_normalized)
+            progress.update(load_task, advance=1)
+
+        # Check if all images have the same shape
+        if not all(img.shape == images[0].shape for img in images):
+            raise ValueError(" All images must have the same dimensions.")
+
+        blend_task = progress.add_task("[cyan] Blending images...", total=1)
+
+        # Create the composite image
+        composite_data = np.zeros((*images[0].shape, 3), dtype=np.uint8)
+
+        # Assign each image to its respective channel
+        for i, data in enumerate(images):
+            composite_data[..., i] = np.clip(data * 255, 0, 255).astype(np.uint8)
+
+        progress.update(blend_task, advance=1)
+
+        save_task = progress.add_task("[cyan] Saving composite image...", total=1)
+
+        # Save the composite image as a new NIfTI file
+        composite_image = nib.Nifti1Image(composite_data, nib.load(image_paths[0]).affine)
+        nib.save(composite_image, output_path)
+        progress.update(save_task, advance=1)
+
+    console.print(f" Composite image saved to {output_path}", style="bold magenta")
+
+    # Create and display a rich table for image information
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("Index", style="dim")
+    table.add_column("File Name")
+    table.add_column("Modality Name")
+    table.add_column("Channel Assigned")
+
+    for idx, (path, modality) in enumerate(zip(image_paths, modality_names)):
+        table.add_row(str(idx + 1), path, modality, channel_colors[idx])
+
+    console.print(table)
+
+
+def multiplex(directory, extension, modality, output_image_path):
+    """
+    Multiplex the images in a directory into a single composite RGB image.
+    :param directory: The directory containing the images.
+    :type directory: str
+    :param extension: The extension of the images.
+    :type extension: str
+    :param modality: The modality of the images.
+    :type modality: str
+    :param output_image_path: The path to the output image.
+    :type output_image_path: str
+    :return: None
+    """
+    nifti_files = get_files(directory, extension)
+    modalities = [modality] * len(nifti_files)
+    blend_images(nifti_files, modalities, output_image_path)

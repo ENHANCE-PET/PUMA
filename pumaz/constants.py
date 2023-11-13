@@ -54,6 +54,7 @@ ALIGNED_PREFIX = 'aligned_'
 ALIGNED_PREFIX_PT = 'aligned_PT_'
 ALIGNED_PREFIX_CT = 'aligned_CT_'
 ALIGNED_PREFIX_MASK = 'aligned_MASK_'
+MULTIPLEXED_COMPOSITE_IMAGE = 'multiplexed_composite_image.nii.gz'
 
 # MOOSE PARAMETERS
 
