@@ -37,8 +37,6 @@ from mpire import WorkerPool
 from rich.console import Console
 from rich.progress import Progress, BarColumn, TimeElapsedColumn
 from rich.table import Table
-from skimage import exposure
-
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz.constants import GREEDY_PATH
@@ -779,8 +777,7 @@ def normalize_data(data):
     :return: The normalized image data.
     :rtype: numpy.ndarray
     """
-    equalized_data = exposure.equalize_hist(data)
-    normalized_data = (equalized_data - np.min(equalized_data)) / (np.max(equalized_data) - np.min(equalized_data))
+    normalized_data = (data - np.min(data)) / (np.max(data) - np.min(data))
     return normalized_data
 
 
