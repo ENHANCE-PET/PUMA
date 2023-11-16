@@ -34,14 +34,15 @@ import numpy as np
 import psutil
 from moosez import moose
 from mpire import WorkerPool
-from pumaz import constants
-from pumaz import file_utilities
-from pumaz.constants import GREEDY_PATH
-from pumaz.file_utilities import create_directory, move_file, remove_directory, move_files_to_directory, get_files
 from rich.console import Console
 from rich.progress import Progress, BarColumn, TimeElapsedColumn
 from rich.table import Table
 from skimage import exposure
+
+from pumaz import constants
+from pumaz import file_utilities
+from pumaz.constants import GREEDY_PATH
+from pumaz.file_utilities import create_directory, move_file, remove_directory, move_files_to_directory, get_files
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
@@ -780,7 +781,7 @@ def normalize_data(data):
     """
     equalized_data = exposure.equalize_hist(data)
     normalized_data = (equalized_data - np.min(equalized_data)) / (np.max(equalized_data) - np.min(equalized_data))
-    return normalized_image
+    return normalized_data
 
 
 def blend_images(image_paths, modality_names, output_path):
