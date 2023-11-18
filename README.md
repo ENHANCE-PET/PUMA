@@ -1,7 +1,7 @@
 ![Puma-logo](Images/Puma-logo.png)
 
 ## PUMA 1.0 🐾 - Agile. Precision-Driven. Empowering 💪
-[![Monthly Downloads](https://img.shields.io/pypi/dm/pumaz?label=Downloads%20(Monthly)&color=9400D3&style=flat-square&logo=python)](https://pypi.org/project/pumaz/) [![Daily Downloads](https://img.shields.io/pypi/dd/pumaz?label=Downloads%20(Daily)&color=9400D3&style=flat-square&logo=python)](https://pypi.org/project/pumaz/)
+[![PyPI version](https://img.shields.io/pypi/v/pumaz?color=FF1493&style=flat-square&logo=pypi)](https://pypi.org/project/pumaz/) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-red.svg?style=flat-square&logo=gnu&color=FF0000)](https://www.gnu.org/licenses/gpl-3.0) [![Monthly Downloads](https://img.shields.io/pypi/dm/pumaz?label=Downloads%20(Monthly)&color=9400D3&style=flat-square&logo=python)](https://pypi.org/project/pumaz/) [![Daily Downloads](https://img.shields.io/pypi/dd/pumaz?label=Downloads%20(Daily)&color=9400D3&style=flat-square&logo=python)](https://pypi.org/project/pumaz/)
 
 Get ready for a leap in the world of Positron Emission Tomography (PET) imaging: introducing PUMA 1.0 🚀
 
@@ -9,7 +9,7 @@ PUMA 1.0 (PET Universal Multi-tracer Aligner) has been crafted with a strong foc
 
 ⚡ It's Agile: PUMA operates across all operating systems and architectures, from x86 to ARM64 (Apple Silicon). It has no specific hardware needs, and with the requirement for Python 3.9 or above, PUMA 1.0 is ready to perform anywhere, anytime.
 
-🔍 It's Precision-Driven yet blazingly fast: Built upon the bedrock of advanced diffeomorphic registration techniques from the awesome 'greedy' library, PUMA 1.0 aligns multiplexed tracer images with high precision in less than a heartbeat, clocking in at under one minute, offering unrivaled clarity and accuracy in the diagnosis of patient pathology.
+🔍 It's Precision-Driven yet blazingly fast: Built upon the bedrock of nnUNet based MOOSE and advanced diffeomorphic registration techniques from the awesome 'greedy' library, PUMA 1.0 aligns multiplexed tracer images with high precision in less than a heartbeat, clocking in at under one minute, offering unrivaled clarity and accuracy in the diagnosis of patient pathology.
 
 🗝️ It's Empowering: PUMA 1.0 enhances diagnostic capabilities with its multiplexed viewing angles, unlocking a new realm of diagnostic possibilities and empowering clinicians.
 
