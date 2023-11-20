@@ -529,7 +529,7 @@ def find_images(directory: str, pattern='*.nii*'):
 
 def setup_aligner(reference_image: str):
     """
-    Setup the image aligner.
+    Se tup the image aligner.
     :param reference_image: The reference image.
     :type reference_image: str
     :return: The image aligner object.
@@ -666,7 +666,6 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
                          constants.ALIGNED_PREFIX_PT)
 
 
-
 def calculate_bbox(mask_np):
     """
     Calculate the bounding box of a binary mask.
@@ -726,8 +725,8 @@ def generate_and_apply_common_fov(mask_files: list, output_dir: str):
     # Create the common FOV mask based on these coordinates
     common_fov_mask_np = np.zeros_like(first_mask_np)
     common_fov_mask_np[min_coords[0]:max_coords[0] + 1,
-    min_coords[1]:max_coords[1] + 1,
-    min_coords[2]:max_coords[2] + 1] = 1
+                       min_coords[1]:max_coords[1] + 1,
+                       min_coords[2]:max_coords[2] + 1] = 1
 
     common_fov_mask = sitk.GetImageFromArray(common_fov_mask_np)
     common_fov_mask.CopyInformation(reference_mask)
@@ -781,7 +780,27 @@ def normalize_data(data):
     return normalized_data
 
 
-def blend_images(image_paths, modality_names, output_path):
+def get_color_channel_assignments(tracer_images) -> list:
+    console = Console()
+
+    color_channel_assignments = []
+    channel_map = {'R': 0, 'G': 1, 'B': 2}
+    line_color_map = {'R': "red", 'G': "green", 'B': "blue"}
+    for tracer in tracer_images:
+        valid_channels = [channel for channel in channel_map.keys() if channel_map[channel] not in color_channel_assignments]
+        color_channel = console.input(f"[white] Assign a color channel ({', '.join(valid_channels)}) for {tracer}: ").upper()
+        while color_channel not in channel_map or channel_map[color_channel] in color_channel_assignments:
+            sys.stdout.write('\033[F')
+            sys.stdout.write('\033[K')
+            color_channel = console.input(f"[bold_red] Invalid input. Please enter {', '.join(valid_channels)} for {tracer}: ").upper()
+        color_channel_assignments.append(channel_map[color_channel])
+        sys.stdout.write('\033[F')
+        sys.stdout.write('\033[K')
+        console.print(f"[{line_color_map[color_channel]}] Assigned color channel {color_channel} for {tracer}.")
+    return color_channel_assignments
+
+
+def blend_images(image_paths, modality_names, output_path, custom_colors=False):
     """
     Blend up to three NIfTI images into a single composite RGB image and create a summary table.
     """
@@ -791,10 +810,14 @@ def blend_images(image_paths, modality_names, output_path):
     if len(image_paths) != len(modality_names):
         raise ValueError(" The number of image paths and modality names must match.")
 
-    images = []
     channel_colors = ['Red', 'Green', 'Blue']
-    console = Console()
+    if custom_colors:
+        color_channels = get_color_channel_assignments(image_paths)
+    else:
+        color_channels = (0, 1, 2)
 
+    images = []
+    console = Console()
     with Progress() as progress:
         load_task = progress.add_task("[cyan] Loading images...", total=len(image_paths))
 
@@ -815,8 +838,8 @@ def blend_images(image_paths, modality_names, output_path):
         composite_data = np.zeros((*images[0].shape, 3), dtype=np.uint8)
 
         # Assign each image to its respective channel
-        for i, data in enumerate(images):
-            composite_data[..., i] = np.clip(data * 255, 0, 255).astype(np.uint8)
+        for data, color_channel in zip(images, color_channels):
+            composite_data[..., color_channel] = np.clip(data * 255, 0, 255).astype(np.uint8)
 
         progress.update(blend_task, advance=1)
 
@@ -836,15 +859,16 @@ def blend_images(image_paths, modality_names, output_path):
     table.add_column("Modality Name")
     table.add_column("Channel Assigned")
 
-    for idx, (path, modality) in enumerate(zip(image_paths, modality_names)):
-        table.add_row(str(idx + 1), path, modality, channel_colors[idx])
+    for idx, (path, modality, color_channel) in enumerate(zip(image_paths, modality_names, color_channels)):
+        table.add_row(str(idx + 1), path, modality, channel_colors[color_channel])
 
     console.print(table)
 
 
-def multiplex(directory, extension, modality, output_image_path):
+def multiplex(directory, extension, modality, output_image_path, custom_colors=False):
     """
     Multiplex the images in a directory into a single composite RGB image.
+    :param custom_colors: Specifies if user defined RGB channel assignment should be used.
     :param directory: The directory containing the images.
     :type directory: str
     :param extension: The extension of the images.
@@ -857,4 +881,4 @@ def multiplex(directory, extension, modality, output_image_path):
     """
     nifti_files = get_files(directory, extension)
     modalities = [modality] * len(nifti_files)
-    blend_images(nifti_files, modalities, output_image_path)
+    blend_images(nifti_files, modalities, output_image_path, custom_colors)

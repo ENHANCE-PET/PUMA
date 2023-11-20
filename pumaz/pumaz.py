@@ -71,14 +71,18 @@ def main():
                         help="Comma-separated list of regions to ignore during registration e.g. arms,legs,"
                              "none. 'none' indicates no regions to ignore.", required=True)
 
-    parser.add_argument("-m", "--multiplex", type=bool,
-                        help="Multiplex the aligned PT images", required=False)
+    parser.add_argument("-m", "--multiplex", action='store_true', default=False,
+                        help="Multiplex the aligned PT images.", required=False)
+
+    parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
+                        help="Manually assign colors to tracer images.", required=False)
 
     args = parser.parse_args()
 
     subject_folder = os.path.abspath(args.subject_directory)
     regions_to_ignore = args.ignore_regions
     multiplex = args.multiplex
+    custom_colors = args.custom_colors
 
     display.logo()
     display.citation()
@@ -167,8 +171,9 @@ def main():
         logging.info(' MULTIPLEXING:')
         logging.info(' ')
         aligned_pt_dir = os.path.join(puma_dir, constants.ALIGNED_PET_FOLDER)
-        image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET', os.path.join(aligned_pt_dir,
-                                                                                constants.MULTIPLEXED_COMPOSITE_IMAGE))
+
+        image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET',
+                                   os.path.join(aligned_pt_dir, constants.MULTIPLEXED_COMPOSITE_IMAGE), custom_colors)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
