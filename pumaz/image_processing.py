@@ -484,6 +484,9 @@ class ImageRegistration:
         elif registration_type == 'deformable':
             cmd_to_run = self._build_cmd(resampled_moving_img, segmentation, resampled_seg,
                                          self.transform_files['warp'], self.transform_files['affine'])
+        else:
+            raise ValueError("Unknown registration type.")
+
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
 
     def _build_cmd(self, resampled_moving_img: str, segmentation: str, resampled_seg: str,

@@ -144,6 +144,11 @@ def main():
                    os.path.isdir(os.path.join(subject_folder, d))]
     puma_compliant_subjects = input_validation.select_puma_compliant_subjects(tracer_dirs, constants.MODALITIES)
 
+    num_subjects = len(puma_compliant_subjects)
+    if num_subjects < 1:
+        print(f'{constants.ANSI_RED} {emoji.emojize(":cross_mark:")} No puma compliant tracer directories found to continue!{constants.ANSI_RESET} {emoji.emojize(":light_bulb:")} See: https://github.com/Keyn34/PUMA#directory-structure-and-naming-conventions-for-puma-%EF%B8%8F')
+        return
+
     # -------------------------------------------------
     # RUNNING PREPROCESSING AND REGISTRATION PIPELINE
     # -------------------------------------------------
