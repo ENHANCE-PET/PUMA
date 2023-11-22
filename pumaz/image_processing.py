@@ -170,7 +170,7 @@ def prepare_reslice_tasks(puma_compliant_subjects):
     tasks = []
     for i, subdir in enumerate(puma_compliant_subjects):
         ct_file = glob.glob(os.path.join(subdir, 'CT*.nii*'))
-        pt_file = glob.glob(os.path.join(subdir, 'PET*.nii*'))
+        pt_file = glob.glob(os.path.join(subdir, 'PT*.nii*'))
         resliced_ct_file = os.path.join(subdir, constants.RESAMPLED_PREFIX + str(i) + '_' +
                                         os.path.basename(subdir) + '_' +
                                         os.path.basename(ct_file[0]))
@@ -298,10 +298,10 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
             resliced_ct_file = glob.glob(os.path.join(subdir, constants.RESAMPLED_PREFIX + '*CT*.nii*'))[0]
             executor.submit(copy_and_rename_file, resliced_ct_file, ct_dir, subdir)
 
-            pt_file = glob.glob(os.path.join(subdir, 'PET*.nii*'))
+            pt_file = glob.glob(os.path.join(subdir, 'PT*.nii*'))
 
             # Generate new filename with unique index
-            new_pt_file = re.sub(r'PET_', f'PET_{index}_', pt_file[0])
+            new_pt_file = re.sub(r'PT_', f'PT_{index}_', pt_file[0])
             # rename the actual file
             os.rename(pt_file[0], new_pt_file)
 
@@ -849,6 +849,9 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
         save_task = progress.add_task("[cyan] Saving composite image...", total=1)
 
         # Save the composite image as a new NIfTI file
+        shape_3d = composite_data.shape[0:3]
+        rgb_dtype = np.dtype([('R', 'u1'), ('G', 'u1'), ('B', 'u1')])
+        composite_data = composite_data.copy().view(dtype=rgb_dtype).reshape(shape_3d)  # copy used to force fresh internal structure
         composite_image = nib.Nifti1Image(composite_data, nib.load(image_paths[0]).affine)
         nib.save(composite_image, output_path)
         progress.update(save_task, advance=1)
