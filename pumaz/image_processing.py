@@ -865,9 +865,10 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
     table.add_column("Modality Name")
     table.add_column("Channel Assigned")
 
+    logging.info(f' File{" "*56} | Modality | Color')
     for idx, (path, modality, color_channel) in enumerate(zip(image_paths, modality_names, color_channels)):
         table.add_row(str(idx + 1), path, modality, channel_colors[color_channel])
-
+        logging.info(f' {os.path.basename(path):60} | {modality:8} | {channel_colors[color_channel]:5}')
     console.print(table)
 
 
