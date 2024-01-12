@@ -43,6 +43,7 @@ def logo():
     print(text)
     print(' ')
 
+
 def citation():
     """
     Display the manuscript citation for PUMA.
@@ -69,13 +70,19 @@ def expectations():
         >>> expectations()
     """
     # display the expected modalities
-    print(f' Expected modalities: {constants.MODALITIES} | Number of required modalities: {len(constants.MODALITIES)} |'
+    print(f' Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} |'
+          f' Number of required anatomical modalities: 1 |'
+          f' Expected functional modalities: {constants.FUNCTIONAL_MODALITIES} |'
+          f' Number of required functional modalities: 1 |'
           f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
-    logging.info(f' Expected modalities: {constants.MODALITIES} | Number of modalities: {len(constants.MODALITIES)} |  '
-                 f'Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
+    logging.info(f' Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} |'
+                 f' Number of required anatomical modalities: 1 |'
+                 f' Expected functional modalities: {constants.FUNCTIONAL_MODALITIES} |'
+                 f' Number of required functional modalities: 1 |'
+                 f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
     print(
-        f"{constants.ANSI_ORANGE} Warning: Any subject datasets in a non-DICOM format that lack the required modalities (" \
-        f"as indicated by the file prefix) will not be included in the analysis. {constants.ANSI_RESET}")
+        f"{constants.ANSI_ORANGE} Warning: Any subject datasets in a non-DICOM format that lack the required modalities"
+        f" (as indicated by the file prefix) will not be included in the analysis. {constants.ANSI_RESET}")
 
     warning_message = " Skipping subjects without the required modalities (check file prefix).\n" \
                       " These subjects will be excluded from analysis and their data will not be used."

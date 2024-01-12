@@ -139,10 +139,10 @@ def main():
 
     tracer_dirs = [os.path.join(subject_folder, d) for d in os.listdir(subject_folder) if
                    os.path.isdir(os.path.join(subject_folder, d))]
-    puma_compliant_subjects = input_validation.select_puma_compliant_subjects(tracer_dirs, constants.MODALITIES)
+    puma_compliant_subject_folders = input_validation.select_puma_compliant_subject_folders(tracer_dirs)
 
-    num_subjects = len(puma_compliant_subjects)
-    if num_subjects < 1:
+    num_subject_folders = len(puma_compliant_subject_folders)
+    if num_subject_folders < 1:
         print(f'{constants.ANSI_RED} {emoji.emojize(":cross_mark:")} No puma compliant tracer directories found to continue!{constants.ANSI_RESET} {emoji.emojize(":light_bulb:")} See: https://github.com/Keyn34/PUMA#directory-structure-and-naming-conventions-for-puma-%EF%B8%8F')
         return
 
@@ -157,7 +157,7 @@ def main():
     logging.info(' ')
     logging.info(' RUNNING PREPROCESSING AND REGISTRATION PIPELINE:')
     logging.info(' ')
-    puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(puma_compliant_subjects=puma_compliant_subjects,
+    puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(puma_compliant_subjects=puma_compliant_subject_folders,
                                                                      regions_to_ignore=regions_to_ignore)
     image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
 

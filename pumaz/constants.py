@@ -25,12 +25,11 @@ project_root = file_utilities.get_virtual_env_root()
 BINARY_PATH = os.path.join(project_root, 'bin')
 
 # SET PATHS TO BINARIES
-
 if file_utilities.get_system()[0] == 'windows':
-    GREEDY_PATH = os.path.join(BINARY_PATH, f'greedy-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+    GREEDY_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                                'greedy.exe')
 elif file_utilities.get_system()[0] in ['linux', 'mac']:
-    GREEDY_PATH = os.path.join(BINARY_PATH, f'greedy-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+    GREEDY_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                                'greedy')
 else:
     raise ValueError('Unsupported OS')
@@ -44,9 +43,11 @@ ANSI_RED = '\033[38;5;196m'
 ANSI_RESET = '\033[0m'
 
 # EXPECTED MODALITIES
+ANATOMICAL_MODALITIES = ['CT']
+FUNCTIONAL_MODALITIES = ['PT', 'ST', 'NM']
 
-MODALITIES = ['PT', 'CT', 'ST']
-MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT', 'SPECT_ for ST']
+MODALITIES = ['PT', 'CT']  # , 'ST', "NM"
+MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT', 'ST_ for SPECT', "NM_ for Nuclear Medicine"]
 
 # FILE NAMES
 
@@ -57,8 +58,12 @@ ALIGNED_PREFIX_CT = 'aligned_CT_'
 ALIGNED_PREFIX_MASK = 'aligned_MASK_'
 MULTIPLEXED_COMPOSITE_IMAGE = 'multiplexed_composite_image.nii.gz'
 
-# MOOSE PARAMETERS
+CHANNEL_PREFIX_RED = "_RED"
+CHANNEL_PREFIX_GREEN = "_GREEN"
+CHANNEL_PREFIX_BLUE = "_BLUE"
+CHANNEL_PREFIXES = [CHANNEL_PREFIX_RED, CHANNEL_PREFIX_GREEN, CHANNEL_PREFIX_BLUE]
 
+# MOOSE PARAMETERS
 MOOSE_MODEL_BODY = "clin_ct_body"
 MOOSE_MODEL_PUMA = "clin_ct_PUMA"
 MOOSE_PREFIX_BODY = 'CT_Body_'

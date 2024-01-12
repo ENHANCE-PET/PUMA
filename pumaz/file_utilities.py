@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import glob
-import logging
 # ----------------------------------------------------------------------------------------------------------------------
 # Author: Lalith Kumar Shiyam Sundar | Sebastian Gutschmayer
 # Institution: Medical University of Vienna
@@ -17,6 +15,9 @@ import logging
 # The functions in this module can be imported and used in other modules within the pumaz to perform file operations.
 #
 # ----------------------------------------------------------------------------------------------------------------------
+
+import glob
+import logging
 import os
 import platform
 import shutil
@@ -294,6 +295,65 @@ def move_file(file_path: str, destination_path: str):
         >>> move_file('/path/to/file', '/path/to/destination')
     """
     shutil.move(file_path, destination_path)
+
+
+def find_images(directory: str, pattern='*.nii*'):
+    """
+    Find images in a directory based on a pattern.
+    :param directory: The directory to search.
+    :type directory: str
+    :param pattern: The pattern to search for.
+    :type pattern: str
+    :return: The list of images found.
+    :rtype: list
+    """
+    return sorted(glob.glob(os.path.join(directory, pattern)))
+
+
+def get_image_by_modality(directory: str, modalities: list) -> str:
+    for modality in modalities:
+        pattern = os.path.join(directory, f'{modality}*.nii*')
+        files = glob.glob(pattern)
+        if len(files) == 1:
+            return files[0]
+
+
+def get_modality(file_path: str, modalities: list) -> str:
+    file_name = os.path.basename(file_path)
+    for modality in modalities:
+        if file_name.startswith(modality):
+            return modality
+
+
+def move_files(source_dir, destination_dir, pattern):
+    """
+    Move files from a source directory to a destination directory based on a pattern.
+    :param source_dir: The source directory.
+    :param destination_dir: The destination directory.
+    :param pattern: The pattern to search for.
+    :return: None
+    """
+    file_paths = find_images(source_dir, pattern)
+    if len(file_paths) < 1:
+        return
+
+    create_directory(destination_dir)
+    for file_path in file_paths:
+        move_file(file_path, destination_dir)
+        logging.info(f"Moved {file_path} to {destination_dir}")
+
+
+def copy_reference_image(source_image, destination_dir, prefix):
+    """
+    Copy the reference image to the destination directory.
+    :param source_image: The path to the source image.
+    :param destination_dir: The path to the destination directory.
+    :param prefix: The prefix to prepend to the image name.
+    :return: None
+    """
+    destination_path = os.path.join(destination_dir, prefix + os.path.basename(source_image))
+    copy_file(source_image, destination_path)
+    logging.info(f"Copied {source_image} to {destination_path}")
 
 
 def move_files_to_directory(src_dir: str, dest_dir: str):

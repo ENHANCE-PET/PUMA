@@ -39,8 +39,9 @@ from rich.progress import Progress, BarColumn, TimeElapsedColumn
 from rich.table import Table
 from pumaz import constants
 from pumaz import file_utilities
-from pumaz.constants import GREEDY_PATH
-from pumaz.file_utilities import create_directory, move_file, remove_directory, move_files_to_directory, get_files
+from pumaz.constants import GREEDY_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES
+from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
+                                  copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
@@ -169,19 +170,12 @@ def prepare_reslice_tasks(puma_compliant_subjects):
     """
     tasks = []
     for i, subdir in enumerate(puma_compliant_subjects):
-        ct_file = glob.glob(os.path.join(subdir, 'CT*.nii*'))
-        pt_file = glob.glob(os.path.join(subdir, 'PT*.nii*'))
+        ct_file = get_image_by_modality(subdir, ANATOMICAL_MODALITIES)
+        pt_file = get_image_by_modality(subdir, FUNCTIONAL_MODALITIES)
         resliced_ct_file = os.path.join(subdir, constants.RESAMPLED_PREFIX + str(i) + '_' +
-                                        os.path.basename(subdir) + '_' +
-                                        os.path.basename(ct_file[0]))
+                                        os.path.basename(subdir) + '_' + os.path.basename(ct_file))
 
-        tasks.append((
-            sitk.ReadImage(pt_file[0]),
-            sitk.ReadImage(ct_file[0]),
-            resliced_ct_file,
-            False,
-            False
-        ))
+        tasks.append((sitk.ReadImage(pt_file), sitk.ReadImage(ct_file), resliced_ct_file, False, False))
     return tasks
 
 
@@ -294,16 +288,16 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
     # Move and rename files in parallel
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         for subdir in puma_compliant_subjects:
-            ct_file = glob.glob(os.path.join(subdir, 'CT*.nii*'))
             resliced_ct_file = glob.glob(os.path.join(subdir, constants.RESAMPLED_PREFIX + '*CT*.nii*'))[0]
             executor.submit(copy_and_rename_file, resliced_ct_file, ct_dir, subdir)
 
-            pt_file = glob.glob(os.path.join(subdir, 'PT*.nii*'))
+            pt_file = get_image_by_modality(subdir, FUNCTIONAL_MODALITIES)
 
             # Generate new filename with unique index
-            new_pt_file = re.sub(r'PT_', f'PT_{index}_', pt_file[0])
+            modality = get_modality(pt_file, FUNCTIONAL_MODALITIES)
+            new_pt_file = re.sub(f'{modality}_', f'{modality}_{index}_', pt_file)
             # rename the actual file
-            os.rename(pt_file[0], new_pt_file)
+            os.rename(pt_file, new_pt_file)
 
             index += 1
             executor.submit(copy_and_rename_file, new_pt_file, pt_dir, subdir)
@@ -517,19 +511,6 @@ class ImageRegistration:
         return cmd
 
 
-def find_images(directory: str, pattern='*.nii*'):
-    """
-    Find images in a directory based on a pattern.
-    :param directory: The directory to search.
-    :type directory: str
-    :param pattern: The pattern to search for.
-    :type pattern: str
-    :return: The list of images found.
-    :rtype: list
-    """
-    return sorted(glob.glob(os.path.join(directory, pattern)))
-
-
 def setup_aligner(reference_image: str):
     """
     Se tup the image aligner.
@@ -568,33 +549,6 @@ def find_corresponding_image(modality_dir, reference_basename):
     else:
         logging.error(f"No corresponding image found in {modality_dir} for {reference_basename}")
         raise FileNotFoundError(f"No corresponding image found in {modality_dir} for {reference_basename}")
-
-
-def move_files(source_dir, destination_dir, pattern):
-    """
-    Move files from a source directory to a destination directory based on a pattern.
-    :param source_dir: The source directory.
-    :param destination_dir: The destination directory.
-    :param pattern: The pattern to search for.
-    :return: None
-    """
-    file_utilities.create_directory(destination_dir)
-    for file_path in find_images(source_dir, pattern):
-        file_utilities.move_file(file_path, destination_dir)
-        logging.info(f"Moved {file_path} to {destination_dir}")
-
-
-def copy_reference_image(source_image, destination_dir, prefix):
-    """
-    Copy the reference image to the destination directory.
-    :param source_image: The path to the source image.
-    :param destination_dir: The path to the destination directory.
-    :param prefix: The prefix to prepend to the image name.
-    :return: None
-    """
-    destination_path = os.path.join(destination_dir, prefix + os.path.basename(source_image))
-    file_utilities.copy_file(source_image, destination_path)
-    logging.info(f"Copied {source_image} to {destination_path}")
 
 
 def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
@@ -651,19 +605,26 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
     # Organizing files into their respective directories
     move_files(mask_dir, os.path.join(puma_working_dir, constants.TRANSFORMS_FOLDER), '*_affine.mat')
     move_files(mask_dir, os.path.join(puma_working_dir, constants.TRANSFORMS_FOLDER), '*warp.nii.gz')
+
     move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_MASK_FOLDER),
                constants.ALIGNED_PREFIX_MASK + '*.nii*')
+
+    for ANATOMICAL_MODALITY in ANATOMICAL_MODALITIES:
+        modality_folder = f"{constants.ALIGNED_PREFIX}{ANATOMICAL_MODALITY}"
+        modality_file_pattern = f"{modality_folder}_*.nii*"
+        move_files(puma_working_dir, os.path.join(puma_working_dir, modality_folder), modality_file_pattern)
+
+    for FUNCTIONAL_MODALITY in FUNCTIONAL_MODALITIES:
+        modality_folder = f"{constants.ALIGNED_PREFIX}{FUNCTIONAL_MODALITY}"
+        modality_file_pattern = f"{modality_folder}_*.nii*"
+        move_files(puma_working_dir, os.path.join(puma_working_dir, modality_folder), modality_file_pattern)
+
+    # get the corresponding Mask, CT and PET for the reference_image
     copy_reference_image(reference_image, os.path.join(puma_working_dir, constants.ALIGNED_MASK_FOLDER),
                          constants.ALIGNED_PREFIX_MASK)
-    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_CT_FOLDER),
-               constants.ALIGNED_PREFIX_CT + '*.nii*')
-    # get the corresponding ct for the reference_image
     reference_ct = find_corresponding_image(ct_dir, os.path.basename(reference_image))
     copy_reference_image(reference_ct, os.path.join(puma_working_dir, constants.ALIGNED_CT_FOLDER),
                          constants.ALIGNED_PREFIX_CT)
-    move_files(puma_working_dir, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
-               constants.ALIGNED_PREFIX_PT + '*.nii*')
-    # get the corresponding pt for the reference_image
     reference_pt = find_corresponding_image(pt_dir, os.path.basename(reference_image))
     copy_reference_image(reference_pt, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
                          constants.ALIGNED_PREFIX_PT)
@@ -870,6 +831,26 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
         table.add_row(str(idx + 1), path, modality, channel_colors[color_channel])
         logging.info(f' {os.path.basename(path):60} | {modality:8} | {channel_colors[color_channel]:5}')
     console.print(table)
+
+    # Renaming according to channel assignments
+    for image_path, color_channel in zip(image_paths, color_channels):
+        directory = os.path.dirname(image_path)
+        filename = os.path.basename(image_path)
+        channel_prefix = constants.CHANNEL_PREFIXES[color_channel]
+
+        if filename.endswith('.nii.gz'):
+            base_name = filename.rsplit('.nii.gz')[0]
+            extension = '.nii.gz'
+        elif filename.endswith('.nii'):
+            base_name = filename.rsplit('.nii')[0]
+            extension = '.nii'
+        else:
+            return
+
+        new_image_path = os.path.join(directory, f"{base_name}{channel_prefix}{extension}")
+        os.rename(image_path, new_image_path)
+
+        console.print(f" Assigning {image_path} the suffix {channel_prefix}: {new_image_path}")
 
 
 def multiplex(directory, extension, modality, output_image_path, custom_colors=False):

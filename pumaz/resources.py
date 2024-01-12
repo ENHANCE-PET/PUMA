@@ -19,23 +19,23 @@
 
 GREEDY_BINARIES = {
     "greedy-windows-x86_64": {
-        "url": "https://greedy.s3.eu.cloud-object-storage.appdomain.cloud/greedy-windows-x86_64.zip",
-        "filename": "greedy-windows-x86_64.zip",
-        "directory": "greedy-windows-x86_64",
+        "url": "https://ucd-emic-muv.s3.us-west-2.amazonaws.com/falcon/falcon-windows-x86_64.zip",
+        "filename": "falcon-windows-x86_64.zip",
+        "directory": "falcon-windows-x86_64",
     },
     "greedy-linux-x86_64": {
-        "url": "https://greedy.s3.eu.cloud-object-storage.appdomain.cloud/greedy-linux-x86_64.zip",
-        "filename": "greedy-linux-x86_64.zip",
-        "directory": "greedy-linux-x86_64",
+        "url": "https://ucd-emic-muv.s3.us-west-2.amazonaws.com/falcon/falcon-linux-x86_64.zip",
+        "filename": "falcon-linux-x86_64.zip",
+        "directory": "falcon-linux-x86_64",
     },
     "greedy-mac-x86_64": {
-        "url": "https://greedy.s3.eu.cloud-object-storage.appdomain.cloud/greedy-mac-x86_64.zip",
-        "filename": "greedy-mac-x86_64.zip",
-        "directory": "greedy-mac-x86_64",
+        "url": "https://ucd-emic-muv.s3.us-west-2.amazonaws.com/falcon/falcon-mac-x86_64.zip",
+        "filename": "falcon-mac-x86_64.zip",
+        "directory": "falcon-mac-x86_64",
     },
     "greedy-mac-arm64": {
-        "url": "https://greedy.s3.eu.cloud-object-storage.appdomain.cloud/greedy-mac-arm64.zip",
-        "filename": "greedy-mac-arm64.zip",
-        "directory": "greedy-mac-arm64",
+        "url": "https://ucd-emic-muv.s3.us-west-2.amazonaws.com/falcon/falcon-mac-arm64.zip",
+        "filename": "falcon-mac-arm64.zip",
+        "directory": "falcon-mac-arm64",
     },
 }

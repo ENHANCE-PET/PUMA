@@ -23,12 +23,10 @@ import os
 from pumaz import constants
 
 
-def select_puma_compliant_subjects(tracer_paths: list, modality_tags: list) -> list:
+def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
     """
     Selects the subjects that have the files that have names that are compliant with the pumaz.
     :param tracer_paths: The path to the list of tracer directories that are present in the subject directory.
-    :param modality_tags: The list of appropriate modality prefixes that should be attached to the files for them to be moose
-    compliant.
     :return: The list of tracer paths that are pumaz compliant.
     """
     # go through each subject in the parent directory
@@ -36,8 +34,10 @@ def select_puma_compliant_subjects(tracer_paths: list, modality_tags: list) -> l
     for subject_path in tracer_paths:
         # go through each subject and see if the files have the appropriate modality prefixes
         files = [file for file in os.listdir(subject_path) if file.endswith('.nii') or file.endswith('.nii.gz')]
-        prefixes = [file.startswith(tag) for tag in modality_tags for file in files]
-        if sum(prefixes) == len(modality_tags):
+        anatomical_prefixes = [file.startswith(tag) for tag in constants.ANATOMICAL_MODALITIES for file in files]
+        functional_prefixes = [file.startswith(tag) for tag in constants.FUNCTIONAL_MODALITIES for file in files]
+
+        if sum(anatomical_prefixes) == 1 and sum(functional_prefixes) == 1:
             puma_compliant_subjects.append(subject_path)
     print(f"{constants.ANSI_ORANGE} Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
           f"{len(tracer_paths)} {constants.ANSI_RESET}")
@@ -45,6 +45,3 @@ def select_puma_compliant_subjects(tracer_paths: list, modality_tags: list) -> l
                  f"{len(tracer_paths)}")
 
     return puma_compliant_subjects
-
-
-
