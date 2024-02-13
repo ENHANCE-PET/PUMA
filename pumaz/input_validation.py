@@ -19,6 +19,7 @@
 
 import logging
 import os
+from rich.console import Console
 
 from pumaz import constants
 
@@ -45,3 +46,8 @@ def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
                  f"{len(tracer_paths)}")
 
     return puma_compliant_subjects
+
+
+def wait_for_confirmation_to_progress(mask_dir):
+    console = Console()
+    console.input(f"[white] Confirm the generated PUMA MASKs in {mask_dir} and press ENTER to continue.")

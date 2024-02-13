@@ -159,6 +159,9 @@ def main():
     logging.info(' ')
     puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(puma_compliant_subjects=puma_compliant_subject_folders,
                                                                      regions_to_ignore=regions_to_ignore)
+
+    input_validation.wait_for_confirmation_to_progress(mask_dir)
+
     image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
 
     # ----------------------------------
