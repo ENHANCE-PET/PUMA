@@ -42,6 +42,7 @@ from pumaz import file_utilities
 from pumaz.constants import GREEDY_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES
 from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
                                   copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
+from pumaz.resources import check_device
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
@@ -284,8 +285,8 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
     file_utilities.create_directory(ct_dir)
     file_utilities.create_directory(pt_dir)
 
-    index = 0
     # Move and rename files in parallel
+    index = 0
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         for subdir in puma_compliant_subjects:
             resliced_ct_file = glob.glob(os.path.join(subdir, constants.RESAMPLED_PREFIX + '*CT*.nii*'))[0]
@@ -303,21 +304,18 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
             executor.submit(copy_and_rename_file, new_pt_file, pt_dir, subdir)
 
     # Run moosez to get the masks
+    accelerator = check_device()
+    process_and_moose_ct_files(ct_dir, body_mask_dir, constants.MOOSE_MODEL_BODY, accelerator)
+    process_and_moose_ct_files(ct_dir, puma_mask_dir, constants.MOOSE_MODEL_PUMA, accelerator)
 
-    process_and_moose_ct_files(ct_dir, body_mask_dir, constants.MOOSE_MODEL_BODY, constants.ACCELERATOR)
-    process_and_moose_ct_files(ct_dir, puma_mask_dir, constants.MOOSE_MODEL_PUMA, constants.ACCELERATOR)
-
-    # Generate mask with common field of view
+    # Remove the body regions that are not relevant for registration
 
     body_mask_files = glob.glob(os.path.join(body_mask_dir, constants.MOOSE_PREFIX_BODY + '*nii*'))
-    # generate_and_apply_common_fov(body_mask_files, os.path.join(puma_working_dir, constants.COMMON_FOV_MASK_FOLDER))
 
     for mask_file in body_mask_files:
         new_mask_file = re.sub(rf'{constants.MOOSE_PREFIX_BODY}', '', mask_file)
         os.rename(mask_file, new_mask_file)
         change_mask_labels(new_mask_file, constants.MOOSE_LABEL_INDEX, regions_to_ignore)
-
-    # remove arms from the puma masks
 
     puma_mask_files = glob.glob(os.path.join(puma_mask_dir, constants.MOOSE_PREFIX_PUMA + '*nii*'))
     for puma_mask_file in puma_mask_files:
@@ -689,8 +687,8 @@ def generate_and_apply_common_fov(mask_files: list, output_dir: str):
     # Create the common FOV mask based on these coordinates
     common_fov_mask_np = np.zeros_like(first_mask_np)
     common_fov_mask_np[min_coords[0]:max_coords[0] + 1,
-                       min_coords[1]:max_coords[1] + 1,
-                       min_coords[2]:max_coords[2] + 1] = 1
+    min_coords[1]:max_coords[1] + 1,
+    min_coords[2]:max_coords[2] + 1] = 1
 
     common_fov_mask = sitk.GetImageFromArray(common_fov_mask_np)
     common_fov_mask.CopyInformation(reference_mask)
@@ -745,18 +743,34 @@ def normalize_data(data):
 
 
 def get_color_channel_assignments(tracer_images) -> list:
+    """
+    Assign color channels to the tracer images.
+
+    This function prompts the user to assign a color channel (Red, Green, or Blue) to each tracer image.
+    The user is asked to input their choice, and the function checks if the input is valid.
+    A color channel can only be assigned once. If the user's input is invalid, they are asked to input again.
+    The function returns a list of color channel assignments in the order of the input tracer images.
+
+    :param tracer_images: A list of tracer image names.
+    :type tracer_images: list
+    :return: A list of color channel assignments corresponding to the tracer images.
+    :rtype: list
+    """
     console = Console()
 
     color_channel_assignments = []
     channel_map = {'R': 0, 'G': 1, 'B': 2}
     line_color_map = {'R': "red", 'G': "green", 'B': "blue"}
     for tracer in tracer_images:
-        valid_channels = [channel for channel in channel_map.keys() if channel_map[channel] not in color_channel_assignments]
-        color_channel = console.input(f"[white] Assign a color channel ({', '.join(valid_channels)}) for {tracer}: ").upper()
+        valid_channels = [channel for channel in channel_map.keys() if
+                          channel_map[channel] not in color_channel_assignments]
+        color_channel = console.input(
+            f"[white] Assign a color channel ({', '.join(valid_channels)}) for {tracer}: ").upper()
         while color_channel not in channel_map or channel_map[color_channel] in color_channel_assignments:
             sys.stdout.write('\033[F')
             sys.stdout.write('\033[K')
-            color_channel = console.input(f"[bold_red] Invalid input. Please enter {', '.join(valid_channels)} for {tracer}: ").upper()
+            color_channel = console.input(
+                f"[bold_red] Invalid input. Please enter {', '.join(valid_channels)} for {tracer}: ").upper()
         color_channel_assignments.append(channel_map[color_channel])
         sys.stdout.write('\033[F')
         sys.stdout.write('\033[K')
@@ -812,7 +826,8 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
         # Save the composite image as a new NIfTI file
         shape_3d = composite_data.shape[0:3]
         rgb_dtype = np.dtype([('R', 'u1'), ('G', 'u1'), ('B', 'u1')])
-        composite_data = composite_data.copy().view(dtype=rgb_dtype).reshape(shape_3d)  # copy used to force fresh internal structure
+        composite_data = composite_data.copy().view(dtype=rgb_dtype).reshape(
+            shape_3d)  # copy used to force fresh internal structure
         composite_image = nib.Nifti1Image(composite_data, nib.load(image_paths[0]).affine)
         nib.save(composite_image, output_path)
         progress.update(save_task, advance=1)
@@ -826,7 +841,7 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
     table.add_column("Modality Name")
     table.add_column("Channel Assigned")
 
-    logging.info(f' File{" "*56} | Modality | Color')
+    logging.info(f' File{" " * 56} | Modality | Color')
     for idx, (path, modality, color_channel) in enumerate(zip(image_paths, modality_names, color_channels)):
         table.add_row(str(idx + 1), path, modality, channel_colors[color_channel])
         logging.info(f' {os.path.basename(path):60} | {modality:8} | {channel_colors[color_channel]:5}')
@@ -849,8 +864,6 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
 
         new_image_path = os.path.join(directory, f"{base_name}{channel_prefix}{extension}")
         os.rename(image_path, new_image_path)
-
-        console.print(f" Assigning {image_path} the suffix {channel_prefix}: {new_image_path}")
 
 
 def multiplex(directory, extension, modality, output_image_path, custom_colors=False):

@@ -74,7 +74,6 @@ MOOSE_LABEL_INDEX = {
         3: "head",
         4: "arms"
     }
-ACCELERATOR = 'cuda'
 
 # FOLDER NAMES
 
