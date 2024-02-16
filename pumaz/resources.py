@@ -16,6 +16,7 @@
 # binaries for the pumaz.
 #
 # ----------------------------------------------------------------------------------------------------------------------
+import torch
 
 GREEDY_BINARIES = {
     "greedy-windows-x86_64": {
@@ -39,3 +40,34 @@ GREEDY_BINARIES = {
         "directory": "falcon-mac-arm64",
     },
 }
+
+
+def check_device(verbose: bool = True) -> str:
+    """
+    This function checks the available device for running predictions, considering CUDA and MPS (for Apple Silicon),
+    and provides the option to control verbosity of the print statements.
+
+    Parameters:
+        verbose (bool): If True, prints the device selection information. Defaults to True.
+
+    Returns:
+        str: The device to run predictions on, either "cpu", "cuda", or "mps".
+    """
+    try:
+        if torch.cuda.is_available():
+            device_count = torch.cuda.device_count()
+            if verbose:
+                print(f" CUDA is available with {device_count} GPU(s). Predictions will be run on GPU.")
+            return "cuda"
+        elif torch.backends.mps.is_available():
+            if verbose:
+                print(" Apple MPS backend is available. Predictions will be run on Apple Silicon GPU.")
+            return "mps"
+        else:
+            if verbose:
+                print(" CUDA/MPS not available. Predictions will be run on CPU.")
+            return "cpu"
+    except Exception as e:
+        if verbose:
+            print(f" An error occurred while checking the device: {e}. Defaulting to CPU.")
+        return "cpu"
