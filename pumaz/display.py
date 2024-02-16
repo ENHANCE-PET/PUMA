@@ -53,8 +53,7 @@ def citation():
     :Example:
         >>> citation()
     """
-    print(" Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar, PET Universal Multi-tracer Aligner (PUMA) - To be "
-          "submitted to Journal of Nuclear Medicine")
+    print(" TBD")
     print(" Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna")
 
 
