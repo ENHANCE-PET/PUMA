@@ -80,10 +80,13 @@ Start your journey with PUMA 1.0 by using our straightforward command-line tool.
 pumaz -d <path_to_image_dir> -ir <regions to ignore: arms,legs,head,none> -m <optional for a multiplexed RGB image output> -cs <optional for a custom color selection when also -m was passed>
 ```
 
-Here `<path_to_image_dir>` refers to the parent directory containing different tracer images in their respective sub-directories.
-`-ir` specifies the regions to be ignored during registration. If you don't want to ignore any regions, use `none`. If you want to ignore the arms, legs, or head during registration, pass the corresponding regions delimited by a `,`. For example: `-ir head,arms` to ignore the head and arms.
-`-m` will activate the output of a multiplexed RGB image of the combined tracer images.
-When `-cs` is passed along with `-m`, you are asked to provide a custom order of color channels for the corresponding tracer images. That way you can freely decide which tracer image is associated with which channel. 
+- `<path_to_image_dir>` refers to the parent directory containing different tracer images in their respective sub-directories.
+
+- `-ir` specifies the regions to be ignored during registration. If you don't want to ignore any regions, use `none`. If you want to ignore the arms, legs, or head during registration, pass the corresponding regions delimited by a `,`. For example: `-ir head,arms` to ignore the head and arms.
+
+- `-m` will activate the output of a multiplexed RGB image of the combined tracer images.
+
+- `-cs`, when passed along with `-m`, PUMA will ask you to provide a custom order of color channels for the corresponding tracer images. That way, you can freely decide which tracer image is associated with which channel. 
 For assistance or additional information, you can always type:
 
 ```bash
@@ -124,7 +127,7 @@ Parent_Directory
 ### Naming Conventions 🏷️
 
 - For DICOM directories, no specific naming is required.
-- For NIFTI files, the file should start with the modality tag (e.g., 'PET_' or 'CT_') followed by the desired name. For example, 'PET_MySample.nii.gz'.
+- For NIFTI files, the file should start with the DICOM modality tag (e.g., 'PT_' or 'CT_') followed by the desired name. For example, 'PT_MySample.nii.gz'.
 
 Note: All the PET and CT images related to a tracer should be placed in the same directory named after the tracer.
 
