@@ -77,11 +77,13 @@ You're now ready to experience the precision and speed of PUMA 1.0.
 Start your journey with PUMA 1.0 by using our straightforward command-line tool. It requires the directory path containing different tracer images, and each image should be stored in separate folders. Here's how you can get started:
 
 ```bash
-pumaz -d <path_to_image_dir>
+pumaz -d <path_to_image_dir> -ir <regions to ignore: arms,legs,head,none> -m <optional for a multiplexed RGB image output> -cs <optional for a custom color selection when also -m was passed>
 ```
 
 Here `<path_to_image_dir>` refers to the parent directory containing different tracer images in their respective sub-directories.
-
+`-ir` specifies the regions to be ignored during registration. If you don't want to ignore any regions, use `none`. If you want to ignore the arms, legs, or head during registration, pass the corresponding regions delimited by a `,`. For example: `-ir head,arms` to ignore the head and arms.
+`-m` will activate the output of a multiplexed RGB image of the combined tracer images.
+When `-cs` is passed along with `-m`, you are asked to provide a custom order of color channels for the corresponding tracer images. That way you can freely decide which tracer image is associated with which channel. 
 For assistance or additional information, you can always type:
 
 ```bash
@@ -101,20 +103,20 @@ Parent_Directory
 │
 └───Tracer1
 │   │
-│   └───PET_DICOM_Directory or PET_xxxx.nii.gz
+│   └───PET_DICOM_Directory or PT_xxxx.nii.gz
 │   │
 │   └───CT_DICOM_Directory or CT_xxxx.nii.gz
 │
 └───Tracer2
 │   │
-│   └───PET_DICOM_Directory or PET_xxxx.nii.gz
+│   └───PET_DICOM_Directory or PT_xxxx.nii.gz
 │   │
 │   └───CT_DICOM_Directory or CT_xxxx.nii.gz
 ...
 
 └───Tracer3
     │
-    └───PET_DICOM_Directory or PET_xxxx.nii.gz
+    └───PET_DICOM_Directory or PT_xxxx.nii.gz
     │
     └───CT_DICOM_Directory or CT_xxxx.nii.gz
 ```
