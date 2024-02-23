@@ -28,9 +28,13 @@ BINARY_PATH = os.path.join(project_root, 'bin')
 if file_utilities.get_system()[0] == 'windows':
     GREEDY_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                                'greedy.exe')
+    C3D_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+                            'c3d.exe')
 elif file_utilities.get_system()[0] in ['linux', 'mac']:
     GREEDY_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                                'greedy')
+    C3D_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+                            'c3d')
 else:
     raise ValueError('Unsupported OS')
 
@@ -56,7 +60,8 @@ ALIGNED_PREFIX = 'aligned_'
 ALIGNED_PREFIX_PT = 'aligned_PT_'
 ALIGNED_PREFIX_CT = 'aligned_CT_'
 ALIGNED_PREFIX_MASK = 'aligned_MASK_'
-MULTIPLEXED_COMPOSITE_IMAGE = 'multiplexed_composite_image.nii.gz'
+MULTIPLEXED_COMPOSITE_IMAGE = 'RBG-composite.nii.gz'
+GRAYSCALE_COMPOSITE_IMAGE = 'grayscale-composite.nii.gz'
 
 CHANNEL_PREFIX_RED = "_RED"
 CHANNEL_PREFIX_GREEN = "_GREEN"
@@ -85,7 +90,20 @@ ALIGNED_PET_FOLDER = 'aligned_PT'
 BODY_MASK_FOLDER = 'body_masks'
 PUMA_MASK_FOLDER = 'puma_masks'
 COMMON_FOV_MASK_FOLDER = 'common_fov_masks'
+SEGMENTATION_FOLDER = 'segmentation'
 
 # HYPERPARAMETERS
 
 MULTI_RESOLUTION_SCHEME = '100x50x25'
+
+# RGB LINEAR TRANSFORMATION PARAMETERS TO GRAYSCALE BASED ON IMAGEMAGICK FORMULA
+
+RED_WEIGHT = 0.2989
+GREEN_WEIGHT = 0.5870
+BLUE_WEIGHT = 0.1140
+
+# LIONZ PARAMETERS
+
+LIONZ_MODEL = "mpx"
+LIONZ_PREFIX = "PT_"
+LIONZ_OUTPUT_DIR = "seg_output"

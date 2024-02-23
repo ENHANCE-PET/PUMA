@@ -26,6 +26,7 @@ import re
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from lionz import lion
 
 import GPUtil
 import SimpleITK as sitk
@@ -39,7 +40,8 @@ from rich.progress import Progress, BarColumn, TimeElapsedColumn
 from rich.table import Table
 from pumaz import constants
 from pumaz import file_utilities
-from pumaz.constants import GREEDY_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES
+from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES, RED_WEIGHT,
+                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL)
 from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
                                   copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 from pumaz.resources import check_device
@@ -883,3 +885,37 @@ def multiplex(directory, extension, modality, output_image_path, custom_colors=F
     nifti_files = get_files(directory, extension)
     modalities = [modality] * len(nifti_files)
     blend_images(nifti_files, modalities, output_image_path, custom_colors)
+
+
+def rgb2gray(rgb_file: str, gray_file: str):
+    """
+    Convert a 3D RGB image to grayscale.
+    This function converts a 3D RGB image to grayscale using the formula:
+    Y = 0.299 * R + 0.587 * G + 0.114 * B. The resulting grayscale image is saved as a new NIfTI file.
+    :param rgb_file: The path to the RGB image.
+    :type rgb_file: str
+    :param gray_file: The path to the grayscale image.
+    :type gray_file: str
+    :return: None
+    """
+    c3d_cmd = f"{C3D_PATH} -mcs {rgb_file} -wsum {RED_WEIGHT} {GREEN_WEIGHT} {BLUE_WEIGHT} -o {gray_file}"
+    subprocess.run(c3d_cmd, shell=True, capture_output=True)
+    logging.info(f" Converted {os.path.basename(rgb_file)} to grayscale.")
+
+
+# use lionz to segment the tumors from the grayscale image
+
+def segment_tumors(input_dir: str, output_dir: str):
+    """
+    Segment tumors from a grayscale image using the LIONz model.
+    :param input_dir: The path to the input directory.
+    :type input_dir: str
+    :param output_dir: The directory to save the output files.
+    :type output_dir: str
+    :return: None
+    """
+    device = check_device()
+    logging.info(f" Running LIONz for segmenting tumors from {input_dir}")
+    lion(LIONZ_MODEL, input_dir, output_dir, device)
+    logging.info(f" Tumor segmentation completed.")
+
