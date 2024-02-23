@@ -187,9 +187,9 @@ def main():
         image_processing.rgb2gray(rgb_image, grayscale_image)
         if segment_tumors:
             print('')
-            print(f'{constants.ANSI_VIOLET} {emoji.emojize("paintbrush:")} SEGMENTING TUMORS:{constants.ANSI_RESET}')
+            print(f'{constants.ANSI_VIOLET} {emoji.emojize(":paintbrush:")} SEGMENTING TUMORS:{constants.ANSI_RESET}')
             print('')
-            print(f' {constants.ANSI_ORANGE} Segmentation may take a few minutes...{constants.ANSI_RESET}')
+            print(f' {constants.ANSI_ORANGE}Segmentation may take a few minutes...{constants.ANSI_RESET}')
             seg_dir = os.path.join(puma_dir, constants.SEGMENTATION_FOLDER)
             file_utilities.create_directory(seg_dir)
             file_utilities.copy_reference_image(grayscale_image, seg_dir, constants.LIONZ_PREFIX)
