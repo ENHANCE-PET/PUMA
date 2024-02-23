@@ -71,6 +71,9 @@ def main():
     parser.add_argument("-m", "--multiplex", action='store_true', default=False,
                         help="Multiplex the aligned PT images.", required=False)
 
+    parser.add_argument("-st", "--segment_tumors", action='store_true', default=False,
+                        help="Segment tumors in the multiplexed images.", required=False)
+
     parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
                         help="Manually assign colors to tracer images.", required=False)
 
@@ -79,6 +82,7 @@ def main():
     subject_folder = os.path.abspath(args.subject_directory)
     regions_to_ignore = args.ignore_regions
     multiplex = args.multiplex
+    segment_tumors = args.segment_tumors
     custom_colors = args.custom_colors
 
     display.logo()
@@ -143,7 +147,8 @@ def main():
 
     num_subject_folders = len(puma_compliant_subject_folders)
     if num_subject_folders < 1:
-        print(f'{constants.ANSI_RED} {emoji.emojize(":cross_mark:")} No puma compliant tracer directories found to continue!{constants.ANSI_RESET} {emoji.emojize(":light_bulb:")} See: https://github.com/Keyn34/PUMA#directory-structure-and-naming-conventions-for-puma-%EF%B8%8F')
+        print(
+            f'{constants.ANSI_RED} {emoji.emojize(":cross_mark:")} No puma compliant tracer directories found to continue!{constants.ANSI_RESET} {emoji.emojize(":light_bulb:")} See: https://github.com/Keyn34/PUMA#directory-structure-and-naming-conventions-for-puma-%EF%B8%8F')
         return
 
     # -------------------------------------------------
@@ -152,13 +157,15 @@ def main():
     # calculate elapsed time for the entire procedure below
     start_time = time.time()
     print('')
-    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":rocket:")} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
+    print(
+        f'{constants.ANSI_VIOLET} {emoji.emojize(":rocket:")} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
     print('')
     logging.info(' ')
     logging.info(' RUNNING PREPROCESSING AND REGISTRATION PIPELINE:')
     logging.info(' ')
-    puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(puma_compliant_subjects=puma_compliant_subject_folders,
-                                                                     regions_to_ignore=regions_to_ignore)
+    puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(
+        puma_compliant_subjects=puma_compliant_subject_folders,
+        regions_to_ignore=regions_to_ignore)
     image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
 
     # ----------------------------------
@@ -173,10 +180,23 @@ def main():
         logging.info(' MULTIPLEXING:')
         logging.info(' ')
         aligned_pt_dir = os.path.join(puma_dir, constants.ALIGNED_PET_FOLDER)
-
+        rgb_image = os.path.join(aligned_pt_dir, constants.MULTIPLEXED_COMPOSITE_IMAGE)
         image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET',
-                                   os.path.join(aligned_pt_dir, constants.MULTIPLEXED_COMPOSITE_IMAGE), custom_colors)
-
+                                   rgb_image, custom_colors)
+        grayscale_image = os.path.join(aligned_pt_dir, constants.GRAYSCALE_COMPOSITE_IMAGE)
+        image_processing.rgb2gray(rgb_image, grayscale_image)
+        if segment_tumors:
+            print('')
+            print(f'{constants.ANSI_VIOLET} {emoji.emojize(":paintbrush:")} SEGMENTING TUMORS:{constants.ANSI_RESET}')
+            print('')
+            print(f' {constants.ANSI_ORANGE}Segmentation may take a few minutes...{constants.ANSI_RESET}')
+            seg_dir = os.path.join(puma_dir, constants.SEGMENTATION_FOLDER)
+            file_utilities.create_directory(seg_dir)
+            file_utilities.copy_reference_image(grayscale_image, seg_dir, constants.LIONZ_PREFIX)
+            output_dir = os.path.join(seg_dir, constants.LIONZ_OUTPUT_DIR)
+            file_utilities.create_directory(output_dir)
+            image_processing.segment_tumors(seg_dir, output_dir)
+            print(f' {constants.ANSI_GREEN}Segmentation complete.{constants.ANSI_RESET}')
     end_time = time.time()
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places

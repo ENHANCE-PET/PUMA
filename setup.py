@@ -50,7 +50,8 @@ setup(
         'moosez',
         'halo',
         'psutil',
-        'gputil'
+        'gputil',
+        'lionz'
     ],
     entry_points={
         'console_scripts': [
