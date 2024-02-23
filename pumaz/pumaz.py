@@ -186,12 +186,17 @@ def main():
         grayscale_image = os.path.join(aligned_pt_dir, constants.GRAYSCALE_COMPOSITE_IMAGE)
         image_processing.rgb2gray(rgb_image, grayscale_image)
         if segment_tumors:
+            print('')
+            print(f'{constants.ANSI_VIOLET} {emoji.emojize("paintbrush:")} SEGMENTING TUMORS:{constants.ANSI_RESET}')
+            print('')
+            print(f' {constants.ANSI_ORANGE} Segmentation may take a few minutes...{constants.ANSI_RESET}')
             seg_dir = os.path.join(puma_dir, constants.SEGMENTATION_FOLDER)
             file_utilities.create_directory(seg_dir)
             file_utilities.copy_reference_image(grayscale_image, seg_dir, constants.LIONZ_PREFIX)
             output_dir = os.path.join(seg_dir, constants.LIONZ_OUTPUT_DIR)
             file_utilities.create_directory(output_dir)
             image_processing.segment_tumors(seg_dir, output_dir)
+            print(f' {constants.ANSI_GREEN}Segmentation complete.{constants.ANSI_RESET}')
     end_time = time.time()
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
