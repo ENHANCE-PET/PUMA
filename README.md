@@ -15,6 +15,8 @@ PUMA 1.2 (PET Universal Multi-tracer Aligner) has been crafted with a strong foc
 
 Join us on this revolutionary journey with PUMA 1.2.
 
+## 🚀 PUMA's multiplexing in action
+
 <div align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Keyn34/PUMA/blob/master/Images/PUMA-Flex.gif">
