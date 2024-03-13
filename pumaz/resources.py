@@ -72,9 +72,10 @@ def check_device(verbose: bool = True) -> str:
             return "cuda"
         elif torch.backends.mps.is_available():
             if verbose:
-                console.print(" Apple MPS backend is available. Predictions will be run on Apple Silicon GPU.",
+                console.print(
+                    " Apple MPS backend is available. Predictions will be run on Apple Silicon GPU. (Not yet implemented)",
                               style="white")
-            return "mps"
+            return "cpu"
         else:
             if verbose:
                 console.print(" CUDA/MPS not available. Predictions will be run on CPU.", style="white")
