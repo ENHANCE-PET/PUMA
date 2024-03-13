@@ -35,7 +35,7 @@ Before stepping into the future with PUMA 1.2, here's what you need for an optim
 
 - **GPU**: You need a cuda enabled GPU (NVIDIA), 8 GB or more!
 
-- **Python**: PUMA 1.2 operates with Python 3.9 or above, staying in line with the latest updates.
+- **Python**: PUMA 1.2 operates with Python 3.10, staying in line with the latest updates.
 
 Once these specifications are met, you're all set to experience PUMA 1.2's capabilities.
 
