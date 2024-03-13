@@ -18,10 +18,12 @@
 # ----------------------------------------------------------------------------------------------------------------------
 
 import logging
+
 import pyfiglet
-
 from pumaz import constants
+from rich.console import Console
 
+console = Console()
 
 def logo():
     """
@@ -53,8 +55,9 @@ def citation():
     :Example:
         >>> citation()
     """
-    print(" TBD")
-    print(" Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna")
+    console.print(" TBD", style="white")
+    console.print(" Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna",
+                  style="white")
 
 
 def expectations():
@@ -69,39 +72,21 @@ def expectations():
         >>> expectations()
     """
     # display the expected modalities
-    print(f' Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} |'
+    console.print(f' Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} |'
           f' Number of required anatomical modalities: 1 |'
           f' Expected functional modalities: {constants.FUNCTIONAL_MODALITIES} |'
           f' Number of required functional modalities: 1 |'
-          f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
+                  f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}', style='white')
     logging.info(f' Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} |'
                  f' Number of required anatomical modalities: 1 |'
                  f' Expected functional modalities: {constants.FUNCTIONAL_MODALITIES} |'
                  f' Number of required functional modalities: 1 |'
                  f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
-    print(
-        f"{constants.ANSI_ORANGE} Warning: Any subject datasets in a non-DICOM format that lack the required modalities"
-        f" (as indicated by the file prefix) will not be included in the analysis. {constants.ANSI_RESET}")
+    console.print(
+        f" Warning: Any subject datasets in a non-DICOM format that lack the required modalities"
+        f" (as indicated by the file prefix) will not be included in the analysis.", style="bold magenta")
 
     warning_message = " Skipping subjects without the required modalities (check file prefix).\n" \
                       " These subjects will be excluded from analysis and their data will not be used."
     logging.warning(warning_message)
 
-
-def alignment_strategy():
-    """
-    Display the alignment strategy for PUMA.
-
-    This function describes the steps involved in aligning PET and CT images in PUMA.
-
-    :return: None
-    :rtype: None
-    :Example:
-        >>> alignment_strategy()
-    """
-    print(" Step 1: A random PET tracer image will be selected as the reference from the list.")
-    print(" Step 2: Each CT image will be resliced to match its corresponding PET tracer image.")
-    print(" Step 3: The CT image that pairs with the reference PET tracer image will be set as the reference CT image.")
-    print(" Step 4: All other CT images will be aligned to the reference CT image.")
-    print(" Step 5: Using the deformation fields derived from the CT images, the corresponding PET tracer images will "
-          "be aligned to the reference PET tracer image.")

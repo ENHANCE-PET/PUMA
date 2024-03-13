@@ -48,10 +48,10 @@ ANSI_RESET = '\033[0m'
 
 # EXPECTED MODALITIES
 ANATOMICAL_MODALITIES = ['CT']
-FUNCTIONAL_MODALITIES = ['PT', 'ST', 'NM']
+FUNCTIONAL_MODALITIES = ['PT']
 
-MODALITIES = ['PT', 'CT']  # , 'ST', "NM"
-MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT', 'ST_ for SPECT', "NM_ for Nuclear Medicine"]
+MODALITIES = ['PT', 'CT']
+MODALITIES_PREFIX = ['PT_ for PET', 'CT_ for CT']
 
 # FILE NAMES
 
@@ -60,7 +60,7 @@ ALIGNED_PREFIX = 'aligned_'
 ALIGNED_PREFIX_PT = 'aligned_PT_'
 ALIGNED_PREFIX_CT = 'aligned_CT_'
 ALIGNED_PREFIX_MASK = 'aligned_MASK_'
-MULTIPLEXED_COMPOSITE_IMAGE = 'RBG-composite.nii.gz'
+MULTIPLEXED_COMPOSITE_IMAGE = 'RGB-composite.nii.gz'
 GRAYSCALE_COMPOSITE_IMAGE = 'grayscale-composite.nii.gz'
 
 CHANNEL_PREFIX_RED = "_RED"
@@ -70,9 +70,11 @@ CHANNEL_PREFIXES = [CHANNEL_PREFIX_RED, CHANNEL_PREFIX_GREEN, CHANNEL_PREFIX_BLU
 
 # MOOSE PARAMETERS
 MOOSE_MODEL_BODY = "clin_ct_body"
-MOOSE_MODEL_PUMA = "clin_ct_PUMA"
+MOOSE_MODEL_PUMA_GPU = "clin_ct_PUMA"
+MOOSE_MODEL_PUMA_CPU = "clin_ct_PUMA4"
 MOOSE_PREFIX_BODY = 'CT_Body_'
-MOOSE_PREFIX_PUMA = 'Clin_CT_PUMA_'
+MOOSE_PREFIX_PUMA_GPU = 'Clin_CT_PUMA_'
+MOOSE_PREFIX_PUMA_CPU = 'Clin_CT_PUMA4_'
 MOOSE_LABEL_INDEX = {
         1: "legs",
         2: "body",
@@ -82,7 +84,7 @@ MOOSE_LABEL_INDEX = {
 
 # FOLDER NAMES
 
-PUMA_WORKING_FOLDER = 'PUMAZ-V01' + '-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+PUMA_WORKING_FOLDER = 'PUMAZ-v1' + '-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 TRANSFORMS_FOLDER = 'transforms'
 ALIGNED_MASK_FOLDER = 'aligned_MASK'
 ALIGNED_CT_FOLDER = 'aligned_CT'

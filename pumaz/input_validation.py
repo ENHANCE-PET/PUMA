@@ -21,7 +21,9 @@ import logging
 import os
 
 from pumaz import constants
+from rich.console import Console
 
+console = Console()
 
 def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
     """
@@ -39,8 +41,8 @@ def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
 
         if sum(anatomical_prefixes) == 1 and sum(functional_prefixes) == 1:
             puma_compliant_subjects.append(subject_path)
-    print(f"{constants.ANSI_ORANGE} Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
-          f"{len(tracer_paths)} {constants.ANSI_RESET}")
+    console.print(f" Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
+                  f"{len(tracer_paths)} ", style="bold magenta")
     logging.info(f" Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
                  f"{len(tracer_paths)}")
 

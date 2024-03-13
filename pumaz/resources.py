@@ -17,6 +17,16 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 import torch
+from rich.console import Console
+
+console = Console()
+
+# GREEDY_BINARIES is a dictionary that contains the download information for the binaries required for the pumaz.
+# Each key in the dictionary is a string that represents the name of the binary.
+# The value associated with each key is another dictionary that contains the following keys:
+# - "url": A string that represents the URL where the binary can be downloaded.
+# - "filename": A string that represents the name of the file that will be downloaded.
+# - "directory": A string that represents the name of the directory where the downloaded file will be stored.
 
 GREEDY_BINARIES = {
     "greedy-windows-x86_64": {
@@ -57,17 +67,19 @@ def check_device(verbose: bool = True) -> str:
         if torch.cuda.is_available():
             device_count = torch.cuda.device_count()
             if verbose:
-                print(f" CUDA is available with {device_count} GPU(s). Predictions will be run on GPU.")
+                console.print(f" CUDA is available with {device_count} GPU(s). Predictions will be run on GPU.",
+                              style="white")
             return "cuda"
         elif torch.backends.mps.is_available():
             if verbose:
-                print(" Apple MPS backend is available. Predictions will be run on Apple Silicon GPU.")
+                console.print(" Apple MPS backend is available. Predictions will be run on Apple Silicon GPU.",
+                              style="white")
             return "mps"
         else:
             if verbose:
-                print(" CUDA/MPS not available. Predictions will be run on CPU.")
+                console.print(" CUDA/MPS not available. Predictions will be run on CPU.", style="white")
             return "cpu"
     except Exception as e:
         if verbose:
-            print(f" An error occurred while checking the device: {e}. Defaulting to CPU.")
+            console.print(f" An error occurred while checking the device: {e}. Defaulting to CPU.")
         return "cpu"

@@ -19,12 +19,13 @@
 
 import logging
 import os
-import requests
 import zipfile
+
+import requests
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, FileSizeColumn, TransferSpeedColumn, TimeRemainingColumn
 
-from pumaz import constants
+console = Console()
 
 
 def download(item_name: str, item_path: str, item_dict: dict) -> str:
@@ -63,7 +64,6 @@ def download(item_name: str, item_path: str, item_dict: dict) -> str:
         total_size = int(response.headers.get("Content-Length", 0))
         chunk_size = 1024 * 10
 
-        console = Console()
         progress = Progress(
             TextColumn("[bold blue]{task.description}"),
             BarColumn(bar_width=None),
@@ -111,11 +111,11 @@ def download(item_name: str, item_path: str, item_dict: dict) -> str:
 
         # Delete the zip file
         os.remove(filename)
-        print(f"{constants.ANSI_GREEN} Registration binaries - download complete. {constants.ANSI_RESET}")
+        console.print(f" Registration binaries - download complete.", style="green")
         logging.info(f" Registration binaries - download complete.")
     else:
-        print(f"{constants.ANSI_GREEN} A local instance of the system specific registration binary has been detected. "
-              f"{constants.ANSI_RESET}")
+        console.print(
+            f" A local instance of the system specific registration binary has been detected.", style="green")
         logging.info(f" A local instance of registration binary has been detected.")
 
     return os.path.join(item_path, item_name)

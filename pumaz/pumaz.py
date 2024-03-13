@@ -33,6 +33,9 @@ from pumaz import image_conversion
 from pumaz import image_processing
 from pumaz import input_validation
 from pumaz import resources
+from rich.console import Console
+
+console = Console()
 
 
 def main():
@@ -82,8 +85,9 @@ def main():
     subject_folder = os.path.abspath(args.subject_directory)
     regions_to_ignore = args.ignore_regions
     multiplex = args.multiplex
-    segment_tumors = args.segment_tumors
     custom_colors = args.custom_colors
+    segment_tumors = args.segment_tumors
+
 
     display.logo()
     display.citation()
@@ -103,7 +107,14 @@ def main():
     print(f'{constants.ANSI_VIOLET} {emoji.emojize(":memo:")} NOTE:{constants.ANSI_RESET}')
     print(' ')
     display.expectations()
-    print(f'{constants.ANSI_ORANGE} Multiplexing: {multiplex}{constants.ANSI_RESET}')
+
+    # ----------------------------------
+    # DISPLAYING INPUT CHOICES
+    # ----------------------------------
+    console.print(f' Multiplexing: {multiplex} | '
+                  f'Custom Colors: {custom_colors} | '
+                  f'Segment Tumors: {segment_tumors} ',
+                  style='bold magenta')
 
     # ----------------------------------
     # DOWNLOADING THE BINARIES
@@ -116,8 +127,7 @@ def main():
     binary_path = constants.BINARY_PATH
     file_utilities.create_directory(binary_path)
     system_os, system_arch = file_utilities.get_system()
-    print(f'{constants.ANSI_ORANGE} Detected system: {system_os} | Detected architecture: {system_arch}'
-          f'{constants.ANSI_RESET}')
+    console.print(f' Detected system: {system_os} | Detected architecture: {system_arch}', style='bold magenta')
     download.download(item_name=f'greedy-{system_os}-{system_arch}', item_path=binary_path,
                       item_dict=resources.GREEDY_BINARIES)
     file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
@@ -134,7 +144,6 @@ def main():
     logging.info(' STANDARDIZING INPUT DATA TO NIFTI:')
     logging.info(' ')
     image_conversion.standardize_to_nifti(subject_folder)
-    print(f"{constants.ANSI_GREEN} Standardization complete.{constants.ANSI_RESET}")
     logging.info(" Standardization complete.")
 
     # --------------------------------------
@@ -196,12 +205,10 @@ def main():
             output_dir = os.path.join(seg_dir, constants.LIONZ_OUTPUT_DIR)
             file_utilities.create_directory(output_dir)
             image_processing.segment_tumors(seg_dir, output_dir)
-            print(f' {constants.ANSI_GREEN}Segmentation complete.{constants.ANSI_RESET}')
+            console.print(f' Segmentation complete.', style='bold green')
     end_time = time.time()
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
     elapsed_time = round(elapsed_time / 60, 2)
-    print(
-        f"{constants.ANSI_GREEN} 🐾 PUMA has successfully completed the hunt in {elapsed_time} minutes."
-        f" Track down your results in the directory: {puma_dir} 🐾{constants.ANSI_RESET}"
-    )
+    console.print(f" 🐾 PUMA has successfully completed the hunt in {elapsed_time} minutes."
+                  f" Track down your results in the directory: {puma_dir} 🐾", style='white')

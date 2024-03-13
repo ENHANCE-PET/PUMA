@@ -26,18 +26,15 @@ import re
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from lionz import lion
 
 import GPUtil
 import SimpleITK as sitk
 import nibabel as nib
 import numpy as np
 import psutil
+from lionz import lion
 from moosez import moose
 from mpire import WorkerPool
-from rich.console import Console
-from rich.progress import Progress, BarColumn, TimeElapsedColumn
-from rich.table import Table
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES, RED_WEIGHT,
@@ -45,6 +42,9 @@ from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCT
 from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
                                   copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 from pumaz.resources import check_device
+from rich.console import Console
+from rich.progress import Progress, BarColumn, TimeElapsedColumn
+from rich.table import Table
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
@@ -70,14 +70,17 @@ def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, acc
             BarColumn(),
             "[progress.percentage]{task.percentage:>3.0f}%",
             "[{task.completed}/{task.total}]",
-            "• Time elapsed:",
+            "[white]• Time elapsed:",  # Making static text white
             TimeElapsedColumn(),
-            "• CPU Load: [cyan]{task.fields[cpu]}%",
-            "• Memory Load: [cyan]{task.fields[memory]}%",
-            "• GPU Load: [cyan]{task.fields[gpu]}%",
+            "[white]• CPU Load:",  # Static text in white
+            "[cyan]{task.fields[cpu]}%",  # Dynamic content in cyan
+            "[white]• Memory Load:",  # Static text in white
+            "[cyan]{task.fields[memory]}%",  # Dynamic content in cyan
+            "[white]• GPU Load:",  # Static text in white
+            "[cyan]{task.fields[gpu]}%",  # Dynamic content in cyan
             expand=False
     ) as progress:
-        task_description = f"[cyan] MOOSE-ing CT files | Model: {moose_model} | Accelerator: {accelerator}"
+        task_description = f"[white] MOOSE-ing CT files | Model: {moose_model} | Accelerator: {accelerator}"
         task = progress.add_task(task_description, total=len(ct_files), cpu="0", memory="0", gpu="N/A")
 
         for ct_file in ct_files:
@@ -269,7 +272,7 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
     # Process tasks in parallel using mpire
     with WorkerPool(n_jobs=num_workers) as pool:
         with Progress() as progress:
-            task = progress.add_task("[cyan] Preprocessing PUMA compliant subjects ", total=len(tasks))
+            task = progress.add_task("[white] Preprocessing PUMA compliant subjects ", total=len(tasks))
 
             for _ in pool.map(reslice_identity, tasks):
                 progress.update(task, advance=1)
@@ -307,8 +310,17 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
 
     # Run moosez to get the masks
     accelerator = check_device()
+
+    # if the accelerator is a GPU, use the MOOSE PUMA model for the GPU or the CPU model otherwise
+    if accelerator == 'cuda':
+        moose_model_puma = constants.MOOSE_MODEL_PUMA_GPU
+        moose_prefix_puma = constants.MOOSE_PREFIX_PUMA_GPU
+    else:
+        moose_model_puma = constants.MOOSE_MODEL_PUMA_CPU
+        moose_prefix_puma = constants.MOOSE_PREFIX_PUMA_CPU
+
     process_and_moose_ct_files(ct_dir, body_mask_dir, constants.MOOSE_MODEL_BODY, accelerator)
-    process_and_moose_ct_files(ct_dir, puma_mask_dir, constants.MOOSE_MODEL_PUMA, accelerator)
+    process_and_moose_ct_files(ct_dir, puma_mask_dir, moose_model_puma, accelerator)
 
     # Remove the body regions that are not relevant for registration
 
@@ -319,9 +331,9 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
         os.rename(mask_file, new_mask_file)
         change_mask_labels(new_mask_file, constants.MOOSE_LABEL_INDEX, regions_to_ignore)
 
-    puma_mask_files = glob.glob(os.path.join(puma_mask_dir, constants.MOOSE_PREFIX_PUMA + '*nii*'))
+    puma_mask_files = glob.glob(os.path.join(puma_mask_dir, moose_prefix_puma + '*nii*'))
     for puma_mask_file in puma_mask_files:
-        new_mask_file = re.sub(rf'{constants.MOOSE_PREFIX_PUMA}', '', puma_mask_file)
+        new_mask_file = re.sub(rf'{moose_prefix_puma}', '', puma_mask_file)
         os.rename(puma_mask_file, new_mask_file)
         apply_mask(new_mask_file, os.path.join(body_mask_dir, os.path.basename(new_mask_file)), new_mask_file)
 
@@ -572,13 +584,13 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
             BarColumn(),
             "[progress.percentage]{task.percentage:>3.0f}%",
             "[{task.completed}/{task.total}]",
-            "• Time elapsed:",
+            "[white]• Time elapsed:",  # Static text in white
             TimeElapsedColumn(),
-            "• CPU Load: [cyan]{task.fields[cpu]}%",
-            "• Memory Load: [cyan]{task.fields[memory]}%",
+            "[white]• CPU Load: [cyan]{task.fields[cpu]}%",  # Static label in white, dynamic content in cyan
+            "[white]• Memory Load: [cyan]{task.fields[memory]}%",  # Static label in white, dynamic content in cyan
             expand=False
     ) as progress:
-        task_description = "[cyan] Aligning images..."
+        task_description = "[white] Aligning images..."
         task = progress.add_task(task_description, total=len(moving_images), cpu="0", memory="0")
 
         for moving_image in moving_images:
@@ -783,8 +795,23 @@ def get_color_channel_assignments(tracer_images) -> list:
 def blend_images(image_paths, modality_names, output_path, custom_colors=False):
     """
     Blend up to three NIfTI images into a single composite RGB image and create a summary table.
+
+    Parameters:
+    - image_paths (list): A list of file paths to the NIfTI images to be blended.
+    - modality_names (list): A list of modality names corresponding to the images.
+    - output_path (str): The path to the output file where the blended image will be saved.
+    - custom_colors (bool, optional): If True, the function will prompt the user to assign a color channel to each image.
+      If False, the color channels will be assigned automatically. Default is False.
+
+    Returns:
+    - None
+
+    Raises:
+    - ValueError: If the number of image paths is not between 1 and 3, or if the number of image paths and modality names do not match.
     """
+
     # Validate the input
+
     if not (1 <= len(image_paths) <= 3):
         raise ValueError(" Provide between one to three image paths.")
     if len(image_paths) != len(modality_names):
@@ -798,21 +825,22 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
 
     images = []
     console = Console()
+    total_steps = len(image_paths) + 2  # Loading images, blending, and saving
     with Progress() as progress:
-        load_task = progress.add_task("[cyan] Loading images...", total=len(image_paths))
+        task = progress.add_task("[white] Processing images...", total=total_steps)
 
         # Load, normalize, and verify image shapes
         for path in image_paths:
             img = nib.load(path).get_fdata()
             img_normalized = normalize_data(img)
             images.append(img_normalized)
-            progress.update(load_task, advance=1)
+            progress.update(task, advance=1, description="[white] Loading images...")
 
         # Check if all images have the same shape
         if not all(img.shape == images[0].shape for img in images):
             raise ValueError(" All images must have the same dimensions.")
 
-        blend_task = progress.add_task("[cyan] Blending images...", total=1)
+        progress.update(task, description="[white] Blending images...")
 
         # Create the composite image
         composite_data = np.zeros((*images[0].shape, 3), dtype=np.uint8)
@@ -821,9 +849,9 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
         for data, color_channel in zip(images, color_channels):
             composite_data[..., color_channel] = np.clip(data * 255, 0, 255).astype(np.uint8)
 
-        progress.update(blend_task, advance=1)
+        progress.update(task, advance=1)
 
-        save_task = progress.add_task("[cyan] Saving composite image...", total=1)
+        progress.update(task, description="[white] Saving composite image...")
 
         # Save the composite image as a new NIfTI file
         shape_3d = composite_data.shape[0:3]
@@ -832,21 +860,27 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
             shape_3d)  # copy used to force fresh internal structure
         composite_image = nib.Nifti1Image(composite_data, nib.load(image_paths[0]).affine)
         nib.save(composite_image, output_path)
-        progress.update(save_task, advance=1)
 
-    console.print(f" Composite image saved to {output_path}", style="bold magenta")
+        progress.update(task, advance=1)
+        progress.stop()  # Manually stop the progress display
 
-    # Create and display a rich table for image information
-    table = Table(show_header=True, header_style="bold magenta")
-    table.add_column("Index", style="dim")
-    table.add_column("File Name")
-    table.add_column("Modality Name")
-    table.add_column("Channel Assigned")
+    table = Table(show_header=True, header_style="bold magenta", border_style="white")
 
-    logging.info(f' File{" " * 56} | Modality | Color')
+    # Add columns with specific style adjustments
+    table.add_column("Index", style="dim white", justify="center")
+    table.add_column("Generated File Names", style="white", overflow="fold", justify="center")
+    table.add_column("Modality Type", style="white", justify="center")
+    table.add_column("Channel Assigned", style="white", justify="center")
+
+    # Add rows with your data
     for idx, (path, modality, color_channel) in enumerate(zip(image_paths, modality_names, color_channels)):
         table.add_row(str(idx + 1), path, modality, channel_colors[color_channel])
-        logging.info(f' {os.path.basename(path):60} | {modality:8} | {channel_colors[color_channel]:5}')
+
+    # Adding the composite image details to the table
+    composite_index = len(image_paths) + 1
+    table.add_row(str(composite_index), output_path, "MPX", "RGB")
+
+    # Print the table
     console.print(table)
 
     # Renaming according to channel assignments
