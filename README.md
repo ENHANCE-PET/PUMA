@@ -87,10 +87,12 @@ You're now ready to experience the precision and speed of PUMA 1.2.
 Start your journey with PUMA 1.2 by using our straightforward command-line tool. It requires the directory path containing different tracer images, and each image should be stored in separate folders. Here's how you can get started:
 
 ```bash
-pumaz -d <path_to_image_dir>
-      -ir <regions to ignore: arms,legs,head,none>
-      -m <optional for a multiplexed RGB image output>
-      -cs <optional for a custom color selection when also -m was passed>
+
+   pumaz \
+       -d <path_to_image_dir>              # Directory path containing the images to be analyzed
+       -ir <regions_to_ignore>             # Regions to ignore: arms, legs, head, none
+       -m                                  # Optional: Enable multiplexed RGB image output
+       -cs <color_selection>               # Optional: Custom color selection for RGB output (requires -m)
 ```
 
 - `<path_to_image_dir>` refers to the parent directory containing different tracer images in their respective sub-directories.
@@ -104,6 +106,12 @@ For assistance or additional information, you can always type:
 
 ```bash
 pumaz -h
+```
+### Example usage:
+Apply PUMA to images in a directory, ignoring arms and legs, with multiplexed RGB output and custom colors:
+
+```bash
+    pumaz -d /path/to/images -ir arms,legs -m -cs 
 ```
 
 ## Directory Structure and Naming Conventions for PUMA 📂🏷️
