@@ -141,6 +141,11 @@ Parent_Directory
 
 Note: All the PET and CT images related to a tracer should be placed in the same directory named after the tracer.
 
+## 🚀 Benchmarks
+
+- [Apple M1 Ultra 20 Cores, Mode: CPU](https://github.com/Keyn34/PUMA/blob/master/Images/Apple-M1-Ultra-20-Cores.png)
+- [Linux Server 128 Cores, Mode: Nvidia A100 GPU](https://github.com/Keyn34/PUMA/blob/master/Images/Linux-Server-Nvidia-A100-128-Cores.png)
+
 ## A Note on QIMP Python Packages: The 'Z' Factor 📚🚀
 
 All of our Python packages here at QIMP carry a special signature – a distinctive 'Z' at the end of their names. The 'Z' is more than just a letter to us; it's a symbol of our forward-thinking approach and commitment to continuous innovation.
