@@ -51,6 +51,7 @@ setup(
         'halo',
         'psutil',
         'gputil',
+        'dask',
         'lionz'
     ],
     entry_points={
