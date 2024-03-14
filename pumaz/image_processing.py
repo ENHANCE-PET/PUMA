@@ -39,13 +39,16 @@ from mpire import WorkerPool
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES, RED_WEIGHT,
-                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL, CHUNK_THRESHOLD)
+                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL, CHUNK_THRESHOLD, MIP_ROTATION_STEP, MIP_VOXEL_SPACING, FRAME_DURATION)
 from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
                                   copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 from pumaz.resources import check_device
 from rich.console import Console
 from rich.progress import Progress, BarColumn, TimeElapsedColumn
 from rich.table import Table
+from scipy import ndimage
+import imageio
+from skimage.transform import resize
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
@@ -1258,3 +1261,132 @@ class ImageResampler:
         if output_image_path is not None:
             sitk.WriteImage(resampled_image, output_image_path)
         return resampled_image
+
+
+def generate_pet_mip_array(img: sitk.Image, rotation_angle: int, channel_contrast_ranges: list, axis: int =1) -> [np.array, list]:
+    """
+    Generates a Maximum Intensity Projection (MIP) of a PET image, applies contrast adjustment,
+    adjusts channels based on human perception, and rotates the image.
+
+    Parameters:
+    - img (SimpleITK.Image): The input PET image.
+    - rotation_angle (float): The angle to rotate the input image before generating the MIP.
+    - channel_contrast_ranges (list of tuples): Each tuple contains the lower and upper contrast
+      ranges for a channel. If None, the ranges will be computed.
+    - axis (int): The axis along which to compute the MIP.
+
+    Returns:
+    - final_mip (numpy.ndarray): The final processed MIP image after rotation.
+    - channel_contrast_ranges (list of tuples): The contrast ranges used for each channel.
+    """
+    # Convert the SimpleITK image to a NumPy array
+    data = sitk.GetArrayFromImage(img)
+
+    # Rotate the image data
+    rotated_data = ndimage.rotate(data, angle=rotation_angle, axes=(1, 2), reshape=False, order=1)
+
+    # Normalize the rotated data to the range [0, 255]
+    min_val = np.min(rotated_data)
+    max_val = np.max(rotated_data)
+    normalized_data = ((rotated_data - min_val) / (max_val - min_val)) * 255.0
+    normalized_data = normalized_data.astype(np.uint8)
+
+    # Compute the Maximum Intensity Projection (MIP)
+    mip = np.max(normalized_data, axis=axis)
+
+    # Adjust the image contrast and channels based on provided or computed ranges
+    if not channel_contrast_ranges:
+        channel_contrast_ranges = compute_channel_contrast_ranges(mip)
+    adjusted_mip = adjust_image_contrast(mip, channel_contrast_ranges)
+    corrected_mip = adjust_channels_per_human_perception(adjusted_mip)
+
+    # Rotate the final MIP image by 180 degrees
+    final_mip = ndimage.rotate(corrected_mip, angle=180, reshape=False, order=1)
+
+    return final_mip, channel_contrast_ranges
+
+
+def adjust_channels_per_human_perception(img: np.array, perception_coefficients: tuple =(1.71, 1.42, 1.89)) -> np.array:
+    """
+       Adjusts the RGB channels of an image based on the human eye's perception coefficients.
+
+       Parameters:
+       - img (numpy.ndarray): The input image in RGB format.
+       - perception_coefficients (tuple of float): Coefficients for the R, G, and B channels, respectively.
+
+       Returns:
+       - numpy.ndarray: The adjusted RGB image.
+       """
+    img_float = img.astype(np.float32)
+    for i, coeff in enumerate(perception_coefficients):
+        img_float[:, :, i] *= coeff
+    img_float = np.clip(img_float, 0, 255)
+    return img_float.astype(np.uint8)
+
+
+def compute_channel_contrast_ranges(image: np.array) -> list:
+    """
+    Computes contrast ranges for each channel of an image based on quantiles.
+
+    Parameters:
+    - image (numpy.ndarray): The input image.
+
+    Returns:
+    - list of tuples: The contrast ranges for each channel.
+    """
+    lower_quantile = 0.01
+    upper_quantile = 0.99
+    new_channel_contrast_ranges = []
+    for channel in range(image.shape[2]):
+        lower, upper = np.quantile(image[:, :, channel], [lower_quantile, upper_quantile])
+        new_channel_contrast_ranges.append((lower, upper))
+    return new_channel_contrast_ranges
+
+
+def adjust_image_contrast(image: np.array, channel_contrast_ranges: list) -> np.array:
+    """
+    Adjusts the contrast of an image based on specified ranges for each channel.
+
+    Parameters:
+    - image (numpy.ndarray): The input image.
+    - channel_contrast_ranges (list of tuples): The contrast ranges for each channel.
+
+    Returns:
+    - numpy.ndarray: The contrast-adjusted image.
+    """
+    adjusted_channel_images = []
+    for channel in range(image.shape[2]):
+        channel_image = image[:, :, channel]
+        lower, upper = channel_contrast_ranges[channel]
+        if upper == lower:
+            adjusted_channel_images.append(channel_image.astype(np.uint8))
+            continue
+        image_stretched = (channel_image - lower) / (upper - lower)
+        image_stretched = np.clip(image_stretched, 0, 1)
+        image_stretched = (image_stretched * 255).astype(np.uint8)
+        adjusted_channel_images.append(image_stretched)
+    return np.stack(adjusted_channel_images, axis=-1)
+
+
+def create_rotational_mip(image_file: str, output_folder: str) -> None:
+    """
+    Creates a rotational Maximum Intensity Projection (MIP) animation from a given image file.
+
+    Parameters:
+    - image_file (str): Path to the input image file.
+    - output_folder (str): Path to the folder where the output GIF will be saved.
+
+    Returns:
+    - None
+    """
+    img = sitk.ReadImage(image_file)
+    image_projections = []
+    channel_contrast_ranges = None
+    # Assuming ImageResampler and related constants are defined elsewhere
+    resampled_img = ImageResampler.resample_image_SimpleITK(img, "linear", MIP_VOXEL_SPACING)
+    for i in range(int(360/MIP_ROTATION_STEP)):
+        angle = i * MIP_ROTATION_STEP
+        image_projection, channel_contrast_ranges = generate_pet_mip_array(resampled_img, angle, channel_contrast_ranges=channel_contrast_ranges)
+        image_projections.append(image_projection)
+    imageio.mimsave(os.path.join(output_folder, "mip.gif"), image_projections, duration=FRAME_DURATION, format="GIF")
+

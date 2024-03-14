@@ -206,6 +206,7 @@ def main():
             file_utilities.create_directory(output_dir)
             image_processing.segment_tumors(seg_dir, output_dir)
             console.print(f' Segmentation complete.', style='bold green')
+    image_processing.create_rotational_mip(rgb_image, puma_dir)
     end_time = time.time()
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
