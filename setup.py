@@ -10,7 +10,7 @@ setup(
                 'different PET tracers. It leverages advanced diffeomorphic imaging techniques to offer high-precision '
                 'alignment for multiplexed tracer images. PUMA aims to significantly enhance the accuracy and '
                 'reproducibility of PET image studies.',
-    python_requires='>=3.9',
+    python_requires='>=3.10',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/QIMP-Team/PUMA',
