@@ -129,8 +129,10 @@ def main():
     system_os, system_arch = file_utilities.get_system()
     console.print(f' Detected system: {system_os} | Detected architecture: {system_arch}', style='bold magenta')
     download.download(item_name=f'greedy-{system_os}-{system_arch}', item_path=binary_path,
-                      item_dict=resources.GREEDY_BINARIES)
+                      item_dict=resources.PUMA_BINARIES)
     file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
+    file_utilities.set_permissions(constants.C3D_PATH, system_os)
+    
 
     # ----------------------------------
     # INPUT STANDARDIZATION
