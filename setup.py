@@ -4,8 +4,8 @@ from setuptools import setup, find_packages
 setup(
     name='pumaz',
     version='1.3.2',
-    author='Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar',
-    author_email='Sebastian.Gutschmayer@meduniwien.ac.at, Lalith.shiyamsundar@meduniwien.ac.at',
+    author='Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires',
+    author_email='Lalith.shiyamsundar@meduniwien.ac.at, Sebastian.Gutschmayer@meduniwien.ac.at, Manuel.pires@meduniwien.ac.at',
     description='PUMA (PET Universal Multi-tracer Aligner) is a robust and efficient tool for aligning images from '
                 'different PET tracers. It leverages advanced diffeomorphic imaging techniques to offer high-precision '
                 'alignment for multiplexed tracer images. PUMA aims to significantly enhance the accuracy and '
