@@ -28,23 +28,23 @@ console = Console()
 # - "filename": A string that represents the name of the file that will be downloaded.
 # - "directory": A string that represents the name of the directory where the downloaded file will be stored.
 
-GREEDY_BINARIES = {
-    "greedy-windows-x86_64": {
+PUMA_BINARIES = {
+    "puma-windows-x86_64": {
         "url": "https://ucd-emic-muv.s3.us-west-2.amazonaws.com/falcon/falcon-windows-x86_64.zip",
         "filename": "falcon-windows-x86_64.zip",
         "directory": "falcon-windows-x86_64",
     },
-    "greedy-linux-x86_64": {
+    "puma-linux-x86_64": {
         "url": "https://ucd-emic-muv.s3.us-west-2.amazonaws.com/falcon/falcon-linux-x86_64.zip",
         "filename": "falcon-linux-x86_64.zip",
         "directory": "falcon-linux-x86_64",
     },
-    "greedy-mac-x86_64": {
+    "puma-mac-x86_64": {
         "url": "https://ucd-emic-muv.s3.us-west-2.amazonaws.com/falcon/falcon-mac-x86_64.zip",
         "filename": "falcon-mac-x86_64.zip",
         "directory": "falcon-mac-x86_64",
     },
-    "greedy-mac-arm64": {
+    "puma-mac-arm64": {
         "url": "https://ucd-emic-muv.s3.us-west-2.amazonaws.com/falcon/falcon-mac-arm64.zip",
         "filename": "falcon-mac-arm64.zip",
         "directory": "falcon-mac-arm64",
