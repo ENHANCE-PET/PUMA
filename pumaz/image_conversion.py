@@ -30,7 +30,10 @@ from nifti2dicom import converter
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz import input_validation
+from rich.console import Console
 from rich.progress import Progress
+
+console = Console()
 
 
 def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
@@ -360,6 +363,9 @@ class NiftiToDicomConverter:
             os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
             f'*{reference_img_dirname}*'
         )[0]
+
+        console.print(f"🔍 Reference tracer image directory: {reference_img_dicom_dir}. Kindly use the "
+                      f"CT from here when overlaying the aligned PT dicom or the MPX images!", style="white")
 
         self._move_reference_dicom_dir(ref_dicom_dir_info.get('PT'),
                                        os.path.splitext(os.path.basename(reference_nifti_img))[0])
