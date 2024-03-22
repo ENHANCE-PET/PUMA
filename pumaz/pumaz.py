@@ -79,6 +79,9 @@ def main():
 
     parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
                         help="Manually assign colors to tracer images.", required=False)
+    parser.add_argument("-c2d", "--convert_to_dicom", action='store_true', default=False,
+                        help="Convert DICOM images to NIFTI format. Set this to true only if your input is DICOM",
+                        required=False)
 
     args = parser.parse_args()
 
@@ -87,7 +90,7 @@ def main():
     multiplex = args.multiplex
     custom_colors = args.custom_colors
     segment_tumors = args.segment_tumors
-
+    convert_to_dicom = args.convert_to_dicom
 
     display.logo()
     display.citation()
@@ -132,7 +135,6 @@ def main():
                       item_dict=resources.PUMA_BINARIES)
     file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
     file_utilities.set_permissions(constants.C3D_PATH, system_os)
-    
 
     # ----------------------------------
     # INPUT STANDARDIZATION
@@ -177,7 +179,7 @@ def main():
     puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(
         puma_compliant_subjects=puma_compliant_subject_folders,
         regions_to_ignore=regions_to_ignore)
-    image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
+    reference_img = image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
 
     # ----------------------------------
     # MULTIPLEXING
@@ -198,7 +200,8 @@ def main():
         image_processing.rgb2gray(rgb_image, grayscale_image)
         if segment_tumors:
             print('')
-            print(f'{constants.ANSI_VIOLET} {emoji.emojize(":face_with_medical_mask:")} SEGMENTING TUMORS:{constants.ANSI_RESET}')
+            print(
+                f'{constants.ANSI_VIOLET} {emoji.emojize(":face_with_medical_mask:")} SEGMENTING TUMORS:{constants.ANSI_RESET}')
             print('')
             print(f' {constants.ANSI_ORANGE}Segmentation may take a few minutes...{constants.ANSI_RESET}')
             seg_dir = os.path.join(puma_dir, constants.SEGMENTATION_FOLDER)
@@ -208,6 +211,21 @@ def main():
             file_utilities.create_directory(output_dir)
             image_processing.segment_tumors(seg_dir, output_dir)
             console.print(f' Segmentation complete.', style='bold green')
+
+    if convert_to_dicom:
+        print('')
+        print(f'{constants.ANSI_VIOLET} {emoji.emojize(":file_folder:")} CONVERTING TO DICOM:{constants.ANSI_RESET}')
+        print('')
+        logging.info(' ')
+        logging.info(' CONVERTING TO DICOM:')
+        logging.info(' ')
+        n2dConverter = image_conversion.NiftiToDicomConverter(
+            subject_folder=subject_folder,
+            puma_dir=puma_dir,
+        )
+        n2dConverter.set_reference_image(reference_img)
+        n2dConverter.convert_to_dicom(puma_compliant_subject_folders=puma_compliant_subject_folders)
+
     end_time = time.time()
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places

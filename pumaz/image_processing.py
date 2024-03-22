@@ -563,14 +563,14 @@ def find_corresponding_image(modality_dir, reference_basename):
         raise FileNotFoundError(f"No corresponding image found in {modality_dir} for {reference_basename}")
 
 
-def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
+def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str) -> str:
     """
     Align the images in the PUMA working directory.
     :param puma_working_dir: The path to the PUMA working directory.
     :param ct_dir: The path to the CT directory.
     :param pt_dir: The path to the PET directory.
     :param mask_dir: The path to the mask directory.
-    :return: None
+    :return: The path to the reference mask image.
     """
     reference_image = find_images(mask_dir)[0]
     logging.info(f"Reference image selected: {os.path.basename(reference_image)}")
@@ -640,6 +640,7 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
     reference_pt = find_corresponding_image(pt_dir, os.path.basename(reference_image))
     copy_reference_image(reference_pt, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
                          constants.ALIGNED_PREFIX_PT)
+    return reference_image
 
 
 def calculate_bbox(mask_np):
@@ -952,4 +953,3 @@ def segment_tumors(input_dir: str, output_dir: str):
     logging.info(f" Running LIONz for segmenting tumors from {input_dir}")
     lion(LIONZ_MODEL, input_dir, output_dir, device)
     logging.info(f" Tumor segmentation completed.")
-

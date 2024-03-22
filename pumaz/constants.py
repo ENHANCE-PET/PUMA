@@ -38,7 +38,6 @@ elif file_utilities.get_system()[0] in ['linux', 'mac']:
 else:
     raise ValueError('Unsupported OS')
 
-
 # COLOR CODES
 ANSI_ORANGE = '\033[38;5;208m'
 ANSI_GREEN = '\033[38;5;40m'
@@ -76,11 +75,11 @@ MOOSE_PREFIX_BODY = 'CT_Body_'
 MOOSE_PREFIX_PUMA_GPU = 'Clin_CT_PUMA_'
 MOOSE_PREFIX_PUMA_CPU = 'Clin_CT_PUMA4_'
 MOOSE_LABEL_INDEX = {
-        1: "legs",
-        2: "body",
-        3: "head",
-        4: "arms"
-    }
+    1: "legs",
+    2: "body",
+    3: "head",
+    4: "arms"
+}
 
 # FOLDER NAMES
 
@@ -93,6 +92,7 @@ BODY_MASK_FOLDER = 'body_masks'
 PUMA_MASK_FOLDER = 'puma_masks'
 COMMON_FOV_MASK_FOLDER = 'common_fov_masks'
 SEGMENTATION_FOLDER = 'segmentation'
+DICOM_FOLDER = 'dicom'
 
 # HYPERPARAMETERS
 
@@ -109,3 +109,7 @@ BLUE_WEIGHT = 0.1140
 LIONZ_MODEL = "mpx"
 LIONZ_PREFIX = "PT_"
 LIONZ_OUTPUT_DIR = "seg_output"
+
+# DICOM DESCRIPTIONS
+
+DESCRIPTION = 'Processed-by-PUMA-AND-DICOM-conversion-by-nifti2dicom'

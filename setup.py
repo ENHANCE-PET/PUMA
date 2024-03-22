@@ -46,11 +46,13 @@ setup(
         'rich',
         'pandas',
         'dicom2nifti',
+        'nifti2dicom',
         'requests',
         'moosez',
         'halo',
         'psutil',
         'gputil',
+        'dask',
         'lionz'
     ],
     entry_points={
