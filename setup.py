@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pumaz',
-    version='1.3.2',
+    version='1.3.3',
     author='Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires',
     author_email='Lalith.shiyamsundar@meduniwien.ac.at, Sebastian.Gutschmayer@meduniwien.ac.at, Manuel.pires@meduniwien.ac.at',
     description='PUMA (PET Universal Multi-tracer Aligner) is a robust and efficient tool for aligning images from '
