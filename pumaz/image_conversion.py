@@ -359,6 +359,20 @@ class NiftiToDicomConverter:
                     header_dir=moving_dicom_dir_info.get('PT')
                 )
 
+        # Convert MPX images to DICOM
+
+        mpx_img = file_utilities.get_files(
+            os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
+            f'{constants.MULTIPLEXED_COMPOSITE_IMAGE}'
+        )[0]
+
+        mpx_dicom_dir = os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER,
+                                     constants.MULTIPLEXED_COMPOSITE_IMAGE + '_' + constants.DICOM_FOLDER)
+
+        converter.write_rgb_dicom_from_nifti(nifti_file_path=mpx_img,
+                                             reference_dicom_series=ref_dicom_dir_info.get('PT'),
+                                             output_directory=mpx_dicom_dir)
+
         reference_nifti_img = file_utilities.get_files(
             os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
             f'*{reference_img_dirname}*'

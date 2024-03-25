@@ -116,7 +116,8 @@ def main():
     # ----------------------------------
     console.print(f' Multiplexing: {multiplex} | '
                   f'Custom Colors: {custom_colors} | '
-                  f'Segment Tumors: {segment_tumors} ',
+                  f'Segment Tumors: {segment_tumors} | ',
+                  f'Convert to DICOM: {convert_to_dicom}',
                   style='bold magenta')
 
     # ----------------------------------
