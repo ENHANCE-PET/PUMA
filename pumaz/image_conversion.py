@@ -351,12 +351,12 @@ class NiftiToDicomConverter:
                                                 os.path.splitext(os.path.basename(moving_nifti_img))[0] +
                                                 '_' + constants.DICOM_FOLDER)
                 moving_dicom_dir_info = input_validation.identify_modalities(moving_dicom_dir)
-                converter.save_dicom_from_nifti_image(
-                    ref_dir=ref_dicom_dir_info.get('PT'),
-                    nifti_path=moving_nifti_img,
-                    output_dir=output_dicom_dir,
-                    series_description=constants.DESCRIPTION,
-                    header_dir=moving_dicom_dir_info.get('PT')
+                converter.nifti_to_dicom_with_resampling(
+                    nifti_image_path=moving_nifti_img,
+                    original_dicom_directory=moving_dicom_dir_info.get('PT'),
+                    dicom_output_directory=output_dicom_dir,
+                    spatial_info_dicom_directory=ref_dicom_dir_info.get('PT'),
+                    verbose=False,
                 )
 
         # Convert MPX images to DICOM
