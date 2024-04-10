@@ -356,6 +356,7 @@ class NiftiToDicomConverter:
                     original_dicom_directory=moving_dicom_dir_info.get('PT'),
                     dicom_output_directory=output_dicom_dir,
                     spatial_info_dicom_directory=ref_dicom_dir_info.get('PT'),
+                    series_description=constants.DESCRIPTION,
                     verbose=False,
                 )
 
