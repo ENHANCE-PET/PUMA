@@ -115,7 +115,7 @@ pumaz -h
 Apply PUMA to images in a directory, ignoring arms and legs, with multiplexed RGB output and custom colors:
 
 ```bash
-    pumaz -d /path/to/images -ir arms,legs -m -cs 
+    pumaz -d /path/to/images -ir arms,legs -m -cs -c2d 
 ```
 
 ## Directory Structure and Naming Conventions for PUMA 📂🏷️
