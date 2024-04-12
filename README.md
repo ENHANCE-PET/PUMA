@@ -1,19 +1,19 @@
 ![Puma-logo](Images/Puma-logo.png)
 
-## PUMA 1.2 🐾 - Agile. Precision-Driven. Empowering 💪
+## PUMA 1.0 🐾 - Agile. Precision-Driven. Empowering 💪
 [![PyPI version](https://img.shields.io/pypi/v/pumaz?color=FF1493&style=flat-square&logo=pypi)](https://pypi.org/project/pumaz/) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-red.svg?style=flat-square&logo=gnu&color=FF0000)](https://www.gnu.org/licenses/gpl-3.0) [![Monthly Downloads](https://img.shields.io/pypi/dm/pumaz?label=Downloads%20(Monthly)&color=9400D3&style=flat-square&logo=python)](https://pypi.org/project/pumaz/) [![Daily Downloads](https://img.shields.io/pypi/dd/pumaz?label=Downloads%20(Daily)&color=9400D3&style=flat-square&logo=python)](https://pypi.org/project/pumaz/)
 
-Get ready for a leap in the world of Positron Emission Tomography (PET) imaging: introducing PUMA 1.2 🚀
+Get ready for a leap in the world of Positron Emission Tomography (PET) imaging: introducing PUMA 1.0 🚀
 
-PUMA 1.2 (PET Universal Multi-tracer Aligner) has been crafted with a strong focus on the challenges of clinical PET imaging.
+PUMA 1.0 (PET Universal Multi-tracer Aligner) has been crafted with a strong focus on the challenges of clinical PET imaging.
 
-⚡ It's Agile: PUMA operates across all operating systems and architectures, from x86 to ARM64 (Apple Silicon). It has no specific hardware needs, and with the requirement for Python 3.9 or above, PUMA 1.2 is ready to perform anywhere, anytime.
+⚡ It's Agile: PUMA operates across all operating systems and architectures, from x86 to ARM64 (Apple Silicon). It has no specific hardware needs, and with the requirement for Python 3.9 or above, PUMA 1.0 is ready to perform anywhere, anytime.
 
-🔍 It's Precision-Driven yet blazingly fast: Built upon the bedrock of nnUNet based MOOSE and advanced diffeomorphic registration techniques from the awesome 'greedy' library, PUMA 1.2 aligns multiplexed tracer images with high precision in less than a heartbeat, clocking in at under one minute, offering unrivaled clarity and accuracy in the diagnosis of patient pathology.
+🔍 It's Precision-Driven yet blazingly fast: Built upon the bedrock of nnUNet based MOOSE and advanced diffeomorphic registration techniques from the awesome 'greedy' library, PUMA 1.0 aligns multiplexed tracer images with high precision in less than a heartbeat, clocking in at under one minute, offering unrivaled clarity and accuracy in the diagnosis of patient pathology.
 
-🗝️ It's Empowering: PUMA 1.2 enhances diagnostic capabilities with its multiplexed viewing angles, unlocking a new realm of diagnostic possibilities and empowering clinicians.
+🗝️ It's Empowering: PUMA 1.0 enhances diagnostic capabilities with its multiplexed viewing angles, unlocking a new realm of diagnostic possibilities and empowering clinicians.
 
-Join us on this revolutionary journey with PUMA 1.2.
+Join us on this revolutionary journey with PUMA 1.0.
 
 ## 🚀 PUMA's multiplexing in action
 
@@ -27,21 +27,21 @@ Join us on this revolutionary journey with PUMA 1.2.
 
 ## Requirements ✅
 
-Before stepping into the future with PUMA 1.2, here's what you need for an optimal experience:
+Before stepping into the future with PUMA 1.0, here's what you need for an optimal experience:
 
-- **Operating System**: Windows, Mac, or Linux - PUMA 1.2 is versatile and works across all these platforms.
+- **Operating System**: Windows, Mac, or Linux - PUMA 1.0 is versatile and works across all these platforms.
 
 - **Memory**: Make sure your system has enough memory (8-16 GB) to run the tasks smoothly.
 
 - **GPU**: You need a cuda enabled GPU (NVIDIA), 8 GB or more!
 
-- **Python**: PUMA 1.2 operates with Python 3.10, staying in line with the latest updates.
+- **Python**: PUMA 1.0 operates with Python 3.10, staying in line with the latest updates.
 
-Once these specifications are met, you're all set to experience PUMA 1.2's capabilities.
+Once these specifications are met, you're all set to experience PUMA 1.0's capabilities.
 
 ## Installation Guide 🛠️
 
-Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to start your journey with PUMA 1.2.
+Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to start your journey with PUMA 1.0.
 
 ### For Linux and MacOS 🐧🍏
 
@@ -56,12 +56,12 @@ Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to
    source puma-env/bin/activate  # for MacOS
    ```
 
-3. Install PUMA 1.2.
+3. Install PUMA 1.0.
    ```bash
    pip install pumaz
    ```
 
-Congratulations! You're all set to start using PUMA 1.2.
+Congratulations! You're all set to start using PUMA 1.0.
 
 ### For Windows 🪟
 
@@ -75,16 +75,16 @@ Congratulations! You're all set to start using PUMA 1.2.
    .\puma-env\Scripts\activate
    ```
 
-3. Install PUMA 1.2.
+3. Install PUMA 1.0.
    ```bash
    pip install pumaz
    ```
 
-You're now ready to experience the precision and speed of PUMA 1.2.
+You're now ready to experience the precision and speed of PUMA 1.0.
 
 ## Usage Guide 📚
 
-Start your journey with PUMA 1.2 by using our straightforward command-line tool. It requires the directory path containing different tracer images, and each image should be stored in separate folders. Here's how you can get started:
+Start your journey with PUMA 1.0 by using our straightforward command-line tool. It requires the directory path containing different tracer images, and each image should be stored in separate folders. Here's how you can get started:
 
 ```bash
 
@@ -120,11 +120,11 @@ Apply PUMA to images in a directory, ignoring arms and legs, with multiplexed RG
 
 ## Directory Structure and Naming Conventions for PUMA 📂🏷️
 
-PUMA 1.2 requires your data to be structured in a certain way. It supports DICOM directories and NIFTI files. For NIFTI files, users need to ensure that the files are named with the correct modality tag at the start.
+PUMA 1.0 requires your data to be structured in a certain way. It supports DICOM directories and NIFTI files. For NIFTI files, users need to ensure that the files are named with the correct modality tag at the start.
 
 ### Required Directory Structure 🌳
 
-Here is the directory structure that PUMA 1.2 expects:
+Here is the directory structure that PUMA 1.0 expects:
 
 ```
 Parent_Directory
