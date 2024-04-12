@@ -93,6 +93,7 @@ Start your journey with PUMA 1.2 by using our straightforward command-line tool.
        -ir <regions_to_ignore>             # Regions to ignore: arms, legs, head, none
        -m                                  # Optional: Enable multiplexed RGB image output
        -cs <color_selection>               # Optional: Custom color selection for RGB output (requires -m)
+       -c2d <convert_back_to_dicom>        # Optional: Once set, the generated nifti images will be converted back to DICOM
 ```
 
 - `<path_to_image_dir>` refers to the parent directory containing different tracer images in their respective sub-directories.
@@ -101,12 +102,15 @@ Start your journey with PUMA 1.2 by using our straightforward command-line tool.
 
 - `-m` will activate the output of a multiplexed RGB image of the combined tracer images.
 
-- `-cs`, when passed along with `-m`, PUMA will ask you to provide a custom order of color channels for the corresponding tracer images. That way, you can freely decide which tracer image is associated with which channel. 
+- `-cs`, when passed along with `-m`, PUMA will ask you to provide a custom order of color channels for the corresponding tracer images. That way, you can freely decide which tracer image is associated with which channel.
+- `-c2d`, when set the generated aligned nifti images will be converted back to DICOM.
+  
 For assistance or additional information, you can always type:
 
 ```bash
 pumaz -h
 ```
+
 ### Example usage:
 Apply PUMA to images in a directory, ignoring arms and legs, with multiplexed RGB output and custom colors:
 
@@ -125,11 +129,11 @@ Here is the directory structure that PUMA 1.2 expects:
 ```
 Parent_Directory
 │
-└───Tracer1
+└───Tracer1 # can be named anything
 │   │
-│   └───PET_DICOM_Directory or PT_xxxx.nii.gz
+│   └───PET_DICOM_Directory or PT_xxxx.nii.gz # If it's DICOM, the folder name can be anything, but if nifti use a prefix 'PT' for PET
 │   │
-│   └───CT_DICOM_Directory or CT_xxxx.nii.gz
+│   └───CT_DICOM_Directory or CT_xxxx.nii.gz # If it's DICOM, the folder name can be anything, but if nifti use a prefix 'CT' for CT
 │
 └───Tracer2
 │   │
