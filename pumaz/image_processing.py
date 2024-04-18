@@ -38,7 +38,7 @@ from mpire import WorkerPool
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES, RED_WEIGHT,
-                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL)
+                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL, MOOSE_FILLER_LABEL)
 from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
                                   copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 from pumaz.resources import check_device
@@ -336,8 +336,51 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
         new_mask_file = re.sub(rf'{moose_prefix_puma}', '', puma_mask_file)
         os.rename(puma_mask_file, new_mask_file)
         apply_mask(new_mask_file, os.path.join(body_mask_dir, os.path.basename(new_mask_file)), new_mask_file)
+        update_multilabel_mask(new_mask_file, os.path.join(body_mask_dir, os.path.basename(new_mask_file)),
+                               new_mask_file)
 
     return puma_working_dir, ct_dir, pt_dir, puma_mask_dir
+
+
+def update_multilabel_mask(multilabel_mask_path: str, body_mask_path: str, output_path: str) -> None:
+    """
+    Updates a multilabel mask by removing a specific label, converting to binary, and filling in gaps
+    from a binary body mask. The gaps are filled with a specified intensity label.
+
+    Args:
+    - multilabel_mask_path (str): Path to the multilabel mask file.
+    - body_mask_path (str): Path to the body mask file.
+    - output_path (str): Path where the updated mask will be saved.
+
+    Returns:
+    - None
+    """
+    # Load the masks
+    multilabel_mask = sitk.ReadImage(multilabel_mask_path, sitk.sitkUInt8)
+    body_mask = sitk.ReadImage(body_mask_path, sitk.sitkUInt8)
+
+    # Remove the filler label from the multilabel mask
+    multilabel_no_filler = sitk.BinaryThreshold(multilabel_mask, lowerThreshold=0,
+                                                upperThreshold=MOOSE_FILLER_LABEL - 1,
+                                                insideValue=1, outsideValue=0)
+
+    # Convert no filler mask back to the original values where filler label was removed
+    multilabel_no_filler = multilabel_no_filler * multilabel_mask
+
+    # Subtract the no filler binary mask from the binary body mask
+    binary_body_mask = body_mask > 0
+    remaining_mask = binary_body_mask - (multilabel_no_filler > 0)
+
+    # Scale the remaining mask with the filler label intensity
+    scaled_remaining_mask = remaining_mask * MOOSE_FILLER_LABEL
+
+    # Combine the multilabel mask with no filler label and the scaled remaining mask
+    final_mask = sitk.Add(multilabel_no_filler, scaled_remaining_mask)
+
+    # Write the resulting mask to the output path
+    sitk.WriteImage(final_mask, output_path)
+
+
 
 
 class ImageRegistration:

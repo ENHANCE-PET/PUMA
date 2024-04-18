@@ -80,6 +80,7 @@ MOOSE_LABEL_INDEX = {
     3: "head",
     4: "arms"
 }
+MOOSE_FILLER_LABEL = 18
 
 # FOLDER NAMES
 
