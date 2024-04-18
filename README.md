@@ -98,11 +98,11 @@ Start your journey with PUMA 1.0 by using our straightforward command-line tool.
 ```bash
 
    pumaz \
-       -d <path_to_image_dir>              # Directory path containing the images to be analyzed
-       -ir <regions_to_ignore>             # Regions to ignore: arms, legs, head, none
-       -m                                  # Optional: Enable multiplexed RGB image output
-       -cs <color_selection>               # Optional: Custom color selection for RGB output (requires -m)
-       -c2d <convert_back_to_dicom>        # Optional: Once set, the generated nifti images will be converted back to DICOM
+       -d   <path_to_image_dir>              # Directory path containing the images to be analyzed
+       -ir  <regions_to_ignore>              # Regions to ignore: arms, legs, head, none
+       -m                                    # Optional: Enable multiplexed RGB image output
+       -cs  <color_selection>                # Optional: Custom color selection for RGB output (requires -m)
+       -c2d <convert_back_to_dicom>          # Optional: Once set, the generated nifti images will be converted back to DICOM
 ```
 
 - `<path_to_image_dir>` refers to the parent directory containing different tracer images in their respective sub-directories.
