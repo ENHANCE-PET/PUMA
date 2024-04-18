@@ -375,6 +375,7 @@ class ImageRegistration:
             out_dir = pathlib.Path(self.moving_img).parent
             moving_img_filename = pathlib.Path(self.moving_img).name
             self.transform_files = {
+                'moments': os.path.join(out_dir, f"{moving_img_filename}_moment.mat"),
                 'rigid': os.path.join(out_dir, f"{moving_img_filename}_rigid.mat"),
                 'affine': os.path.join(out_dir, f"{moving_img_filename}_affine.mat"),
                 'warp': os.path.join(out_dir, f"{moving_img_filename}_warp.nii.gz"),
@@ -391,13 +392,21 @@ class ImageRegistration:
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
         combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
 
+        # Initialize the command with moments 1 <center of mass>
+
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -i " \
+                     fr"{self.fixed_img} {self.moving_img} " \
+                     f"{combined_mask_cmd} -moments 1 -o " \
+                     fr"{self.transform_files['moments']} "
+        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
         cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
                      fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -ia-image-centers -dof 6 -o " \
+                     f"{combined_mask_cmd} -ia {self.transform_files['moments']} -dof 6 -o " \
                      fr"{self.transform_files['rigid']} " \
                      f"-n {self.multi_resolution_iterations} -m SSD"
-
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
         logging.info(
             f"Rigid alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | Aligned image: "
             f"moco-{pathlib.Path(self.moving_img).name} | Transform file: {pathlib.Path(self.transform_files['rigid']).name}")
@@ -413,13 +422,22 @@ class ImageRegistration:
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
         combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
+        # Initialize the command with moments 1 <center of mass>
+
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -i " \
                      fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -ia-image-centers -dof 12 -o " \
-                     fr"{self.transform_files['affine']} " \
-                     f"-n {self.multi_resolution_iterations} -m SSD"
+                     f"{combined_mask_cmd} -moments 1 -o " \
+                     fr"{self.transform_files['moments']} "
 
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
+                     fr"{self.fixed_img} {self.moving_img} " \
+                     f"{combined_mask_cmd} -ia {self.transform_files['moments']} -dof 12 -o " \
+                     fr"{self.transform_files['affine']} " \
+                     f"-n {self.multi_resolution_iterations} -m SSD"
+        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
         logging.info(
             f"Affine alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} |"
             f" Aligned image: moco-{pathlib.Path(self.moving_img).name} | Transform file: {pathlib.Path(self.transform_files['affine']).name}")
