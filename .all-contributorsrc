@@ -15,6 +15,16 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "mprires",
+      "name": "Manuel Pires",
+      "avatar_url": "https://avatars.githubusercontent.com/u/48754309?v=4",
+      "profile": "https://github.com/mprires",
+      "contributions": [
+        "code",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
