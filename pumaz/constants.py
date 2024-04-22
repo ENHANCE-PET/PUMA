@@ -26,14 +26,14 @@ BINARY_PATH = os.path.join(project_root, 'bin')
 
 # SET PATHS TO BINARIES
 if file_utilities.get_system()[0] == 'windows':
-    GREEDY_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+    GREEDY_PATH = os.path.join(BINARY_PATH, f'beast-binaries-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                                'greedy.exe')
-    C3D_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+    C3D_PATH = os.path.join(BINARY_PATH, f'beast-binaries-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                             'c3d.exe')
 elif file_utilities.get_system()[0] in ['linux', 'mac']:
-    GREEDY_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+    GREEDY_PATH = os.path.join(BINARY_PATH, f'beast-binaries-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                                'greedy')
-    C3D_PATH = os.path.join(BINARY_PATH, f'falcon-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
+    C3D_PATH = os.path.join(BINARY_PATH, f'beast-binaries-{file_utilities.get_system()[0]}-{file_utilities.get_system()[1]}',
                             'c3d')
 else:
     raise ValueError('Unsupported OS')
