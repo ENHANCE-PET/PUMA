@@ -157,8 +157,8 @@ def main():
     # CHECKING FOR PUMA COMPLIANT SUBJECTS
     # --------------------------------------
 
-    tracer_dirs = [os.path.join(subject_folder, d) for d in os.listdir(subject_folder) if
-                   os.path.isdir(os.path.join(subject_folder, d))]
+    tracer_dirs = [os.path.join(subject_folder, d) for d in os.listdir(subject_folder)
+                   if os.path.isdir(os.path.join(subject_folder, d)) and not d.startswith('PUMAZ-v1')]
     puma_compliant_subject_folders = input_validation.select_puma_compliant_subject_folders(tracer_dirs)
 
     num_subject_folders = len(puma_compliant_subject_folders)
