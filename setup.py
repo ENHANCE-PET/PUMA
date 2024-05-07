@@ -49,7 +49,7 @@ setup(
         'dicom2nifti',
         'nifti2dicom',
         'requests',
-        'moosez',
+        'moosez==2.4.9',
         'halo',
         'psutil',
         'gputil',
