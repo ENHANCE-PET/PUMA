@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pumaz',
-    version='1.6.1',
+    version='1.6.2',
     author='Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires',
     author_email='Lalith.shiyamsundar@meduniwien.ac.at, Sebastian.Gutschmayer@meduniwien.ac.at, '
                  'Manuel.pires@meduniwien.ac.at',
@@ -49,7 +49,7 @@ setup(
         'dicom2nifti',
         'nifti2dicom',
         'requests',
-        'moosez==2.4.9',
+        'moosez',
         'halo',
         'psutil',
         'gputil',
