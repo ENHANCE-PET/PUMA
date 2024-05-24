@@ -359,23 +359,15 @@ def update_multilabel_mask(multilabel_mask_path: str, body_mask_path: str, outpu
     multilabel_mask = sitk.ReadImage(multilabel_mask_path, sitk.sitkUInt8)
     body_mask = sitk.ReadImage(body_mask_path, sitk.sitkUInt8)
 
-    # Remove the filler label from the multilabel mask
-    multilabel_no_filler = sitk.BinaryThreshold(multilabel_mask, lowerThreshold=0,
-                                                upperThreshold=MOOSE_FILLER_LABEL - 1,
-                                                insideValue=1, outsideValue=0)
-
-    # Convert no filler mask back to the original values where filler label was removed
-    multilabel_no_filler = multilabel_no_filler * multilabel_mask
-
-    # Subtract the no filler binary mask from the binary body mask
+    # Subtract the binary PUMA mask from the binary body mask
     binary_body_mask = body_mask > 0
-    remaining_mask = binary_body_mask - (multilabel_no_filler > 0)
+    remaining_mask = binary_body_mask - (multilabel_mask > 0)
 
     # Scale the remaining mask with the filler label intensity
     scaled_remaining_mask = remaining_mask * MOOSE_FILLER_LABEL
 
     # Combine the multilabel mask with no filler label and the scaled remaining mask
-    final_mask = sitk.Add(multilabel_no_filler, scaled_remaining_mask)
+    final_mask = sitk.Add(multilabel_mask, scaled_remaining_mask)
 
     # Write the resulting mask to the output path
     sitk.WriteImage(final_mask, output_path)
