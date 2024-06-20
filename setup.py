@@ -36,7 +36,7 @@ setup(
         'SimpleITK~=2.2.1',
         'pydicom~=2.2.2',
         'argparse~=1.4.0',
-        'numpy',
+        'numpy<2.0',
         'mpire~=2.3.3',
         'openpyxl~=3.0.9',
         'matplotlib',
