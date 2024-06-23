@@ -52,35 +52,25 @@ PUMA_BINARIES = {
 }
 
 
-def check_device(verbose: bool = True) -> str:
+def check_device() -> str:
     """
-    This function checks the available device for running predictions, considering CUDA and MPS (for Apple Silicon),
-    and provides the option to control verbosity of the print statements.
-
-    Parameters:
-        verbose (bool): If True, prints the device selection information. Defaults to True.
+    This function checks the available device for running predictions, considering CUDA and MPS (for Apple Silicon).
 
     Returns:
         str: The device to run predictions on, either "cpu", "cuda", or "mps".
     """
-    try:
-        if torch.cuda.is_available():
-            device_count = torch.cuda.device_count()
-            if verbose:
-                console.print(f" CUDA is available with {device_count} GPU(s). Predictions will be run on GPU.",
-                              style="white")
-            return "cuda"
-        elif torch.backends.mps.is_available():
-            if verbose:
-                console.print(
-                    " Apple MPS backend is available. Predictions will be run on Apple Silicon GPU. (Not yet implemented)",
-                              style="white")
-            return "cpu"
-        else:
-            if verbose:
-                console.print(" CUDA/MPS not available. Predictions will be run on CPU.", style="white")
-            return "cpu"
-    except Exception as e:
-        if verbose:
-            console.print(f" An error occurred while checking the device: {e}. Defaulting to CPU.")
+    # Check for CUDA
+    if torch.cuda.is_available():
+        device_count = torch.cuda.device_count()
+        print(f" CUDA is available with {device_count} GPU(s). Predictions will be run on GPU.")
+        return "cuda"
+    # Check for MPS (Apple Silicon) Here for the future but not compatible right now
+    elif torch.backends.mps.is_available():
+        print(" Apple MPS backend is available. Predictions will be run on Apple Silicon GPU.")
+        return "mps"
+    elif not torch.backends.mps.is_built():
+        print(" MPS not available because the current PyTorch install was not built with MPS enabled.")
+        return "cpu"
+    else:
+        print(" CUDA/MPS not available. Predictions will be run on CPU.")
         return "cpu"
