@@ -312,7 +312,7 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
     accelerator = check_device()
 
     # if the accelerator is a GPU, use the MOOSE PUMA model for the GPU or the CPU model otherwise
-    if accelerator == 'cuda' or accelerator == 'mps':
+    if accelerator in {'cuda', 'mps'}:
         moose_model_puma = constants.MOOSE_MODEL_PUMA_GPU
         moose_prefix_puma = constants.MOOSE_PREFIX_PUMA_GPU
     else:
