@@ -26,7 +26,14 @@ import unicodedata
 import SimpleITK
 import dicom2nifti
 import pydicom
+from nifti2dicom import converter
+from pumaz import constants
+from pumaz import file_utilities
+from pumaz import input_validation
+from rich.console import Console
 from rich.progress import Progress
+
+console = Console()
 
 
 def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
@@ -284,3 +291,104 @@ def rename_nifti_files(nifti_dir, dicom_info):
 
                 # delete the old name from the dictionary
                 del dicom_info[filename]
+
+
+class NiftiToDicomConverter:
+    def __init__(self, subject_folder, puma_dir):
+        self.subject_folder = subject_folder
+        self.puma_dir = puma_dir
+        self.reference_img = None
+        self.moving_img_dicom_dirs = []
+        self.moving_nifti_imgs = []
+
+    def set_reference_image(self, reference_img):
+        """Sets the reference image for the conversion process."""
+        self.reference_img = reference_img
+
+    def _get_reference_image_info(self):
+        """Extracts and prepares reference image information."""
+        reference_img_basename = os.path.basename(self.reference_img)
+        # Ensure we're splitting by the correct prefix and capturing the expected directory name portion
+        reference_img_dirname_parts = reference_img_basename.split('_resampled_')
+        if len(reference_img_dirname_parts) > 1:
+            reference_img_dirname = reference_img_dirname_parts[0]
+        else:
+            # Handle cases where the '_resampled_' string is not found
+            reference_img_dirname = reference_img_basename
+
+        # Assuming self.subject_folder is the path up to .../PUMA/00-MTIC/
+        reference_img_dicom_dir = os.path.join(self.subject_folder, reference_img_dirname)
+
+        return reference_img_dirname, reference_img_dicom_dir
+
+    def _find_moving_images(self, puma_compliant_subject_folders):
+        """Identifies and prepares moving images for conversion, ensuring each key is hashable."""
+        _, reference_img_dicom_dir = self._get_reference_image_info()
+        self.moving_img_dicom_dirs = [d for d in puma_compliant_subject_folders if d != reference_img_dicom_dir]
+        self.moving_nifti_imgs = [
+            tuple(file_utilities.find_images(os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
+                                             '*' + os.path.basename(m) + '*'))
+            for m in self.moving_img_dicom_dirs
+        ]
+
+    def convert_to_dicom(self, puma_compliant_subject_folders):
+        """Performs the NIfTI to DICOM conversion for all moving images, correctly handling list keys."""
+        if not self.reference_img:
+            raise ValueError("Reference image not set.")
+
+        reference_img_dirname, reference_img_dicom_dir = self._get_reference_image_info()
+        self._find_moving_images(puma_compliant_subject_folders)
+
+        ref_dicom_dir_info = input_validation.identify_modalities(reference_img_dicom_dir)
+
+        # Ensure we are creating a dictionary with hashable keys
+        moving_nifti_dicom_dirs = {moving_nifti_img: moving_dicom_dir for moving_nifti_img, moving_dicom_dir in
+                                   zip(self.moving_nifti_imgs, self.moving_img_dicom_dirs) if moving_nifti_img}
+
+        for moving_nifti_imgs, moving_dicom_dir in moving_nifti_dicom_dirs.items():
+            for moving_nifti_img in moving_nifti_imgs:  # Process each NIfTI image individually
+                output_dicom_dir = os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER,
+                                                os.path.splitext(os.path.basename(moving_nifti_img))[0] +
+                                                '_' + constants.DICOM_FOLDER)
+                moving_dicom_dir_info = input_validation.identify_modalities(moving_dicom_dir)
+                converter.nifti_to_dicom_with_resampling(
+                    nifti_image_path=moving_nifti_img,
+                    original_dicom_directory=moving_dicom_dir_info.get('PT'),
+                    dicom_output_directory=output_dicom_dir,
+                    spatial_info_dicom_directory=ref_dicom_dir_info.get('PT'),
+                    series_description=constants.DESCRIPTION,
+                    verbose=False,
+                )
+
+        # Convert MPX images to DICOM
+
+        mpx_img = file_utilities.get_files(
+            os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
+            f'{constants.MULTIPLEXED_COMPOSITE_IMAGE}'
+        )[0]
+
+        mpx_dicom_dir = os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER,
+                                     constants.MULTIPLEXED_COMPOSITE_IMAGE + '_' + constants.DICOM_FOLDER)
+
+        converter.write_rgb_dicom_from_nifti(nifti_file_path=mpx_img,
+                                             reference_dicom_series=ref_dicom_dir_info.get('PT'),
+                                             output_directory=mpx_dicom_dir)
+
+        reference_nifti_img = file_utilities.get_files(
+            os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
+            f'*{reference_img_dirname}*'
+        )[0]
+
+        console.print(f"🔍 Reference tracer image directory: {reference_img_dicom_dir}. Kindly use the "
+                      f"CT from here when overlaying the aligned PT dicom or the MPX images!", style="white")
+
+        self._move_reference_dicom_dir(ref_dicom_dir_info.get('PT'),
+                                       os.path.splitext(os.path.basename(reference_nifti_img))[0])
+
+    def _move_reference_dicom_dir(self, reference_img_dicom_dir, reference_img_dirname):
+        """Moves the reference DICOM directory to the aligned PET directory."""
+        aligned_reference_dir = os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER,
+                                             reference_img_dirname + '_' + constants.DICOM_FOLDER)
+        file_utilities.create_directory(aligned_reference_dir)
+        reference_dcm_files = file_utilities.get_files(reference_img_dicom_dir, '*')
+        file_utilities.copy_files_to_destination(reference_dcm_files, aligned_reference_dir)

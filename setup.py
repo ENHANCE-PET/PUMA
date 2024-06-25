@@ -3,14 +3,15 @@ from setuptools import setup, find_packages
 
 setup(
     name='pumaz',
-    version='1.3.1',
-    author='Sebastian Gutschmayer, Lalith Kumar Shiyam Sundar',
-    author_email='Sebastian.Gutschmayer@meduniwien.ac.at, Lalith.shiyamsundar@meduniwien.ac.at',
+    version='1.6.6',
+    author='Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires',
+    author_email='Lalith.shiyamsundar@meduniwien.ac.at, Sebastian.Gutschmayer@meduniwien.ac.at, '
+                 'Manuel.pires@meduniwien.ac.at',
     description='PUMA (PET Universal Multi-tracer Aligner) is a robust and efficient tool for aligning images from '
                 'different PET tracers. It leverages advanced diffeomorphic imaging techniques to offer high-precision '
                 'alignment for multiplexed tracer images. PUMA aims to significantly enhance the accuracy and '
                 'reproducibility of PET image studies.',
-    python_requires='>=3.9',
+    python_requires='>=3.10',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/QIMP-Team/PUMA',
@@ -35,7 +36,7 @@ setup(
         'SimpleITK~=2.2.1',
         'pydicom~=2.2.2',
         'argparse~=1.4.0',
-        'numpy',
+        'numpy<2.0',
         'mpire~=2.3.3',
         'openpyxl~=3.0.9',
         'matplotlib',
@@ -46,11 +47,13 @@ setup(
         'rich',
         'pandas',
         'dicom2nifti',
+        'nifti2dicom',
         'requests',
         'moosez',
         'halo',
         'psutil',
         'gputil',
+        'dask',
         'lionz'
     ],
     entry_points={

@@ -38,7 +38,7 @@ from mpire import WorkerPool
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES, RED_WEIGHT,
-                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL)
+                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL, MOOSE_FILLER_LABEL)
 from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
                                   copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 from pumaz.resources import check_device
@@ -312,7 +312,7 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
     accelerator = check_device()
 
     # if the accelerator is a GPU, use the MOOSE PUMA model for the GPU or the CPU model otherwise
-    if accelerator == 'cuda':
+    if accelerator in {'cuda', 'mps'}:
         moose_model_puma = constants.MOOSE_MODEL_PUMA_GPU
         moose_prefix_puma = constants.MOOSE_PREFIX_PUMA_GPU
     else:
@@ -336,8 +336,43 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
         new_mask_file = re.sub(rf'{moose_prefix_puma}', '', puma_mask_file)
         os.rename(puma_mask_file, new_mask_file)
         apply_mask(new_mask_file, os.path.join(body_mask_dir, os.path.basename(new_mask_file)), new_mask_file)
+        update_multilabel_mask(new_mask_file, os.path.join(body_mask_dir, os.path.basename(new_mask_file)),
+                               new_mask_file)
 
     return puma_working_dir, ct_dir, pt_dir, puma_mask_dir
+
+
+def update_multilabel_mask(multilabel_mask_path: str, body_mask_path: str, output_path: str) -> None:
+    """
+    Updates a multilabel mask by removing a specific label, converting to binary, and filling in gaps
+    from a binary body mask. The gaps are filled with a specified intensity label.
+
+    Args:
+    - multilabel_mask_path (str): Path to the multilabel mask file.
+    - body_mask_path (str): Path to the body mask file.
+    - output_path (str): Path where the updated mask will be saved.
+
+    Returns:
+    - None
+    """
+    # Load the masks
+    multilabel_mask = sitk.ReadImage(multilabel_mask_path, sitk.sitkUInt8)
+    body_mask = sitk.ReadImage(body_mask_path, sitk.sitkUInt8)
+
+    # Subtract the binary PUMA mask from the binary body mask
+    binary_body_mask = body_mask > 0
+    remaining_mask = binary_body_mask - (multilabel_mask > 0)
+
+    # Scale the remaining mask with the filler label intensity
+    scaled_remaining_mask = remaining_mask * MOOSE_FILLER_LABEL
+
+    # Combine the multilabel mask with no filler label and the scaled remaining mask
+    final_mask = sitk.Add(multilabel_mask, scaled_remaining_mask)
+
+    # Write the resulting mask to the output path
+    sitk.WriteImage(final_mask, output_path)
+
+
 
 
 class ImageRegistration:
@@ -375,6 +410,7 @@ class ImageRegistration:
             out_dir = pathlib.Path(self.moving_img).parent
             moving_img_filename = pathlib.Path(self.moving_img).name
             self.transform_files = {
+                'moments': os.path.join(out_dir, f"{moving_img_filename}_moment.mat"),
                 'rigid': os.path.join(out_dir, f"{moving_img_filename}_rigid.mat"),
                 'affine': os.path.join(out_dir, f"{moving_img_filename}_affine.mat"),
                 'warp': os.path.join(out_dir, f"{moving_img_filename}_warp.nii.gz"),
@@ -391,13 +427,21 @@ class ImageRegistration:
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
         combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
 
+        # Initialize the command with moments 1 <center of mass>
+
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -i " \
+                     fr"{self.fixed_img} {self.moving_img} " \
+                     f"{combined_mask_cmd} -moments 1 -o " \
+                     fr"{self.transform_files['moments']} "
+        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
         cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
                      fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -ia-image-centers -dof 6 -o " \
+                     f"{combined_mask_cmd} -ia {self.transform_files['moments']} -dof 6 -o " \
                      fr"{self.transform_files['rigid']} " \
                      f"-n {self.multi_resolution_iterations} -m SSD"
-
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
         logging.info(
             f"Rigid alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | Aligned image: "
             f"moco-{pathlib.Path(self.moving_img).name} | Transform file: {pathlib.Path(self.transform_files['rigid']).name}")
@@ -413,13 +457,22 @@ class ImageRegistration:
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
         combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
+        # Initialize the command with moments 1 <center of mass>
+
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -i " \
                      fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -ia-image-centers -dof 12 -o " \
-                     fr"{self.transform_files['affine']} " \
-                     f"-n {self.multi_resolution_iterations} -m SSD"
+                     f"{combined_mask_cmd} -moments 1 -o " \
+                     fr"{self.transform_files['moments']} "
 
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
+        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
+                     fr"{self.fixed_img} {self.moving_img} " \
+                     f"{combined_mask_cmd} -ia {self.transform_files['moments']} -dof 12 -o " \
+                     fr"{self.transform_files['affine']} " \
+                     f"-n {self.multi_resolution_iterations} -m SSD"
+        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+
         logging.info(
             f"Affine alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} |"
             f" Aligned image: moco-{pathlib.Path(self.moving_img).name} | Transform file: {pathlib.Path(self.transform_files['affine']).name}")
@@ -563,14 +616,14 @@ def find_corresponding_image(modality_dir, reference_basename):
         raise FileNotFoundError(f"No corresponding image found in {modality_dir} for {reference_basename}")
 
 
-def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
+def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str) -> str:
     """
     Align the images in the PUMA working directory.
     :param puma_working_dir: The path to the PUMA working directory.
     :param ct_dir: The path to the CT directory.
     :param pt_dir: The path to the PET directory.
     :param mask_dir: The path to the mask directory.
-    :return: None
+    :return: The path to the reference mask image.
     """
     reference_image = find_images(mask_dir)[0]
     logging.info(f"Reference image selected: {os.path.basename(reference_image)}")
@@ -640,6 +693,7 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
     reference_pt = find_corresponding_image(pt_dir, os.path.basename(reference_image))
     copy_reference_image(reference_pt, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
                          constants.ALIGNED_PREFIX_PT)
+    return reference_image
 
 
 def calculate_bbox(mask_np):
@@ -952,4 +1006,3 @@ def segment_tumors(input_dir: str, output_dir: str):
     logging.info(f" Running LIONz for segmenting tumors from {input_dir}")
     lion(LIONZ_MODEL, input_dir, output_dir, device)
     logging.info(f" Tumor segmentation completed.")
-
