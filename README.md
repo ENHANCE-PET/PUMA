@@ -68,9 +68,15 @@ Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to
 3. Install PUMA 1.0.
    ```bash
    pip install pumaz # for linux and MacOS
-   pip install git+https://github.com/LalithShiyam/pytorch-mps.git # Do this if you have M series chips of apple silicon. DON'T DO THIS FOR LINUX!
-
+    
    ```
+ 4. Apple M1 Specific Installation
+If you are installing OCELOT on an Apple Silicon device (e.g., Apple M1), follow this step. **Do not perform this step for Linux installations.**
+
+```bash
+pip install git+https://github.com/LalithShiyam/pytorch-mps.git
+```
+
 
 Congratulations! You're all set to start using PUMA 1.0.
 
