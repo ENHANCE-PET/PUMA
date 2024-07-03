@@ -24,15 +24,13 @@ Harness the power of AI with MOOSE-driven segmentations and ‘greedy’ library
 ### 🎨 Art of Imaging
 Why settle for ordinary when you can visualize in vibrant RGB? Each color shines a spotlight on a different tracer, turning complex data into a vivid, easy-to-interpret display. With processing times ranging from just 5 to 12 minutes, you're all set for a speedy yet thorough diagnostic journey.
 
-## 🚀 PUMA's multiplexing in action
+## 🚀 PUMA's Promo
 
-<div align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Keyn34/PUMA/blob/master/Images/PUMA-Flex.gif">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Keyn34/PUMA/blob/master/Images/PUMA-Flex.gif">
-  <img alt="Shows an illustrated MOOSE story board adopted to different themes" src="https://github.com/Keyn34/PUMA/blob/master/Images/PUMA-Flex.gif">
-</picture>
-</div>
+
+https://github.com/LalithShiyam/PUMA/assets/48599863/caac8dfc-d41c-4235-b59d-61bd17c09fe2
+
+
+
 
 ## Requirements ✅
 
