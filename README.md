@@ -27,9 +27,7 @@ Why settle for ordinary when you can visualize in vibrant RGB? Each color shines
 ## 🚀 PUMA's Promo
 
 
-https://github.com/LalithShiyam/PUMA/assets/48599863/caac8dfc-d41c-4235-b59d-61bd17c09fe2
-
-
+https://github.com/LalithShiyam/PUMA/assets/48599863/fea6f06f-8253-4645-b477-185da562e495
 
 
 ## Requirements ✅
