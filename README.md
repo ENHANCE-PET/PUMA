@@ -70,7 +70,7 @@ Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to
 If you are installing OCELOT on an Apple Silicon device (e.g., Apple M1), follow this step. **Do not perform this step for Linux installations.**
 
 ```bash
-pip install git+https://github.com/LalithShiyam/pytorch-mps.git
+   pip install git+https://github.com/LalithShiyam/pytorch-mps.git
 ```
 
 
