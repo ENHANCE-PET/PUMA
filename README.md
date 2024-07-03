@@ -55,6 +55,7 @@ Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to
    python3 -m venv puma-env
    ```
 
+
 2. Activate the environment.
    ```bash
    source puma-env/bin/activate  # for Linux
@@ -63,15 +64,13 @@ Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to
 
 3. Install PUMA 1.0.
    ```bash
-   pip install pumaz # for linux and MacOS
-    
+   pip install pumaz # for Linux and MacOS
    ```
- 4. Apple M1 Specific Installation
-If you are installing OCELOT on an Apple Silicon device (e.g., Apple M1), follow this step. **Do not perform this step for Linux installations.**
 
-```bash
+4. Apple M1 Specific Installation: If you are installing OCELOT on an Apple Silicon device (e.g., Apple M1), follow this step.
+   ```bash
    pip install git+https://github.com/LalithShiyam/pytorch-mps.git
-```
+   ```
 
 
 Congratulations! You're all set to start using PUMA 1.0.
@@ -124,12 +123,14 @@ For assistance or additional information, you can always type:
 pumaz -h
 ```
 
+
 ### Example usage:
 Apply PUMA to images in a directory, ignoring arms and legs, with multiplexed RGB output and custom colors:
 
 ```bash
-    pumaz -d /path/to/images -ir arms,legs -m -cs -c2d 
+pumaz -d /path/to/images -ir arms,legs -m -cs -c2d 
 ```
+
 
 ## Directory Structure and Naming Conventions for PUMA 📂🏷️
 
