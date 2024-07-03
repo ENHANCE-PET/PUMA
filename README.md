@@ -141,26 +141,27 @@ PUMA 1.0 requires your data to be structured in a certain way. It supports DICOM
 Here is the directory structure that PUMA 1.0 expects:
 
 ```
-Parent_Directory
+📁 Parent_Directory
 │
-└───Tracer1 # can be named anything
+└───📂 Tracer1 # can be named anything
 │   │
-│   └───PET_DICOM_Directory or PT_xxxx.nii.gz # If it's DICOM, the folder name can be anything, but if nifti use a prefix 'PT' for PET
+│   └───📁 PET_DICOM_Directory or 🗃️ PT_xxxx.nii.gz # If it's DICOM, the folder name can be anything, but if nifti use a prefix 'PT' for PET
 │   │
-│   └───CT_DICOM_Directory or CT_xxxx.nii.gz # If it's DICOM, the folder name can be anything, but if nifti use a prefix 'CT' for CT
+│   └───📁 CT_DICOM_Directory or 🗃️ CT_xxxx.nii.gz # If it's DICOM, the folder name can be anything, but if nifti use a prefix 'CT' for CT
 │
-└───Tracer2
+└───📂 Tracer2
 │   │
-│   └───PET_DICOM_Directory or PT_xxxx.nii.gz
+│   └───📁 PET_DICOM_Directory or 🗃️ PT_xxxx.nii.gz
 │   │
-│   └───CT_DICOM_Directory or CT_xxxx.nii.gz
+│   └───📁 CT_DICOM_Directory or 🗃️ CT_xxxx.nii.gz
 ...
 
-└───Tracer3
+└───📂 Tracer3
     │
-    └───PET_DICOM_Directory or PT_xxxx.nii.gz
+    └───📁 PET_DICOM_Directory or 🗃️ PT_xxxx.nii.gz
     │
-    └───CT_DICOM_Directory or CT_xxxx.nii.gz
+    └───📁 CT_DICOM_Directory or 🗃️ CT_xxxx.nii.gz
+
 ```
 
 ### Naming Conventions 🏷️
