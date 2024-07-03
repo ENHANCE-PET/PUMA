@@ -24,15 +24,11 @@ Harness the power of AI with MOOSE-driven segmentations and ‘greedy’ library
 ### 🎨 Art of Imaging
 Why settle for ordinary when you can visualize in vibrant RGB? Each color shines a spotlight on a different tracer, turning complex data into a vivid, easy-to-interpret display. With processing times ranging from just 5 to 12 minutes, you're all set for a speedy yet thorough diagnostic journey.
 
-## 🚀 PUMA's multiplexing in action
+## 🚀 Why PUMA?
 
-<div align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Keyn34/PUMA/blob/master/Images/PUMA-Flex.gif">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Keyn34/PUMA/blob/master/Images/PUMA-Flex.gif">
-  <img alt="Shows an illustrated MOOSE story board adopted to different themes" src="https://github.com/Keyn34/PUMA/blob/master/Images/PUMA-Flex.gif">
-</picture>
-</div>
+
+https://github.com/LalithShiyam/PUMA/assets/48599863/fea6f06f-8253-4645-b477-185da562e495
+
 
 ## Requirements ✅
 
@@ -42,9 +38,9 @@ Before stepping into the future with PUMA 1.0, here's what you need for an optim
 
 - **Memory**: Make sure your system has enough memory (8-16 GB) to run the tasks smoothly.
 
-- **GPU**: You need a cuda enabled GPU (NVIDIA), 8 GB or more!
+- **GPU**: You need a cuda-enabled GPU (NVIDIA), 8 GB or more, or MPS (Apple silicon) - if you like quick results ⚡️
 
-- **Python**: PUMA 1.0 operates with Python 3.10, staying in line with the latest updates.
+- **Python**: PUMA 1.0 operates the best with Python 3.10.
 
 Once these specifications are met, you're all set to experience PUMA 1.0's capabilities.
 
@@ -67,8 +63,16 @@ Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to
 
 3. Install PUMA 1.0.
    ```bash
-   pip install pumaz
+   pip install pumaz # for linux and MacOS
+    
    ```
+ 4. Apple M1 Specific Installation
+If you are installing OCELOT on an Apple Silicon device (e.g., Apple M1), follow this step. **Do not perform this step for Linux installations.**
+
+```bash
+pip install git+https://github.com/LalithShiyam/pytorch-mps.git
+```
+
 
 Congratulations! You're all set to start using PUMA 1.0.
 
