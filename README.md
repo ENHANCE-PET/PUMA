@@ -67,7 +67,7 @@ Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to
    pip install pumaz # for Linux and MacOS
    ```
 
-4. Apple M1 Specific Installation: If you are installing PUMA on an Apple Silicon device (e.g., Apple M1), follow this step.
+4. Apple M1 Specific Installation: If you are installing PUMA on an Apple Silicon device (e.g., Apple M1), follow this step. Do not do this if you are installing PUMA on Linux!
    ```bash
    pip install git+https://github.com/LalithShiyam/pytorch-mps.git
    ```
