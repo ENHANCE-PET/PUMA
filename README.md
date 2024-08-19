@@ -38,7 +38,7 @@ Before stepping into the future with PUMA 1.0, here's what you need for an optim
 
 - **Memory**: Make sure your system has enough memory (8-16 GB) to run the tasks smoothly.
 
-- **GPU**: You need a cuda-enabled GPU (NVIDIA), 8 GB or more, or MPS (Apple silicon) - if you like quick results ⚡️
+- **GPU**: You would benefit from a cuda-enabled GPU (NVIDIA), 8 GB or more, or MPS (Apple silicon) - if you like quick results ⚡️. But if you don't fret not, PUMA runs a cpu-tuned version if there is no GPU.
 
 - **Python**: PUMA 1.0 operates the best with Python 3.10.
 
