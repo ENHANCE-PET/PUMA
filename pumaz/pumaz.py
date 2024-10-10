@@ -75,7 +75,7 @@ def main():
                         help="Multiplex the aligned PT images.", required=False)
 
     parser.add_argument("-st", "--segment_tumors", action='store_true', default=False,
-                        help="Segment tumors in the multiplexed images.", required=False)
+                        help="Segment tumors in the multiplexed images (not implemented: postponed for puma v.2.0)", required=False)
 
     parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
                         help="Manually assign colors to tracer images.", required=False)
