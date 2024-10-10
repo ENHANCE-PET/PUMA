@@ -83,25 +83,14 @@ def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, acc
         task_description = f"[white] MOOSE-ing CT files | Model: {moose_model} | Accelerator: {accelerator}"
         task = progress.add_task(task_description, total=len(ct_files), cpu="0", memory="0", gpu="N/A")
 
-        for ct_file in ct_files:
-            base_name = os.path.basename(ct_file).split('.')[0]
-            ct_file_dir = os.path.join(ct_dir, base_name)
-            create_directory(ct_file_dir)
-            move_file(ct_file, os.path.join(ct_file_dir, os.path.basename(ct_file)))
+        create_directory(mask_dir)
 
-            mask_file_dir = os.path.join(mask_dir, base_name)
-            create_directory(mask_file_dir)
+        for ct_file in ct_files:
 
             # Redirect moose output to null to avoid cluttering the console
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
-                    moose(moose_model, ct_file_dir, mask_file_dir, accelerator)
-
-            # Clean up intermediate directories and move files back
-            move_files_to_directory(ct_file_dir, ct_dir)
-            move_files_to_directory(mask_file_dir, mask_dir)
-            remove_directory(ct_file_dir)
-            remove_directory(mask_file_dir)
+                    moose(input_data=ct_file, model_names=moose_model, output_dir=mask_dir, accelerator=accelerator)
 
             # Update the progress bar with system loads after each file is processed
             cpu_load = psutil.cpu_percent(interval=None)
