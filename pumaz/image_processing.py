@@ -26,6 +26,7 @@ import re
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+import warnings
 
 import GPUtil
 import SimpleITK as sitk
@@ -38,13 +39,15 @@ from mpire import WorkerPool
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES, RED_WEIGHT,
-                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL, MOOSE_FILLER_LABEL)
+                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL, MOOSE_FILLER_LABEL, ALIGNED_MASK_FOLDER,
+                             ALIGNED_PET_FOLDER, ALIGNED_CT_FOLDER, PUMA_LABELS)
 from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
                                   copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 from pumaz.resources import check_device
 from rich.console import Console
 from rich.progress import Progress, BarColumn, TimeElapsedColumn
 from rich.table import Table
+from typing import Dict, List
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
@@ -86,7 +89,6 @@ def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, acc
         create_directory(mask_dir)
 
         for ct_file in ct_files:
-
             # Redirect moose output to null to avoid cluttering the console
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
@@ -362,8 +364,6 @@ def update_multilabel_mask(multilabel_mask_path: str, body_mask_path: str, outpu
     sitk.WriteImage(final_mask, output_path)
 
 
-
-
 class ImageRegistration:
     """
     A class for performing image registration using the GREEDY algorithm.
@@ -605,14 +605,14 @@ def find_corresponding_image(modality_dir, reference_basename):
         raise FileNotFoundError(f"No corresponding image found in {modality_dir} for {reference_basename}")
 
 
-def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str) -> str:
+def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
     """
     Align the images in the PUMA working directory.
     :param puma_working_dir: The path to the PUMA working directory.
     :param ct_dir: The path to the CT directory.
     :param pt_dir: The path to the PET directory.
     :param mask_dir: The path to the mask directory.
-    :return: The path to the reference mask image.
+    :return: The path to the reference mask image, PT image, and CT image.
     """
     reference_image = find_images(mask_dir)[0]
     logging.info(f"Reference image selected: {os.path.basename(reference_image)}")
@@ -682,7 +682,7 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str) -> str
     reference_pt = find_corresponding_image(pt_dir, os.path.basename(reference_image))
     copy_reference_image(reference_pt, os.path.join(puma_working_dir, constants.ALIGNED_PET_FOLDER),
                          constants.ALIGNED_PREFIX_PT)
-    return reference_image
+    return reference_image, reference_ct, reference_pt
 
 
 def calculate_bbox(mask_np):
@@ -995,3 +995,133 @@ def segment_tumors(input_dir: str, output_dir: str):
     logging.info(f" Running LIONz for segmenting tumors from {input_dir}")
     lion(LIONZ_MODEL, input_dir, output_dir, device)
     logging.info(f" Tumor segmentation completed.")
+
+
+def calculate_volume_difference(reference_image: sitk.Image, aligned_images: List[sitk.Image]) -> Dict[
+    str, Dict[int, float]]:
+    """
+    Calculate the percentage difference in volumes between the reference image and multiple aligned images.
+    :param reference_image: Reference image.
+    :param aligned_images: List of aligned images to compare.
+    :return: Dictionary with filenames as keys and label-volume percentage differences as values.
+    """
+    label_filter_ref = sitk.LabelShapeStatisticsImageFilter()
+    label_filter_ref.Execute(reference_image)
+
+    reference_labels = set(label_filter_ref.GetLabels())
+    volume_differences = {}
+
+    for aligned_image in aligned_images:
+        label_filter_aligned = sitk.LabelShapeStatisticsImageFilter()
+        label_filter_aligned.Execute(aligned_image)
+
+        aligned_labels = set(label_filter_aligned.GetLabels())
+        common_labels = reference_labels.intersection(aligned_labels)
+
+        image_differences = {}
+        for label in common_labels:
+            try:
+                ref_volume = label_filter_ref.GetPhysicalSize(label)
+                aligned_volume = label_filter_aligned.GetPhysicalSize(label)
+                if ref_volume + aligned_volume == 0:
+                    continue  # Avoid division by zero for zero volumes
+                percentage_diff = abs(ref_volume - aligned_volume) / ((ref_volume + aligned_volume) / 2) * 100
+                image_differences[label] = percentage_diff
+            except Exception as e:
+                warnings.warn(f"Error calculating volume difference for label {label}: {e}")
+
+        volume_differences[aligned_image.GetMetaData("filename")] = image_differences
+
+    return volume_differences
+
+
+def display_misalignment(puma_dir: str, reference_dict: dict, dice_threshold=0.8) -> dict:
+    """
+    Calculate and display misalignment using Dice similarity scores.
+    :param puma_dir: Directory containing aligned masks.
+    :param reference_dict: Dictionary containing reference mask and other metadata.
+    :param dice_threshold: Minimum Dice score threshold for alignment.
+    :return: Dictionary of misaligned masks and their Dice scores.
+    """
+    reference_mask_file = reference_dict['reference_mask']
+    aligned_reference_mask = os.path.join(puma_dir, constants.ALIGNED_MASK_FOLDER, ALIGNED_MASK_FOLDER +
+                                          '_' + os.path.basename(reference_mask_file))
+    aligned_mask_files = glob.glob(os.path.join(puma_dir, constants.ALIGNED_MASK_FOLDER, '*nii*'))
+    aligned_mask_files.remove(aligned_reference_mask)
+
+    # Load the reference mask and aligned masks
+    reference_mask = sitk.ReadImage(reference_mask_file)
+    aligned_images = [sitk.ReadImage(f) for f in aligned_mask_files]
+
+    # Add metadata for filenames
+    for img, path in zip(aligned_images, aligned_mask_files):
+        img.SetMetaData("filename", os.path.basename(path))
+
+        # Calculate volume differences
+        dice_scores = calculate_dice_scores(reference_mask, aligned_images)
+
+        # Identify misaligned regions
+        misaligned_regions = {}
+        for filename, label_scores in dice_scores.items():
+            for label, dice_score in label_scores.items():
+                if dice_score < dice_threshold:
+                    if filename not in misaligned_regions:
+                        misaligned_regions[filename] = {}
+                    misaligned_regions[filename][label] = dice_score
+
+        return misaligned_regions
+
+
+def display_misalignment_table(misaligned_regions: dict, reference_filename: str):
+    """
+    Display the misaligned regions in a table format using the rich library.
+
+    :param misaligned_regions: Dictionary of misaligned regions and their Dice scores.
+    :param reference_filename: The filename of the reference mask.
+    """
+    # Reverse the PUMA_LABELS dictionary for quick lookup by index
+    label_map = {value: key for key, value in PUMA_LABELS.items()}
+
+    console = Console()
+    table = Table(title=f"Reference Mask: {reference_filename}", show_header=True, header_style="bold magenta",
+                  border_style="white")
+    # Define table columns
+    table.add_column("Aligned Mask Filename", justify="left", style="cyan", no_wrap=True)
+    table.add_column("Dice Score (Label: Name)", justify="left", style="magenta")
+
+    # Populate the table with data
+    for filename, label_scores in misaligned_regions.items():
+        formatted_scores = ", ".join([
+            f"{label_map.get(label, 'Unknown')}: {score:.4f}" for label, score in label_scores.items()
+        ])
+        table.add_row(filename, formatted_scores)
+
+    # Display the table
+    console.print(table)
+
+
+def calculate_dice_scores(reference_image: sitk.Image, aligned_images: list) -> dict:
+    """
+    Calculate label-wise Dice similarity coefficients between the reference image and multiple aligned images.
+    :param reference_image: Reference segmentation mask.
+    :param aligned_images: List of aligned segmentation masks to compare.
+    :return: Dictionary with filenames as keys and label-wise Dice scores as values.
+    """
+    dice_scores = {}
+
+    for aligned_image in aligned_images:
+        aligned_filename = aligned_image.GetMetaData("filename")
+        label_overlap_filter = sitk.LabelOverlapMeasuresImageFilter()
+        label_dice_scores = {}
+
+        # Iterate through unique labels in the reference image
+        for label in range(1, int(sitk.GetArrayFromImage(reference_image).max()) + 1):  # Exclude label 0 (background)
+            binary_ref = sitk.BinaryThreshold(reference_image, lowerThreshold=label, upperThreshold=label)
+            binary_aligned = sitk.BinaryThreshold(aligned_image, lowerThreshold=label, upperThreshold=label)
+            label_overlap_filter.Execute(binary_ref, binary_aligned)
+            dice = label_overlap_filter.GetDiceCoefficient()
+            label_dice_scores[label] = dice
+
+        dice_scores[aligned_filename] = label_dice_scores
+
+    return dice_scores

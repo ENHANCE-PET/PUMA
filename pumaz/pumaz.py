@@ -83,6 +83,9 @@ def main():
     parser.add_argument("-c2d", "--convert_to_dicom", action='store_true', default=False,
                         help="Convert DICOM images to NIFTI format. Set this to true only if your input is DICOM",
                         required=False)
+    parser.add_argument("-ra", "--risk_analysis", action='store_true', default=False,
+                        help="Highlight areas of misalignment in the images.",
+                        required=False)
 
     args = parser.parse_args()
 
@@ -92,6 +95,7 @@ def main():
     custom_colors = args.custom_colors
     segment_tumors = args.segment_tumors
     convert_to_dicom = args.convert_to_dicom
+    perform_risk_analysis = args.risk_analysis
 
     display.logo()
     display.citation()
@@ -119,7 +123,8 @@ def main():
                   f'Custom Colors: {custom_colors} | '
                   f'Segment Tumors: {segment_tumors} | ',
                   f'Convert to DICOM: {convert_to_dicom} | ',
-                  f'Regions to Ignore: {regions_to_ignore}',
+                  f'Regions to Ignore: {regions_to_ignore} | ',
+                  f'Risk Analysis: {perform_risk_analysis}',
                   style='bold magenta')
 
     # ----------------------------------
@@ -182,7 +187,29 @@ def main():
     puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(
         puma_compliant_subjects=puma_compliant_subject_folders,
         regions_to_ignore=regions_to_ignore)
-    reference_img = image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
+    reference_mask, reference_ct, reference_pt = image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
+
+    # store the reference images as a dictionary
+    reference_dict = {
+        'reference_mask': reference_mask,
+        'reference_ct': reference_ct,
+        'reference_pt': reference_pt
+    }
+
+    if perform_risk_analysis:
+        # ---------------------------------------
+        # DISPLAY POSSIBLE AREAS OF MISALIGNMENT
+        # ---------------------------------------
+        print('')
+        print(f'{constants.ANSI_VIOLET} {emoji.emojize(":face_screaming_in_fear:")} POSSIBLE AREAS OF MISALIGNMENT:{constants.ANSI_RESET}')
+        print('')
+        logging.info(' ')
+        logging.info(' DISPLAYING POSSIBLE AREAS OF MISALIGNMENT:')
+        logging.info(' ')
+        misaligned_regions = image_processing.display_misalignment(puma_dir, reference_dict)
+        reference_filename = os.path.basename(reference_dict["reference_mask"])
+        image_processing.display_misalignment_table(misaligned_regions, reference_filename)
+
 
     # ----------------------------------
     # MULTIPLEXING
@@ -226,7 +253,7 @@ def main():
             subject_folder=subject_folder,
             puma_dir=puma_dir,
         )
-        n2dConverter.set_reference_image(reference_img)
+        n2dConverter.set_reference_image(reference_mask)
         n2dConverter.convert_to_dicom(puma_compliant_subject_folders=puma_compliant_subject_folders)
 
     end_time = time.time()

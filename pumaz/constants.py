@@ -114,3 +114,31 @@ LIONZ_OUTPUT_DIR = "seg_output"
 # DICOM DESCRIPTIONS
 
 DESCRIPTION = 'Processed-by-PUMA-AND-DICOM-conversion-by-nifti2dicom'
+
+PUMA_LABELS = {
+    "background": 0,
+    "Spleen": 1,
+    "Kidneys": 2,
+    "Gallbladder": 3,
+    "Liver": 4,
+    "Stomach": 5,
+    "Pancreas": 6,
+    "Adrenal_glands": 7,
+    "Lungs": 8,
+    "Heart_myocardium": 9,
+    "Heart_atrium_left": 10,
+    "Heart_ventricle_left": 11,
+    "Heart_atrium_right": 12,
+    "Heart_ventricle_right": 13,
+    "Pulmonary_artery": 14,
+    "Aorta": 15,
+    "Inferior_vena_cava": 16,
+    "Esophagus": 17,
+    "Trachea": 18,
+    "Digestive": 19,
+    "Brain": 20,
+    "Skeleton": 21,
+    "Muscles": 22,
+    "Bladder": 23,
+    "filler": 24
+}
