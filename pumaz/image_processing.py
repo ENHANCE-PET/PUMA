@@ -47,6 +47,8 @@ from pumaz.resources import check_device
 from rich.console import Console
 from rich.progress import Progress, BarColumn, TimeElapsedColumn
 from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
 from typing import Dict, List
 
 
@@ -1035,19 +1037,17 @@ def calculate_volume_difference(reference_image: sitk.Image, aligned_images: Lis
     return volume_differences
 
 
-def display_misalignment(puma_dir: str, reference_dict: dict, dice_threshold=0.8) -> dict:
+def display_misalignment(puma_dir: str, reference_dict: dict, threshold_vol_perc_diff=20) -> dict:
     """
     Calculate and display misalignment using Dice similarity scores.
     :param puma_dir: Directory containing aligned masks.
     :param reference_dict: Dictionary containing reference mask and other metadata.
-    :param dice_threshold: Minimum Dice score threshold for alignment.
+    :param threshold_vol_perc_diff: Volume threshold for misalignment (default is 20%).
     :return: Dictionary of misaligned masks and their Dice scores.
     """
     reference_mask_file = reference_dict['reference_mask']
-    aligned_reference_mask = os.path.join(puma_dir, constants.ALIGNED_MASK_FOLDER, ALIGNED_MASK_FOLDER +
-                                          '_' + os.path.basename(reference_mask_file))
-    aligned_mask_files = glob.glob(os.path.join(puma_dir, constants.ALIGNED_MASK_FOLDER, '*nii*'))
-    aligned_mask_files.remove(aligned_reference_mask)
+    aligned_mask_files = glob.glob(os.path.join(puma_dir, 'puma_masks', '*nii.gz'))
+    aligned_mask_files.remove(reference_mask_file)
 
     # Load the reference mask and aligned masks
     reference_mask = sitk.ReadImage(reference_mask_file)
@@ -1058,46 +1058,81 @@ def display_misalignment(puma_dir: str, reference_dict: dict, dice_threshold=0.8
         img.SetMetaData("filename", os.path.basename(path))
 
         # Calculate volume differences
-        dice_scores = calculate_dice_scores(reference_mask, aligned_images)
+        volume_differences = calculate_volume_difference(reference_mask, aligned_images)
 
         # Identify misaligned regions
         misaligned_regions = {}
-        for filename, label_scores in dice_scores.items():
-            for label, dice_score in label_scores.items():
-                if dice_score < dice_threshold:
+        for filename, differences in volume_differences.items():
+            for label, diff in differences.items():
+                if diff > threshold_vol_perc_diff:
                     if filename not in misaligned_regions:
                         misaligned_regions[filename] = {}
-                    misaligned_regions[filename][label] = dice_score
+                    misaligned_regions[filename][label] = diff
 
         return misaligned_regions
 
 
-def display_misalignment_table(misaligned_regions: dict, reference_filename: str):
+def display_misalignment_table(misaligned_regions: dict, reference_filename: str, threshold=10):
     """
-    Display the misaligned regions in a table format using the rich library.
+    Display the misaligned regions in a sleek and minimalistic table format using the rich library.
 
-    :param misaligned_regions: Dictionary of misaligned regions and their Dice scores.
+    :param misaligned_regions: Dictionary of misaligned regions and their volume differences.
     :param reference_filename: The filename of the reference mask.
+    :param threshold: Volume difference threshold for flagging regions (default is 10%).
     """
     # Reverse the PUMA_LABELS dictionary for quick lookup by index
     label_map = {value: key for key, value in PUMA_LABELS.items()}
 
     console = Console()
-    table = Table(title=f"Reference Mask: {reference_filename}", show_header=True, header_style="bold magenta",
-                  border_style="white")
+
+    # Use a properly styled Text object for the panel
+    panel_content = Text()
+    panel_content.append("Reference Mask: ", style="bold yellow")
+    panel_content.append(f"{reference_filename}\n\n", style="cyan")
+    panel_content.append("Key Points:\n", style="bold")
+    panel_content.append("1. Regions with >10% volume difference before alignment are flagged.\n", style="dim")
+    panel_content.append("2. These differences may lead to suboptimal results after alignment, particularly around the affected organs.\n", style="dim")
+    panel_content.append("3. Review the corresponding PT images and multiplexed image for potential issues.\n", style="dim")
+
+    # Create a panel with the content
+    panel = Panel(
+        panel_content,
+        border_style="cyan",
+        title="Volume Difference Warning",
+        title_align="left",
+        padding=(1, 2),
+    )
+
+    # Print the panel
+    console.print(panel)
+
+    # Initialize the table
+    table = Table(
+        show_header=True,
+        header_style="bold cyan",
+        border_style="dim white",
+        row_styles=["none", "dim"]
+    )
     # Define table columns
-    table.add_column("Aligned Mask Filename", justify="left", style="cyan", no_wrap=True)
-    table.add_column("Dice Score (Label: Name)", justify="left", style="magenta")
+    table.add_column("Aligned Mask Filename", justify="left", style="bold magenta", no_wrap=True)
+    table.add_column("Volume Differences (Label: %Difference)", justify="left", style="bold green")
 
     # Populate the table with data
-    for filename, label_scores in misaligned_regions.items():
-        formatted_scores = ", ".join([
-            f"{label_map.get(label, 'Unknown')}: {score:.4f}" for label, score in label_scores.items()
+    for filename, label_differences in misaligned_regions.items():
+        if filename == reference_filename:
+            continue  # Exclude the reference mask
+
+        # Highlight regions exceeding the threshold
+        formatted_differences = ", ".join([
+            f"[bold red]{label_map.get(label, 'Unknown')}: {diff:.2f}%[/bold red]" if diff > threshold
+            else f"{label_map.get(label, 'Unknown')}: {diff:.2f}%"
+            for label, diff in label_differences.items()
         ])
-        table.add_row(filename, formatted_scores)
+        table.add_row(f"[cyan]{filename}[/cyan]", formatted_differences)
 
     # Display the table
     console.print(table)
+
 
 
 def calculate_dice_scores(reference_image: sitk.Image, aligned_images: list) -> dict:
