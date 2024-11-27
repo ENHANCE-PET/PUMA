@@ -173,9 +173,7 @@ Note: All the PET and CT images related to a tracer should be placed in the same
 
 ## 🚀 Benchmarks
 
-- [Apple Intel 4 Cores | Device: CPU | Archictecture: x86_64 | ~25 min](https://github.com/Keyn34/PUMA/blob/master/Images/Apple-intel-4-core.png)
-- [Apple M1 Ultra 20 Cores | Device: CPU | Archictecture: ARM | ~12 min](https://github.com/Keyn34/PUMA/blob/master/Images/Apple-M1-Ultra-20-Cores.png)
-- [Linux Server 128 Cores | Nvidia A100 GPU | Architecture: x86_64 | ~10 min](https://github.com/Keyn34/PUMA/blob/master/Images/Linux-Server-Nvidia-A100-128-Cores.png)
+To be updated.
 
 ## A Note on QIMP Python Packages: The 'Z' Factor 📚🚀
 
