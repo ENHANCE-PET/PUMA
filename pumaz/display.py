@@ -84,7 +84,7 @@ def expectations():
                  f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
     console.print(
         f" Warning: Any subject datasets in a non-DICOM format that lack the required modalities"
-        f" (as indicated by the file prefix) will not be included in the analysis.", style="bold magenta")
+        f" (as indicated by the file prefix) will not be included in the analysis.", style="bold yellow")
 
     warning_message = " Skipping subjects without the required modalities (check file prefix).\n" \
                       " These subjects will be excluded from analysis and their data will not be used."

@@ -50,6 +50,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 from typing import Dict, List
+from rich import box
 
 
 def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, accelerator: str) -> None:
@@ -1092,18 +1093,19 @@ def display_misalignment_table(misaligned_regions: dict, reference_filename: str
     # Use a properly styled Text object for the panel
     panel_content = Text()
     panel_content.append("Reference Mask: ", style="bold yellow")
-    panel_content.append(f"{reference_filename}\n\n", style="cyan")
-    panel_content.append("Key Points:\n", style="bold")
-    panel_content.append("1. Regions with >10% volume difference before alignment are flagged.\n", style="dim")
-    panel_content.append("2. These differences may lead to suboptimal results after alignment, particularly around the affected organs.\n", style="dim")
-    panel_content.append("3. Review the corresponding PT images and multiplexed image for potential issues.\n", style="dim")
+    panel_content.append(f"{reference_filename}\n\n")
+    panel_content.append("Key Points:\n", style="bold yellow")
+    panel_content.append("1. Regions with >10% volume difference before alignment are flagged.\n")
+    panel_content.append("2. These differences may lead to suboptimal results after alignment, particularly around the affected organs.\n")
+    panel_content.append("3. Review the corresponding PT images and multiplexed image for potential issues.\n")
+    panel_content.append("3. Review the corresponding PT images and multiplexed image for potential issues.\n")
 
     # Create a panel with the content
     panel = Panel(
         panel_content,
-        border_style="cyan",
+        border_style="yellow",
         title="Volume Difference Warning",
-        title_align="left",
+        title_align="center",
         padding=(1, 2),
     )
 
@@ -1113,13 +1115,14 @@ def display_misalignment_table(misaligned_regions: dict, reference_filename: str
     # Initialize the table
     table = Table(
         show_header=True,
-        header_style="bold cyan",
-        border_style="dim white",
-        row_styles=["none", "dim"]
+        header_style="bold yellow",
+        border_style="yellow",
+        box=box.HORIZONTALS,
+        # Removed row_styles to ensure consistent styling for all rows
     )
     # Define table columns
-    table.add_column("Aligned Mask Filename", justify="left", style="bold magenta", no_wrap=True)
-    table.add_column("Volume Differences (Label: %Difference)", justify="left", style="bold green")
+    table.add_column("Aligned Mask Filename", justify="left", no_wrap=True)
+    table.add_column("Volume Differences (Label: %Difference)", justify="left", style="cyan")
 
     # Populate the table with data
     for filename, label_differences in misaligned_regions.items():
@@ -1128,11 +1131,12 @@ def display_misalignment_table(misaligned_regions: dict, reference_filename: str
 
         # Highlight regions exceeding the threshold
         formatted_differences = ", ".join([
-            f"[bold red]{label_map.get(label, 'Unknown')}: {diff:.2f}%[/bold red]" if diff > threshold
-            else f"{label_map.get(label, 'Unknown')}: {diff:.2f}%"
+            f"{label_map.get(label, 'Unknown')}: {diff:.2f}%" if diff > threshold
+            else f"[cyan]{label_map.get(label, 'Unknown')}: {diff:.2f}%"
             for label, diff in label_differences.items()
         ])
-        table.add_row(f"[cyan]{filename}[/cyan]", formatted_differences)
+        # Consistently style the filename and content
+        table.add_row(f"{filename}", formatted_differences)
 
     # Display the table
     console.print(table)

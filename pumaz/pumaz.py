@@ -125,7 +125,7 @@ def main():
                   f'Convert to DICOM: {convert_to_dicom} | ',
                   f'Regions to Ignore: {regions_to_ignore} | ',
                   f'Risk Analysis: {perform_risk_analysis}',
-                  style='bold magenta')
+                  style='bold yellow')
 
     # ----------------------------------
     # DOWNLOADING THE BINARIES
@@ -138,7 +138,7 @@ def main():
     binary_path = constants.BINARY_PATH
     file_utilities.create_directory(binary_path)
     system_os, system_arch = file_utilities.get_system()
-    console.print(f' Detected system: {system_os} | Detected architecture: {system_arch}', style='bold magenta')
+    console.print(f' Detected system: {system_os} | Detected architecture: {system_arch}', style='bold yellow')
     download.download(item_name=f'puma-{system_os}-{system_arch}', item_path=binary_path,
                       item_dict=resources.PUMA_BINARIES)
     file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
@@ -207,7 +207,6 @@ def main():
         logging.info(' DISPLAYING POSSIBLE AREAS OF MISALIGNMENT:')
         logging.info(' ')
         misaligned_regions = image_processing.display_misalignment(puma_dir, reference_dict)
-        print(misaligned_regions)
         reference_filename = os.path.basename(reference_dict["reference_mask"])
         image_processing.display_misalignment_table(misaligned_regions, reference_filename)
 

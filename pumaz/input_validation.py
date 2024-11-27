@@ -47,7 +47,7 @@ def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
         if sum(anatomical_prefixes) == 1 and sum(functional_prefixes) == 1:
             puma_compliant_subjects.append(subject_path)
     console.print(f" Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
-                  f"{len(tracer_paths)} ", style="bold magenta")
+                  f"{len(tracer_paths)} ", style="bold yellow")
     logging.info(f" Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
                  f"{len(tracer_paths)}")
 
