@@ -1043,11 +1043,14 @@ def display_misalignment(puma_dir: str, reference_dict: dict, threshold_vol_perc
     :param puma_dir: Directory containing aligned masks.
     :param reference_dict: Dictionary containing reference mask and other metadata.
     :param threshold_vol_perc_diff: Volume threshold for misalignment (default is 20%).
-    :return: Dictionary of misaligned masks and their Dice scores.
+    :return: Dictionary of misaligned masks and their volume differences.
     """
     reference_mask_file = reference_dict['reference_mask']
     aligned_mask_files = glob.glob(os.path.join(puma_dir, 'puma_masks', '*nii.gz'))
-    aligned_mask_files.remove(reference_mask_file)
+
+    # Exclude the reference mask file
+    if reference_mask_file in aligned_mask_files:
+        aligned_mask_files.remove(reference_mask_file)
 
     # Load the reference mask and aligned masks
     reference_mask = sitk.ReadImage(reference_mask_file)
@@ -1057,19 +1060,20 @@ def display_misalignment(puma_dir: str, reference_dict: dict, threshold_vol_perc
     for img, path in zip(aligned_images, aligned_mask_files):
         img.SetMetaData("filename", os.path.basename(path))
 
-        # Calculate volume differences
-        volume_differences = calculate_volume_difference(reference_mask, aligned_images)
+    # Calculate volume differences
+    volume_differences = calculate_volume_difference(reference_mask, aligned_images)
 
-        # Identify misaligned regions
-        misaligned_regions = {}
-        for filename, differences in volume_differences.items():
-            for label, diff in differences.items():
-                if diff > threshold_vol_perc_diff:
-                    if filename not in misaligned_regions:
-                        misaligned_regions[filename] = {}
-                    misaligned_regions[filename][label] = diff
+    # Identify misaligned regions
+    misaligned_regions = {}
+    for filename, differences in volume_differences.items():
+        for label, diff in differences.items():
+            if diff > threshold_vol_perc_diff:
+                if filename not in misaligned_regions:
+                    misaligned_regions[filename] = {}
+                misaligned_regions[filename][label] = diff
 
-        return misaligned_regions
+    return misaligned_regions
+
 
 
 def display_misalignment_table(misaligned_regions: dict, reference_filename: str, threshold=10):

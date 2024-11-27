@@ -207,6 +207,7 @@ def main():
         logging.info(' DISPLAYING POSSIBLE AREAS OF MISALIGNMENT:')
         logging.info(' ')
         misaligned_regions = image_processing.display_misalignment(puma_dir, reference_dict)
+        print(misaligned_regions)
         reference_filename = os.path.basename(reference_dict["reference_mask"])
         image_processing.display_misalignment_table(misaligned_regions, reference_filename)
 
