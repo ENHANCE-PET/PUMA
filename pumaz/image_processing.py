@@ -1098,7 +1098,6 @@ def display_misalignment_table(misaligned_regions: dict, reference_filename: str
     panel_content.append("1. Regions with >10% volume difference before alignment are flagged.\n")
     panel_content.append("2. These differences may lead to suboptimal results after alignment, particularly around the affected organs.\n")
     panel_content.append("3. Review the corresponding PT images and multiplexed image for potential issues.\n")
-    panel_content.append("3. Review the corresponding PT images and multiplexed image for potential issues.\n")
 
     # Create a panel with the content
     panel = Panel(
