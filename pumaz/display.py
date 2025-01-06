@@ -20,6 +20,7 @@
 import logging
 
 import pyfiglet
+import importlib.metadata
 from pumaz import constants
 from rich.console import Console
 
@@ -34,10 +35,11 @@ def logo():
     :Example:
         >>> logo()
     """
+    version = importlib.metadata.version("pumaz")
     print(' ')
     logo_color_code = constants.ANSI_VIOLET
     slogan_color_code = constants.ANSI_VIOLET
-    result = logo_color_code + pyfiglet.figlet_format("PUMA 1.0", font="speed").rstrip() + "\033[0m"
+    result = logo_color_code + pyfiglet.figlet_format(f"PUMA {version}", font="speed").rstrip() + "\033[0m"
     text = slogan_color_code + "A part of the ENHANCE community. Join us at https://enhance.pet to build the future " \
                                "of " \
                                "PET imaging together." + "\033[0m"
