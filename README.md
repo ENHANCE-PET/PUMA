@@ -52,7 +52,7 @@ Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to
 
 1. Create a Python environment named 'puma-env' or as per your preference.
    ```bash
-   python3 -m venv puma-env
+   python3.10 -m venv puma-env
    ```
 
 
@@ -79,7 +79,7 @@ Congratulations! You're all set to start using PUMA 1.0.
 
 1. Create a Python environment, e.g., 'puma-env'.
    ```bash
-   python -m venv puma-env
+   python3.10 -m venv puma-env
    ```
 
 2. Activate the environment.
