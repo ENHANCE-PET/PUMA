@@ -53,7 +53,7 @@ def set_permissions(file_path: str, system_type: str) -> None:
 
     try:
         if system_type.lower() == 'windows':
-            subprocess.check_call(["icacls", file_path, "/grant", "Everyone:(F)"], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            subprocess.check_call(["icacls", file_path, "/grant", "*S-1-1-0:(F)"], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         elif system_type.lower() in ['linux', 'mac']:
             os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
         else:
