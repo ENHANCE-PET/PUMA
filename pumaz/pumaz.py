@@ -38,17 +38,7 @@ from rich.console import Console
 console = Console()
 
 
-def str2list(value):
-    choices_list = list(constants.MOOSE_LABEL_INDEX.values()) + ['none']
-    value_list = value.lower().split(',')
-    if all(item in choices_list for item in value_list):
-        return value_list
-    else:
-        raise argparse.ArgumentTypeError(f"invalid choice: {value_list} (choose from {choices_list})")
-
-def pumaz(subject_folder,regions_to_ignore, multiplex, custom_colors, segment_tumors, convert_to_dicom, perform_risk_analysis ):
-    print("coucou les lapins")
-
+def main():
     """
     Run the PUMA-Z preprocessing and registration pipeline.
 
@@ -64,8 +54,48 @@ def pumaz(subject_folder,regions_to_ignore, multiplex, custom_colors, segment_tu
                         filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'), filemode='w')
     colorama.init()
 
-    subject_folder = os.path.abspath(subject_folder)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--subject_directory", type=str,
+                        help="Subject directory containing the different PET/CT images of the same subject",
+                        required=True)
 
+    def str2list(value):
+        choices_list = list(constants.MOOSE_LABEL_INDEX.values()) + ['none']
+        value_list = value.lower().split(',')
+        if all(item in choices_list for item in value_list):
+            return value_list
+        else:
+            raise argparse.ArgumentTypeError(f"invalid choice: {value_list} (choose from {choices_list})")
+
+    parser.add_argument("-ir", "--ignore_regions", type=str2list,
+                        help="Comma-separated list of regions to ignore during registration e.g. arms,legs,"
+                             "none. 'none' indicates no regions to ignore.", required=True)
+
+    parser.add_argument("-m", "--multiplex", action='store_true', default=False,
+                        help="Multiplex the aligned PT images.", required=False)
+
+    parser.add_argument("-st", "--segment_tumors", action='store_true', default=False,
+                        help="Segment tumors in the multiplexed images (not implemented: postponed for puma v.2.0)", required=False)
+
+    parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
+                        help="Manually assign colors to tracer images.", required=False)
+
+    parser.add_argument("-c2d", "--convert_to_dicom", action='store_true', default=False,
+                        help="Convert DICOM images to NIFTI format. Set this to true only if your input is DICOM",
+                        required=False)
+    parser.add_argument("-ra", "--risk_analysis", action='store_true', default=False,
+                        help="Highlight areas of misalignment in the images.",
+                        required=False)
+
+    args = parser.parse_args()
+
+    subject_folder = os.path.abspath(args.subject_directory)
+    regions_to_ignore = args.ignore_regions
+    multiplex = args.multiplex
+    custom_colors = args.custom_colors
+    segment_tumors = args.segment_tumors
+    convert_to_dicom = args.convert_to_dicom
+    perform_risk_analysis = args.risk_analysis
 
     display.logo()
     display.citation()
@@ -232,58 +262,3 @@ def pumaz(subject_folder,regions_to_ignore, multiplex, custom_colors, segment_tu
     elapsed_time = round(elapsed_time / 60, 2)
     console.print(f" 🐾 PUMA has successfully completed the hunt in {elapsed_time} minutes."
                   f" Track down your results in the directory: {puma_dir} 🐾", style='white')
-
-
-def main():
-    """
-    Run the PUMA-Z preprocessing and registration pipeline.
-
-    This function standardizes input data to NIFTI format, checks for PUMA-compliant subjects, and runs the preprocessing
-    and registration pipeline. It also downloads the necessary binaries and sets the appropriate permissions.
-
-    :return: None
-    :rtype: None
-    :Example:
-        >>> main()
-    """
-    logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
-                        filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'), filemode='w')
-    colorama.init()
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--subject_directory", type=str,
-                        help="Subject directory containing the different PET/CT images of the same subject",
-                        required=True)
-
-    parser.add_argument("-ir", "--ignore_regions", type=str2list,
-                        help="Comma-separated list of regions to ignore during registration e.g. arms,legs,"
-                             "none. 'none' indicates no regions to ignore.", required=True)
-
-    parser.add_argument("-m", "--multiplex", action='store_true', default=False,
-                        help="Multiplex the aligned PT images.", required=False)
-
-    parser.add_argument("-st", "--segment_tumors", action='store_true', default=False,
-                        help="Segment tumors in the multiplexed images (not implemented: postponed for puma v.2.0)", required=False)
-
-    parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
-                        help="Manually assign colors to tracer images.", required=False)
-
-    parser.add_argument("-c2d", "--convert_to_dicom", action='store_true', default=False,
-                        help="Convert DICOM images to NIFTI format. Set this to true only if your input is DICOM",
-                        required=False)
-    parser.add_argument("-ra", "--risk_analysis", action='store_true', default=False,
-                        help="Highlight areas of misalignment in the images.",
-                        required=False)
-
-    args = parser.parse_args()
-
-    subject_folder = os.path.abspath(args.subject_directory)
-    regions_to_ignore = args.ignore_regions
-    multiplex = args.multiplex
-    custom_colors = args.custom_colors
-    segment_tumors = args.segment_tumors
-    convert_to_dicom = args.convert_to_dicom
-    perform_risk_analysis = args.risk_analysis
-
-    pumaz(subject_folder, regions_to_ignore, multiplex, custom_colors, segment_tumors, convert_to_dicom,
-               perform_risk_analysis)
