@@ -67,6 +67,35 @@ def main():
         else:
             raise argparse.ArgumentTypeError(f"invalid choice: {value_list} (choose from {choices_list})")
 
+    def parse_color_dict(value):
+        try:
+            color_map = {}
+            used_colors = set()
+            allowed_colors = {'R', 'G', 'B'}
+
+            for pair in value.split(','):
+                key, val = pair.split(':')
+                key = key.strip()
+                val = val.strip().upper()
+
+                if val not in allowed_colors:
+                    raise argparse.ArgumentTypeError(
+                        f"Invalid color '{val}' for tracer '{key}'. Allowed values are: R, G, B."
+                    )
+
+                if val in used_colors:
+                    raise argparse.ArgumentTypeError(
+                        f"Color '{val}' is already assigned. Each color can be used only once."
+                    )
+
+                color_map[key] = val
+                used_colors.add(val)
+
+            return color_map
+
+        except ValueError:
+            raise argparse.ArgumentTypeError("Colors must be in the format tracer:color,...")
+
     parser.add_argument("-ir", "--ignore_regions", type=str2list,
                         help="Comma-separated list of regions to ignore during registration e.g. arms,legs,"
                              "none. 'none' indicates no regions to ignore.", required=True)
@@ -79,6 +108,8 @@ def main():
 
     parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
                         help="Manually assign colors to tracer images.", required=False)
+
+    parser.add_argument("-cm", "--color_map", type=parse_color_dict, default=None,  help="Specify custom colors as tracer (e.g. psma:red,fdg:green) (requires -m)")
 
     parser.add_argument("-c2d", "--convert_to_dicom", action='store_true', default=False,
                         help="Convert DICOM images to NIFTI format. Set this to true only if your input is DICOM",
@@ -93,6 +124,7 @@ def main():
     regions_to_ignore = args.ignore_regions
     multiplex = args.multiplex
     custom_colors = args.custom_colors
+    color_map = args.color_map
     segment_tumors = args.segment_tumors
     convert_to_dicom = args.convert_to_dicom
     perform_risk_analysis = args.risk_analysis
@@ -121,6 +153,7 @@ def main():
     # ----------------------------------
     console.print(f' Multiplexing: {multiplex} | '
                   f'Custom Colors: {custom_colors} | '
+                  f'Color map: {color_map} |',
                   f'Segment Tumors: {segment_tumors} | ',
                   f'Convert to DICOM: {convert_to_dicom} | ',
                   f'Regions to Ignore: {regions_to_ignore} | ',
@@ -225,7 +258,7 @@ def main():
         aligned_pt_dir = os.path.join(puma_dir, constants.ALIGNED_PET_FOLDER)
         rgb_image = os.path.join(aligned_pt_dir, constants.MULTIPLEXED_COMPOSITE_IMAGE)
         image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET',
-                                   rgb_image, custom_colors)
+                                   rgb_image, custom_colors, color_map)
         grayscale_image = os.path.join(aligned_pt_dir, constants.GRAYSCALE_COMPOSITE_IMAGE)
         image_processing.rgb2gray(rgb_image, grayscale_image)
         if segment_tumors:
