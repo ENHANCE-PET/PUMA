@@ -116,7 +116,7 @@ Start your journey with PUMA 1.0 by using our straightforward command-line tool.
 
 - `-cs`, when passed along with `-m`, PUMA will ask you to provide a custom order of color channels for the corresponding tracer images. That way, you can freely decide which tracer image is associated with which channel.
 - `-cm` provides a predefined color channel assignment for each tracer using the format `tracer:color,....`. The `tracer` part must match the name of each subdirectory inside your image parent directory (e.g., `Tracer1`, `Tracer2`, etc.).  Valid colors are R, G, and B. Each color may only be used once.
-Example: `-cm Tracer1:Tracer2:G` assigns Red to Tracer1 and Green to Tracer2. This option requires -m and is mutually exclusive with -cs.
+Example: `-cm Tracer1:R,Tracer2:G` assigns Red to Tracer1 and Green to Tracer2. This option requires -m and is mutually exclusive with -cs.
 - `-c2d`, when set the generated aligned nifti images will be converted back to DICOM.
   
 For assistance or additional information, you can always type:
