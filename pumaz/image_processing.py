@@ -862,7 +862,8 @@ def get_color_channel_assignments_from_map(color_map, tracer_images):
 
     for tracer_image in tracer_images:
         tracer_image = os.path.basename(tracer_image)
-        tracer = tracer_image.split('_')[2]
+        match = re.search(r'PT_(.*?)_PT', tracer_image)
+        tracer = match.group(1)
         color_channel_assignments.append(channel_map[color_map[tracer]])
     return color_channel_assignments
 
