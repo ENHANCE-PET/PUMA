@@ -104,6 +104,7 @@ Start your journey with PUMA 1.0 by using our straightforward command-line tool.
        -ir  <regions_to_ignore>              # Regions to ignore: arms, legs, head, none
        -m                                    # Optional: Enable multiplexed RGB image output
        -cs  <color_selection>                # Optional: Custom color selection for RGB output (requires -m)
+       -cm  <color_map>                      # Optional: Assign specific colors to each tracer (e.g., psma:R,fdg:G) (requires -m)
        -c2d <convert_back_to_dicom>          # Optional: Once set, the generated nifti images will be converted back to DICOM
 ```
 
@@ -114,6 +115,8 @@ Start your journey with PUMA 1.0 by using our straightforward command-line tool.
 - `-m` will activate the output of a multiplexed RGB image of the combined tracer images.
 
 - `-cs`, when passed along with `-m`, PUMA will ask you to provide a custom order of color channels for the corresponding tracer images. That way, you can freely decide which tracer image is associated with which channel.
+- `-cm` provides a predefined color channel assignment for each tracer using the format `tracer:color,....`. The `tracer` part must match the name of each subdirectory inside your image parent directory (e.g., `Tracer1`, `Tracer2`, etc.).  Valid colors are R, G, and B. Each color may only be used once.
+Example: `-cm Tracer1:R,Tracer2:G` assigns Red to Tracer1 and Green to Tracer2. This option requires -m and is mutually exclusive with -cs.
 - `-c2d`, when set the generated aligned nifti images will be converted back to DICOM.
   
 For assistance or additional information, you can always type:
