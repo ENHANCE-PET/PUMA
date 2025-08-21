@@ -109,7 +109,7 @@ def main():
     parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
                         help="Manually assign colors to tracer images.", required=False)
 
-    parser.add_argument("-cm", "--color_map", type=parse_color_dict, default=None,  help="Specify custom colors as tracer (e.g. psma:red,fdg:green) (requires -m)")
+    parser.add_argument("-cm", "--color_map", type=parse_color_dict, default=None,  help="Specify custom colors as tracer (e.g. psma:R,fdg:G) (requires -m)")
 
     parser.add_argument("-c2d", "--convert_to_dicom", action='store_true', default=False,
                         help="Convert DICOM images to NIFTI format. Set this to true only if your input is DICOM",
