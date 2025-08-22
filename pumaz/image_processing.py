@@ -861,14 +861,26 @@ def get_color_channel_assignments_from_map(color_map, tracer_images):
     channel_map = {'R': 0, 'G': 1, 'B': 2}
 
     for tracer_image in tracer_images:
-        tracer_image = os.path.basename(tracer_image)
-        match = re.search(r'PT_(.*?)_PT', tracer_image)
-        if match:
+        tracer_filename = os.path.basename(tracer_image)
+
+        try:
+
+            match = re.search(r'PT_(.*?)_PT', tracer_filename)
+            if not match:
+                raise ValueError(f"Could not extract tracer from filename '{tracer_filename}'.")
+
             tracer = match.group(1)
-            color_channel_assignments.append(channel_map[color_map[tracer]])
-        else:
-            print(f"Warning: Tracer not found in color_map.")
-            get_color_channel_assignments(tracer_images)
+
+            if tracer not in color_map:
+                raise KeyError(f"Tracer '{tracer}' not found in color_map.")
+
+            color = color_map[tracer]
+            color_channel_assignments.append(channel_map[color])
+
+        except (KeyError, ValueError) as e:
+            print(f"Warning: {e}")
+            color_channel_assignments = get_color_channel_assignments(tracer_images)
+
     return color_channel_assignments
 
 def blend_images(image_paths, modality_names, output_path, custom_colors=False, color_map=None):
