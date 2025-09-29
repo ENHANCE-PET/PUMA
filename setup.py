@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pumaz',
-    version='1.7.7',
+    version='1.7.8',
     author='Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires',
     author_email='Lalith.shiyamsundar@meduniwien.ac.at, Sebastian.Gutschmayer@meduniwien.ac.at, '
                  'Manuel.pires@meduniwien.ac.at',
@@ -31,19 +31,17 @@ setup(
     keywords='PET tracer alignment, diffeomorphic imaging, image processing, multiplexed tracers',
     packages=find_packages(),
     install_requires=[
-        'nibabel~=3.2.2',
-        'halo~=0.0.31',
-        'SimpleITK~=2.2.1',
-        'pydicom~=2.2.2',
-        'argparse~=1.4.0',
-        'numpy<2.0',
-        'mpire~=2.3.3',
-        'openpyxl~=3.0.9',
+        'nibabel',
+        'halo',
+        'SimpleITK',
+        'pydicom',
+        'numpy',
+        'mpire',
+        'openpyxl',
         'matplotlib',
-        'pyfiglet~=0.8.post1',
-        'natsort~=8.1.0',
-        'pillow>=9.2.0',
-        'colorama~=0.4.6',
+        'pyfiglet',
+        'natsort',
+        'colorama',
         'rich',
         'pandas',
         'dicom2nifti',
@@ -53,8 +51,7 @@ setup(
         'halo',
         'psutil',
         'gputil',
-        'dask',
-        'lionz'
+        'dask'
     ],
     entry_points={
         'console_scripts': [

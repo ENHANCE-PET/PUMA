@@ -79,14 +79,10 @@ def main():
                 val = val.strip().upper()
 
                 if val not in allowed_colors:
-                    raise argparse.ArgumentTypeError(
-                        f"Invalid color '{val}' for tracer '{key}'. Allowed values are: R, G, B."
-                    )
+                    raise argparse.ArgumentTypeError(f"Invalid color '{val}' for tracer '{key}'. Allowed values are: R, G, B.")
 
                 if val in used_colors:
-                    raise argparse.ArgumentTypeError(
-                        f"Color '{val}' is already assigned. Each color can be used only once."
-                    )
+                    raise argparse.ArgumentTypeError(f"Color '{val}' is already assigned. Each color can be used only once.")
 
                 color_map[key] = val
                 used_colors.add(val)
@@ -103,17 +99,16 @@ def main():
     parser.add_argument("-m", "--multiplex", action='store_true', default=False,
                         help="Multiplex the aligned PT images.", required=False)
 
-    parser.add_argument("-st", "--segment_tumors", action='store_true', default=False,
-                        help="Segment tumors in the multiplexed images (not implemented: postponed for puma v.2.0)", required=False)
-
     parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
                         help="Manually assign colors to tracer images.", required=False)
 
-    parser.add_argument("-cm", "--color_map", type=parse_color_dict, default=None,  help="Specify custom colors as tracer (e.g. psma:R,fdg:G) (requires -m)")
+    parser.add_argument("-cm", "--color_map", type=parse_color_dict, default=None,
+                        help="Specify custom colors as tracer (e.g. psma:R,fdg:G) (requires -m)")
 
     parser.add_argument("-c2d", "--convert_to_dicom", action='store_true', default=False,
                         help="Convert DICOM images to NIFTI format. Set this to true only if your input is DICOM",
                         required=False)
+
     parser.add_argument("-ra", "--risk_analysis", action='store_true', default=False,
                         help="Highlight areas of misalignment in the images.",
                         required=False)
@@ -125,7 +120,6 @@ def main():
     multiplex = args.multiplex
     custom_colors = args.custom_colors
     color_map = args.color_map
-    segment_tumors = args.segment_tumors
     convert_to_dicom = args.convert_to_dicom
     perform_risk_analysis = args.risk_analysis
 
@@ -154,7 +148,6 @@ def main():
     console.print(f' Multiplexing: {multiplex} | '
                   f'Custom Colors: {custom_colors} | '
                   f'Color map: {color_map} |',
-                  f'Segment Tumors: {segment_tumors} | ',
                   f'Convert to DICOM: {convert_to_dicom} | ',
                   f'Regions to Ignore: {regions_to_ignore} | ',
                   f'Risk Analysis: {perform_risk_analysis}',
@@ -172,8 +165,7 @@ def main():
     file_utilities.create_directory(binary_path)
     system_os, system_arch = file_utilities.get_system()
     console.print(f' Detected system: {system_os} | Detected architecture: {system_arch}', style='bold yellow')
-    download.download(item_name=f'puma-{system_os}-{system_arch}', item_path=binary_path,
-                      item_dict=resources.PUMA_BINARIES)
+    download.download(item_name=f'puma-{system_os}-{system_arch}', item_path=binary_path, item_dict=resources.PUMA_BINARIES)
     file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
     file_utilities.set_permissions(constants.C3D_PATH, system_os)
 
@@ -201,8 +193,7 @@ def main():
 
     num_subject_folders = len(puma_compliant_subject_folders)
     if num_subject_folders < 1:
-        print(
-            f'{constants.ANSI_RED} {emoji.emojize(":cross_mark:")} No puma compliant tracer directories found to continue!{constants.ANSI_RESET} {emoji.emojize(":light_bulb:")} See: https://github.com/Keyn34/PUMA#directory-structure-and-naming-conventions-for-puma-%EF%B8%8F')
+        print(f'{constants.ANSI_RED} {emoji.emojize(":cross_mark:")} No puma compliant tracer directories found to continue!{constants.ANSI_RESET} {emoji.emojize(":light_bulb:")} See: https://github.com/Keyn34/PUMA#directory-structure-and-naming-conventions-for-puma-%EF%B8%8F')
         return
 
     # -------------------------------------------------
@@ -211,15 +202,13 @@ def main():
     # calculate elapsed time for the entire procedure below
     start_time = time.time()
     print('')
-    print(
-        f'{constants.ANSI_VIOLET} {emoji.emojize(":rocket:")} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
+    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":rocket:")} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
     print('')
     logging.info(' ')
     logging.info(' RUNNING PREPROCESSING AND REGISTRATION PIPELINE:')
     logging.info(' ')
-    puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(
-        puma_compliant_subjects=puma_compliant_subject_folders,
-        regions_to_ignore=regions_to_ignore)
+    puma_dir, ct_dir, pt_dir, mask_dir = image_processing.preprocess(puma_compliant_subjects=puma_compliant_subject_folders,
+                                                                     regions_to_ignore=regions_to_ignore)
     reference_mask, reference_ct, reference_pt = image_processing.align(puma_dir, ct_dir, pt_dir, mask_dir)
 
     # store the reference images as a dictionary
@@ -257,23 +246,9 @@ def main():
         logging.info(' ')
         aligned_pt_dir = os.path.join(puma_dir, constants.ALIGNED_PET_FOLDER)
         rgb_image = os.path.join(aligned_pt_dir, constants.MULTIPLEXED_COMPOSITE_IMAGE)
-        image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET',
-                                   rgb_image, custom_colors, color_map)
+        image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET', rgb_image, custom_colors, color_map)
         grayscale_image = os.path.join(aligned_pt_dir, constants.GRAYSCALE_COMPOSITE_IMAGE)
         image_processing.rgb2gray(rgb_image, grayscale_image)
-        if segment_tumors:
-            print('')
-            print(
-                f'{constants.ANSI_VIOLET} {emoji.emojize(":face_with_medical_mask:")} SEGMENTING TUMORS:{constants.ANSI_RESET}')
-            print('')
-            print(f' {constants.ANSI_ORANGE}Segmentation may take a few minutes...{constants.ANSI_RESET}')
-            seg_dir = os.path.join(puma_dir, constants.SEGMENTATION_FOLDER)
-            file_utilities.create_directory(seg_dir)
-            file_utilities.copy_reference_image(grayscale_image, seg_dir, constants.LIONZ_PREFIX)
-            output_dir = os.path.join(seg_dir, constants.LIONZ_OUTPUT_DIR)
-            file_utilities.create_directory(output_dir)
-            image_processing.segment_tumors(seg_dir, output_dir)
-            console.print(f' Segmentation complete.', style='bold green')
 
     if convert_to_dicom:
         print('')
@@ -282,10 +257,7 @@ def main():
         logging.info(' ')
         logging.info(' CONVERTING TO DICOM:')
         logging.info(' ')
-        n2dConverter = image_conversion.NiftiToDicomConverter(
-            subject_folder=subject_folder,
-            puma_dir=puma_dir,
-        )
+        n2dConverter = image_conversion.NiftiToDicomConverter(subject_folder=subject_folder, puma_dir=puma_dir)
         n2dConverter.set_reference_image(reference_mask)
         n2dConverter.convert_to_dicom(puma_compliant_subject_folders=puma_compliant_subject_folders)
 

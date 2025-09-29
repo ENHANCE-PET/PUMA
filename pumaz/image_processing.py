@@ -33,16 +33,13 @@ import SimpleITK as sitk
 import nibabel as nib
 import numpy as np
 import psutil
-from lionz import lion
 from moosez import moose
 from mpire import WorkerPool
 from pumaz import constants
 from pumaz import file_utilities
 from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES, RED_WEIGHT,
-                             GREEN_WEIGHT, BLUE_WEIGHT, LIONZ_MODEL, MOOSE_FILLER_LABEL, ALIGNED_MASK_FOLDER,
-                             ALIGNED_PET_FOLDER, ALIGNED_CT_FOLDER, PUMA_LABELS)
-from pumaz.file_utilities import (create_directory, move_file, remove_directory, move_files_to_directory, get_files,
-                                  copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
+                             GREEN_WEIGHT, BLUE_WEIGHT, MOOSE_FILLER_LABEL, PUMA_LABELS)
+from pumaz.file_utilities import (create_directory, get_files, copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 from pumaz.resources import check_device
 from rich.console import Console
 from rich.progress import Progress, BarColumn, TimeElapsedColumn
@@ -1030,23 +1027,6 @@ def rgb2gray(rgb_file: str, gray_file: str):
     c3d_cmd = f"{C3D_PATH} -mcs {rgb_file} -wsum {RED_WEIGHT} {GREEN_WEIGHT} {BLUE_WEIGHT} -o {gray_file}"
     subprocess.run(c3d_cmd, shell=True, capture_output=True)
     logging.info(f" Converted {os.path.basename(rgb_file)} to grayscale.")
-
-
-# use lionz to segment the tumors from the grayscale image
-
-def segment_tumors(input_dir: str, output_dir: str):
-    """
-    Segment tumors from a grayscale image using the LIONz model.
-    :param input_dir: The path to the input directory.
-    :type input_dir: str
-    :param output_dir: The directory to save the output files.
-    :type output_dir: str
-    :return: None
-    """
-    device = check_device()
-    logging.info(f" Running LIONz for segmenting tumors from {input_dir}")
-    lion(LIONZ_MODEL, input_dir, output_dir, device)
-    logging.info(f" Tumor segmentation completed.")
 
 
 def calculate_volume_difference(reference_image: sitk.Image, aligned_images: List[sitk.Image]) -> Dict[
