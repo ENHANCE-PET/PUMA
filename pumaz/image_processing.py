@@ -838,7 +838,52 @@ def get_color_channel_assignments(tracer_images) -> list:
     return color_channel_assignments
 
 
-def blend_images(image_paths, modality_names, output_path, custom_colors=False):
+def get_color_channel_assignments_from_map(color_map, tracer_images):
+    """
+    Assign color channels to tracer images based on a provided color map.
+
+    This function uses a user-defined color map to assign a color channel (Red, Green, or Blue)
+    to each tracer image. The color map must associate each tracer name with a valid channel symbol
+    ('R', 'G', or 'B'). The function parses each image path to extract the tracer name, matches it
+    to the color map, and converts the channel symbol to its corresponding index.
+
+    The function returns a list of color channel indices in the same order as the input image paths.
+
+    :param color_map: A dictionary mapping tracer names to color channel symbols ('R', 'G', or 'B').
+    :type color_map: dict
+    :param tracer_images: A list of full file paths to the tracer images.
+    :type tracer_images: list
+    :return: A list of color channel indices corresponding to the image paths
+    :rtype: list
+    """
+
+    color_channel_assignments = []
+    channel_map = {'R': 0, 'G': 1, 'B': 2}
+
+    for tracer_image in tracer_images:
+        tracer_filename = os.path.basename(tracer_image)
+
+        try:
+
+            match = re.search(r'PT_(.*?)_PT', tracer_filename)
+            if not match:
+                raise ValueError(f"Could not extract tracer from filename '{tracer_filename}'.")
+
+            tracer = match.group(1)
+
+            if tracer not in color_map:
+                raise KeyError(f"Tracer '{tracer}' not found in color_map.")
+
+            color = color_map[tracer]
+            color_channel_assignments.append(channel_map[color])
+
+        except (KeyError, ValueError) as e:
+            print(f"Warning: {e}")
+            color_channel_assignments = get_color_channel_assignments(tracer_images)
+
+    return color_channel_assignments
+
+def blend_images(image_paths, modality_names, output_path, custom_colors=False, color_map=None):
     """
     Blend up to three NIfTI images into a single composite RGB image and create a summary table.
 
@@ -848,6 +893,7 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
     - output_path (str): The path to the output file where the blended image will be saved.
     - custom_colors (bool, optional): If True, the function will prompt the user to assign a color channel to each image.
       If False, the color channels will be assigned automatically. Default is False.
+    - color_map (dict): A dictionary mapping tracer names to color channel symbols ('R', 'G', or 'B'). default is None.
 
     Returns:
     - None
@@ -866,6 +912,8 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
     channel_colors = ['Red', 'Green', 'Blue']
     if custom_colors:
         color_channels = get_color_channel_assignments(image_paths)
+    elif color_map is not None:
+        color_channels = get_color_channel_assignments_from_map(color_map, image_paths)
     else:
         color_channels = (0, 1, 2)
 
@@ -948,10 +996,11 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False):
         os.rename(image_path, new_image_path)
 
 
-def multiplex(directory, extension, modality, output_image_path, custom_colors=False):
+def multiplex(directory, extension, modality, output_image_path, custom_colors=False, color_map=None):
     """
     Multiplex the images in a directory into a single composite RGB image.
     :param custom_colors: Specifies if user defined RGB channel assignment should be used.
+    :param color_map: A dictionary mapping tracer names to color channel symbols ('R', 'G', or 'B').
     :param directory: The directory containing the images.
     :type directory: str
     :param extension: The extension of the images.
@@ -964,7 +1013,7 @@ def multiplex(directory, extension, modality, output_image_path, custom_colors=F
     """
     nifti_files = get_files(directory, extension)
     modalities = [modality] * len(nifti_files)
-    blend_images(nifti_files, modalities, output_image_path, custom_colors)
+    blend_images(nifti_files, modalities, output_image_path, custom_colors,color_map)
 
 
 def rgb2gray(rgb_file: str, gray_file: str):
