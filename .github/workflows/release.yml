@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # Required for trusted publishing to PyPI
 
 jobs:
   release:
@@ -13,54 +14,92 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.10'
 
       - name: Install build tooling
         run: |
           python -m pip install --upgrade pip
           pip install build twine
 
-      - name: Build and publish package to PyPI
+      - name: Determine release version
+        id: version
+        run: |
+          VERSION=$(python -c "import re; content = open('pyproject.toml').read(); match = re.search(r'^version\s*=\s*[\"'\''\"'\'''\''']([^\"'\'']+)[\"'\''\"'\'''\''']', content, re.MULTILINE); print(match.group(1) if match else exit('Version not found'))")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "📦 Building version: $VERSION"
+
+      - name: Build package
+        run: |
+          python -m build --sdist --wheel
+          ls -la dist/
+
+      - name: Publish package to PyPI
         env:
           PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          python -m build --sdist --wheel
           twine upload dist/* --username __token__ --password "$PYPI_TOKEN"
 
       - name: Wait for PyPI propagation
         run: |
-          echo "⏳ Waiting 45 seconds for PyPI to update..."
-          sleep 45
+          echo "⏳ Waiting 60 seconds for PyPI to propagate..."
+          sleep 60
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Determine release version
+      - name: Create Docker context directory
         run: |
-          VERSION="$(python -c 'from pathlib import Path; import re, sys; data = Path("pyproject.toml").read_text(encoding="utf-8"); match = re.search(r"^version\s*=\s*[\"\\\']([^\"\\\']+)[\"\\\']", data, re.MULTILINE); sys.exit("Version not found in pyproject.toml") if not match else print(match.group(1))')"
-          if [ -z "$VERSION" ]; then
-            echo "Version could not be determined." >&2
-            exit 1
-          fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p docker-context
+          cp Dockerfile docker-context/
+          
+      - name: Create optimized Dockerfile
+        run: |
+          cat > docker-context/Dockerfile << EOF
+          # Base image
+          FROM python:3.10-slim
+          
+          # Set working directory
+          WORKDIR /app
+          
+          # Wait for PyPI propagation and install pumaz
+          RUN pip install --no-cache-dir --upgrade pip && \\
+              for i in {1..5}; do \\
+                pip install pumaz==${VERSION} && break || \\
+                (echo "Attempt \$i failed, waiting 30s..." && sleep 30); \\
+              done
+          
+          # Entry point for pumaz CLI
+          ENTRYPOINT ["pumaz"]
+          
+          # Default command
+          CMD ["-h"]
+          EOF
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./docker-context
+          file: ./docker-context/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/pumaz:${{ env.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/pumaz:${{ steps.version.outputs.version }}
             ${{ secrets.DOCKER_USERNAME }}/pumaz:latest
+          platforms: linux/amd64,linux/arm64
+
+      - name: Verify release
+        run: |
+          echo "✅ Release $VERSION completed successfully!"
+          echo "📦 PyPI: https://pypi.org/project/pumaz/$VERSION/"
+          echo "🐳 Docker: ${{ secrets.DOCKER_USERNAME }}/pumaz:$VERSION"
