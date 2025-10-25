@@ -48,17 +48,7 @@ jobs:
 
       - name: Determine release version
         run: |
-          VERSION="$(python - <<'PY'
-import pathlib
-import re
-
-pyproject = pathlib.Path("pyproject.toml").read_text(encoding="utf-8")
-match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pyproject, re.MULTILINE)
-if not match:
-    raise SystemExit("Version not found in pyproject.toml")
-print(match.group(1))
-PY
-)"
+          VERSION="$(python -c 'from pathlib import Path; import re, sys; data = Path("pyproject.toml").read_text(encoding="utf-8"); match = re.search(r"^version\s*=\s*[\"\\\']([^\"\\\']+)[\"\\\']", data, re.MULTILINE); sys.exit("Version not found in pyproject.toml") if not match else print(match.group(1))')"
           if [ -z "$VERSION" ]; then
             echo "Version could not be determined." >&2
             exit 1
