@@ -31,7 +31,7 @@ from pumaz import constants
 from pumaz import file_utilities
 from pumaz import input_validation
 from rich.console import Console
-from rich.progress import Progress
+from pumaz.display import themed_progress
 
 console = Console()
 
@@ -106,8 +106,8 @@ def standardize_to_nifti(parent_dir: str):
     # get only the directories
     subjects = [subject for subject in subjects if os.path.isdir(os.path.join(parent_dir, subject))]
 
-    with Progress() as progress:
-        task = progress.add_task("[white] Standardizing subjects...", total=len(subjects))
+    with themed_progress(expand=True) as progress:
+        task = progress.add_task(" Standardizing subjects...", total=len(subjects))
         for subject in subjects:
             subject_path = os.path.join(parent_dir, subject)
             if os.path.isdir(subject_path):
@@ -121,7 +121,7 @@ def standardize_to_nifti(parent_dir: str):
                         non_nifti_to_nifti(image_path)
             else:
                 continue
-            progress.update(task, advance=1, description=f"[white] Standardizing {subject}...")
+            progress.update(task, advance=1, description=f" Standardizing {subject}...")
 
 
 def dcm2niix(input_path: str) -> str:

@@ -46,8 +46,10 @@ def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
 
         if sum(anatomical_prefixes) == 1 and sum(functional_prefixes) == 1:
             puma_compliant_subjects.append(subject_path)
-    console.print(f" Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
-                  f"{len(tracer_paths)} ", style="bold yellow")
+    console.print(
+        f" Number of PUMA-compliant tracer directories: {len(puma_compliant_subjects)} out of {len(tracer_paths)}",
+        style=constants.PUMAZ_COLORS["accent"],
+    )
     logging.info(f" Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
                  f"{len(tracer_paths)}")
 
@@ -76,17 +78,17 @@ def identify_modalities(directory):
     {'PT': '/path/to/directory/PT', 'CT': '/path/to/directory/CT'}
     """
     with Progress(
-            SpinnerColumn(),  # Spinner column to show the spinner
-            TextColumn("[progress.description]{task.description}"),
+            SpinnerColumn(style=constants.PUMAZ_COLORS["accent"]),
+            TextColumn(f"[{constants.PUMAZ_COLORS['accent']}]{{task.description}}"),
             TimeElapsedColumn(),
-            transient=True,  # Hides the progress bar after completion
+            transient=True,
     ) as progress:
-        task = progress.add_task(" Identifying modalities • Time elapsed:", total=None)
+        task = progress.add_task("Identifying modalities • Time elapsed:", total=None)
 
         # Call your function here
         data_info = identify_medical_image_data(directory)
 
-        progress.update(task, completed=100, description="[green] Done:tick:")
+        progress.update(task, completed=100, description=f"[{constants.PUMAZ_COLORS['success']}]Done ✔")
 
     return data_info
 

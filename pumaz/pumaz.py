@@ -33,7 +33,10 @@ from pumaz import image_conversion
 from pumaz import image_processing
 from pumaz import input_validation
 from pumaz import resources
+from rich.align import Align
 from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 console = Console()
 
@@ -87,7 +90,9 @@ def _parse_color_map(ctx, param, value):
 
 def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, color_map,
                  convert_to_dicom, perform_risk_analysis):
+    console.print()
     display.logo()
+    console.print()
     display.citation()
 
     logging.info('----------------------------------------------------------------------------------------------------')
@@ -101,46 +106,44 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
     logging.info(' ')
     logging.info('- Subject directory: ' + subject_folder)
     logging.info(' ')
-    print(' ')
-    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":memo:")} NOTE:{constants.ANSI_RESET}')
-    print(' ')
-    display.expectations()
+    options_summary = [
+        f"Multiplexing: {multiplex}",
+        f"Custom Colors: {custom_colors}",
+        f"Color map: {color_map}",
+        f"Convert to DICOM: {convert_to_dicom}",
+        f"Regions to Ignore: {', '.join(regions_to_ignore) if regions_to_ignore else 'None'}",
+        f"Risk Analysis: {perform_risk_analysis}",
+    ]
+
+    console.print()
+    display.expectations(options_summary)
 
     # ----------------------------------
     # DISPLAYING INPUT CHOICES
     # ----------------------------------
-    console.print(f' Multiplexing: {multiplex} | '
-                  f'Custom Colors: {custom_colors} | '
-                  f'Color map: {color_map} |',
-                  f'Convert to DICOM: {convert_to_dicom} | ',
-                  f'Regions to Ignore: {regions_to_ignore} | ',
-                  f'Risk Analysis: {perform_risk_analysis}',
-                  style='bold yellow')
+    # Options already displayed inside expectations panel
 
     # ----------------------------------
     # DOWNLOADING THE BINARIES
     # ----------------------------------
 
-    print('')
-    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":globe_with_meridians:")} BINARIES DOWNLOAD:{constants.ANSI_RESET}')
-
-    print('')
+    display.section("Binaries Download", ":globe_with_meridians:")
     binary_path = constants.BINARY_PATH
     file_utilities.create_directory(binary_path)
     system_os, system_arch = file_utilities.get_system()
-    console.print(f' Detected system: {system_os} | Detected architecture: {system_arch}', style='bold yellow')
+    console.print(
+        f" [{constants.PUMAZ_COLORS['text']}]Detected system: {system_os} | Detected architecture: {system_arch}[/]"
+    )
     download.download(item_name=f'puma-{system_os}-{system_arch}', item_path=binary_path, item_dict=resources.PUMA_BINARIES)
     file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
     file_utilities.set_permissions(constants.C3D_PATH, system_os)
+    console.print()
 
     # ----------------------------------
     # INPUT STANDARDIZATION
     # ----------------------------------
 
-    print('')
-    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":magnifying_glass_tilted_left:")} STANDARDIZING INPUT DATA TO '
-          f'NIFTI:{constants.ANSI_RESET}')
-    print('')
+    display.section("Standardizing Input Data to NIFTI", ":magnifying_glass_tilted_left:")
     logging.info(' ')
     logging.info(' STANDARDIZING INPUT DATA TO NIFTI:')
     logging.info(' ')
@@ -154,10 +157,21 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
     tracer_dirs = [os.path.join(subject_folder, d) for d in os.listdir(subject_folder)
                    if os.path.isdir(os.path.join(subject_folder, d)) and not d.startswith('PUMAZ-v1')]
     puma_compliant_subject_folders = input_validation.select_puma_compliant_subject_folders(tracer_dirs)
+    console.print()
 
     num_subject_folders = len(puma_compliant_subject_folders)
     if num_subject_folders < 1:
-        print(f'{constants.ANSI_RED} {emoji.emojize(":cross_mark:")} No puma compliant tracer directories found to continue!{constants.ANSI_RESET} {emoji.emojize(":light_bulb:")} See: https://github.com/Keyn34/PUMA#directory-structure-and-naming-conventions-for-puma-%EF%B8%8F')
+        error_panel = Panel(
+            Text(
+                "No PUMA-compliant tracer directories found to continue!\n"
+                "See: https://github.com/Keyn34/PUMA#directory-structure-and-naming-conventions-for-puma-%EF%B8%8F",
+                style="white",
+            ),
+            title=f"{emoji.emojize(':cross_mark:')} Error",
+            border_style=constants.PUMAZ_COLORS["error"],
+            padding=(1, 2),
+        )
+        console.print(error_panel)
         return
 
     # -------------------------------------------------
@@ -165,9 +179,7 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
     # -------------------------------------------------
     # calculate elapsed time for the entire procedure below
     start_time = time.time()
-    print('')
-    print(f'{constants.ANSI_VIOLET} {emoji.emojize(":rocket:")} RUNNING PREPROCESSING AND REGISTRATION PIPELINE:{constants.ANSI_RESET}')
-    print('')
+    display.section("Running Preprocessing and Registration Pipeline", ":rocket:")
     logging.info(' ')
     logging.info(' RUNNING PREPROCESSING AND REGISTRATION PIPELINE:')
     logging.info(' ')
@@ -186,9 +198,7 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         # ---------------------------------------
         # DISPLAY POSSIBLE AREAS OF MISALIGNMENT
         # ---------------------------------------
-        print('')
-        print(f'{constants.ANSI_VIOLET} {emoji.emojize(":face_screaming_in_fear:")} POSSIBLE AREAS OF MISALIGNMENT:{constants.ANSI_RESET}')
-        print('')
+        display.section("Possible Areas of Misalignment", ":face_screaming_in_fear:")
         logging.info(' ')
         logging.info(' DISPLAYING POSSIBLE AREAS OF MISALIGNMENT:')
         logging.info(' ')
@@ -201,9 +211,8 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
     # ----------------------------------
 
     if multiplex:
-        print('')
-        print(f'{constants.ANSI_VIOLET} {emoji.emojize(":artist_palette:")} MULTIPLEXING:{constants.ANSI_RESET}')
-        print('')
+        console.print()
+        display.section("Multiplexing", ":artist_palette:")
         logging.info(' ')
         logging.info(' MULTIPLEXING:')
         logging.info(' ')
@@ -214,9 +223,7 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         image_processing.rgb2gray(rgb_image, grayscale_image)
 
     if convert_to_dicom:
-        print('')
-        print(f'{constants.ANSI_VIOLET} {emoji.emojize(":file_folder:")} CONVERTING TO DICOM:{constants.ANSI_RESET}')
-        print('')
+        display.section("Converting to DICOM", ":file_folder:")
         logging.info(' ')
         logging.info(' CONVERTING TO DICOM:')
         logging.info(' ')
@@ -224,12 +231,37 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         n2dConverter.set_reference_image(reference_mask)
         n2dConverter.convert_to_dicom(puma_compliant_subject_folders=puma_compliant_subject_folders)
 
+    timeline_steps = [
+        ("MOOSE Body", True),
+        ("MOOSE PUMA", True),
+        ("Alignment", True),
+    ]
+    timeline_line = Text("  ")
+    for idx, (label, done) in enumerate(timeline_steps):
+        icon = "🟢" if done else "⚪"
+        color = constants.PUMAZ_COLORS["success"] if done else constants.PUMAZ_COLORS["warning"]
+        timeline_line.append(icon, style=color)
+        timeline_line.append(f" {label} ", style=constants.PUMAZ_COLORS["muted"])
+        if idx < len(timeline_steps) - 1:
+            timeline_line.append("→", style=constants.PUMAZ_COLORS["muted"])
+            timeline_line.append(" ", style=constants.PUMAZ_COLORS["muted"])
+    console.print(timeline_line)
+    console.print()
+
     end_time = time.time()
     elapsed_time = end_time - start_time
     # show elapsed time in minutes and round it to 2 decimal places
     elapsed_time = round(elapsed_time / 60, 2)
-    console.print(f" 🐾 PUMA has successfully completed the hunt in {elapsed_time} minutes."
-                  f" Track down your results in the directory: {puma_dir} 🐾", style='white')
+    success_panel = Panel(
+        Text(
+            f"PUMA completed in {elapsed_time} minutes. Results available in: {puma_dir}",
+            style="white",
+            justify="center",
+        ),
+        border_style=constants.PUMAZ_COLORS["primary"],
+        padding=(1, 2),
+    )
+    console.print(success_panel)
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -287,7 +319,7 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
 )
 def cli(subject_directory, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom, risk_analysis):
     """
-    Run the PUMA-Z preprocessing and registration pipeline with a richly formatted CLI.
+    PUMA (PET Universal Multi-tracer Aligner) standardizes, registers, and multiplexes serial PET/CT studies.
     """
     logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
                         filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'), filemode='w')

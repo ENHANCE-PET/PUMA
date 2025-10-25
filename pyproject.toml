@@ -48,8 +48,10 @@ dependencies = [
   "nifti2dicom",
   "requests",
   "moosez",
+  "emoji",
   "click",
   "rich-click",
+  "cfonts",
   "psutil",
   "gputil",
   "dask"

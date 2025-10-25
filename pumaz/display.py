@@ -19,12 +19,46 @@
 
 import logging
 
-import pyfiglet
 import importlib.metadata
+import emoji
+import pyfiglet
 from pumaz import constants
+from rich.align import Align
 from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, BarColumn, TextColumn
+from rich.text import Text
+
+try:
+    from cfonts import render as cfonts_render, say as cfonts_say  # type: ignore[import-not-found]
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
+    cfonts_render = None
+    cfonts_say = None
 
 console = Console()
+
+
+def themed_progress(*additional_columns, expand=True, transient=None, console_override=None):
+    """Create a themed Progress instance using the shared color palette."""
+    base_columns = [
+        TextColumn(f"[{constants.PUMAZ_COLORS['text']}]{{task.description}}"),
+        BarColumn(
+            bar_width=None,
+            style=constants.PUMAZ_COLORS["muted"],
+            complete_style=constants.PUMAZ_COLORS["primary"],
+            finished_style=constants.PUMAZ_COLORS["primary"],
+            pulse_style=constants.PUMAZ_COLORS["info"],
+        ),
+        TextColumn(f"[{constants.PUMAZ_COLORS['info']}]{{task.percentage:>3.0f}}%"),
+    ]
+    columns = base_columns + list(additional_columns)
+    resolved_transient = True if transient is None else transient
+    return Progress(
+        *columns,
+        console=console_override or console,
+        expand=expand,
+        transient=resolved_transient,
+    )
 
 def logo():
     """
@@ -36,16 +70,47 @@ def logo():
         >>> logo()
     """
     version = importlib.metadata.version("pumaz")
-    print(' ')
-    logo_color_code = constants.ANSI_VIOLET
-    slogan_color_code = constants.ANSI_VIOLET
-    result = logo_color_code + pyfiglet.figlet_format(f"PUMA {version}", font="speed").rstrip() + "\033[0m"
-    text = slogan_color_code + "A part of the ENHANCE community. Join us at https://enhance.pet to build the future " \
-                               "of " \
-                               "PET imaging together." + "\033[0m"
-    print(result)
-    print(text)
-    print(' ')
+    console.print()
+    # add a space before the banner
+    console.print()
+    banner_text = f"PUMA {version}"
+    if cfonts_say is not None:
+        cfonts_say(
+            banner_text,
+            colors=constants.PUMAZ_BANNER_COLORS,
+            align="center",
+            font=constants.PUMAZ_BANNER_FONT,
+            space=False,
+        )
+    elif cfonts_render is not None:
+        banner = cfonts_render(
+            banner_text,
+            colors=constants.PUMAZ_BANNER_COLORS,
+            align="center",
+            font=constants.PUMAZ_BANNER_FONT,
+            space=False,
+        )
+        banner_output = banner.get("string") if isinstance(banner, dict) else banner
+        console.print(str(banner_output), markup=False)
+    else:
+        ascii_art = pyfiglet.figlet_format(banner_text, font="speed").rstrip()
+        console.print(ascii_art, style=constants.PUMAZ_COLORS["primary"], justify="center")
+
+    subtitle = Text(
+        "PET Universal Multi-tracer Aligner. A part of the ENHANCE.PET initiative.",
+        style=f"bold {constants.PUMAZ_COLORS['secondary']}",
+        justify="center",
+    )
+    console.print(Align.center(subtitle))
+    console.print()
+
+    capability = Text(
+        "One Framework. Many Tracers. Unified Insight.",
+        style=constants.PUMAZ_COLORS["secondary"],
+        justify="center",
+    )
+    console.print(Align.center(capability))
+    console.print()
 
 
 def citation():
@@ -57,19 +122,49 @@ def citation():
     :Example:
         >>> citation()
     """
-    console.print(" Fully Automated Image-Based Multiplexing of Serial PET/CT Imaging for Facilitating "
-                  "Comprehensive Disease Phenotyping", style="white")
-    console.print(" Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires, Daria Ferrara, "
-                  "Toni Nguyen, Yasser Gaber Abdelhafez, Benjamin Spencer, Simon R. Cherry, Ramsey D. Badawi, "
-                  "David Kersting, Wolfgang P. Fendler, Moon-Sung Kim, Martin Lyngby Lassen, Philip Hasbak, "
-                  "Fabian Schmidt, Pia Linder, Xingyu Mu, Zewen Jiang, Elisabetta M. Abenavoli, Roberto Sciagrà, "
-                  "Armin Frille, Hubert Wirtz, Swen Hesse, Osama Sabri, Dale Bailey, David Chan, Jason Callahan, "
-                  "Rodney J. Hicks, Thomas Beyer", style="white")
-    console.print(" Journal of Nuclear Medicine, September 2025, jnumed.125.269688; "
-                  "DOI: https://doi.org/10.2967/jnumed.125.269688", style="white")
+    citation_text = Text(justify="left")
+    citation_text.append(
+        "Fully Automated Image-Based Multiplexing of Serial PET/CT Imaging for Facilitating "
+        "Comprehensive Disease Phenotyping\n",
+        style="white",
+    )
+    citation_text.append(
+        "Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires, et al.\n",
+        style="white",
+    )
+    citation_text.append(
+        "Journal of Nuclear Medicine, September 2025, jnumed.125.269688; "
+        "DOI: https://doi.org/10.2967/jnumed.125.269688",
+        style="white",
+    )
+
+    title_text = Text(f"{emoji.emojize(':books:')} Citation", style=f"bold {constants.PUMAZ_COLORS['secondary']}")
+    panel = Panel(
+        Align.left(citation_text),
+        title=title_text,
+        title_align="left",
+        border_style=constants.PUMAZ_CITATION_BORDER_COLOR,
+        padding=(1, 2),
+    )
+    console.print(panel)
+    console.print()
 
 
-def expectations():
+def section(title: str, icon: str = ""):
+    """Render a themed section heading."""
+    heading = emoji.emojize(f"{icon} {title}" if icon else title)
+    header_text = Text(heading.strip(), style=f"bold {constants.PUMAZ_COLORS['secondary']}", justify="left")
+    panel = Panel(
+        Align.left(header_text),
+        border_style=constants.PUMAZ_SECTION_BORDER_COLOR,
+        padding=(0, 2),
+        expand=True,
+    )
+    console.print(panel)
+    console.print()
+
+
+def expectations(options_lines: list[str]):
     """
     Display the expected modalities for PUMA.
 
@@ -80,21 +175,45 @@ def expectations():
     :Example:
         >>> expectations()
     """
-    # display the expected modalities
-    console.print(f' Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} |'
-          f' Number of required anatomical modalities: 1 |'
-          f' Expected functional modalities: {constants.FUNCTIONAL_MODALITIES} |'
-          f' Number of required functional modalities: 1 |'
-                  f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}', style='white')
-    logging.info(f' Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} |'
-                 f' Number of required anatomical modalities: 1 |'
-                 f' Expected functional modalities: {constants.FUNCTIONAL_MODALITIES} |'
-                 f' Number of required functional modalities: 1 |'
-                 f' Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}')
-    console.print(
-        f" Warning: Any subject datasets in a non-DICOM format that lack the required modalities"
-        f" (as indicated by the file prefix) will not be included in the analysis.", style="bold yellow")
+    note_text = Text(justify="left", style=constants.PUMAZ_COLORS["muted"])
+    note_text.append(
+        f"Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} | Number required: 1\n"
+    )
+    note_text.append(
+        f"Expected functional modalities: {constants.FUNCTIONAL_MODALITIES} | Number required: 1\n"
+    )
+    note_text.append(
+        f"Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}\n",
+        style=constants.PUMAZ_COLORS["accent"],
+    )
+    note_text.append("\n")
+    note_text.append("Chosen arguments:\n", style=constants.PUMAZ_COLORS["accent"])
+    for option in options_lines:
+        note_text.append(f" • {option}\n")
+    warning_message = (
+        "Warning: Any subject datasets in a non-DICOM format that lack the required modalities "
+        "(as indicated by the file prefix) will not be included in the analysis.\n"
+        "Skipping subjects without required modalities. These datasets will be excluded from the pipeline."
+    )
+    note_text.append("\n")
+    note_text.append(warning_message, style=f"bold {constants.PUMAZ_COLORS['warning']}")
+    title_text = Text(f"{emoji.emojize(':memo:')} Note", style=f"bold {constants.PUMAZ_COLORS['secondary']}")
+    note_panel = Panel(
+        Align.left(note_text),
+        title=title_text,
+        title_align="left",
+        border_style=constants.PUMAZ_CITATION_BORDER_COLOR,
+        padding=(1, 2),
+    )
+    console.print(note_panel)
+    console.print()
 
-    warning_message = " Skipping subjects without the required modalities (check file prefix).\n" \
-                      " These subjects will be excluded from analysis and their data will not be used."
-    logging.warning(warning_message)
+    logging.info(
+        f"Expected anatomical modalities: {constants.ANATOMICAL_MODALITIES} | Number required: 1 | "
+        f"Expected functional modalities: {constants.FUNCTIONAL_MODALITIES} | Number required: 1 | "
+        f"Required prefix for non-DICOM files: {constants.MODALITIES_PREFIX}" 
+    )
+    logging.warning(
+        "Skipping subjects without the required modalities (check file prefix). "
+        "These subjects will be excluded from analysis and their data will not be used."
+    )

@@ -45,6 +45,29 @@ ANSI_VIOLET = '\033[38;5;141m'
 ANSI_RED = '\033[38;5;196m'
 ANSI_RESET = '\033[0m'
 
+# RICH COLOR THEME (aligned with MOSAICX)
+PUMAZ_COLORS = {
+    "primary": "#ff79c6",      # vibrant pink
+    "secondary": "#4163ca",    # elegant purple-blue
+    "success": "#34c658",
+    "warning": "#f0c37b",
+    "error": "#eb7777",
+    "info": "#2b60dc",
+    "accent": "#bd93f9",
+    "muted": "#44475a",
+    "text": "#44475a", 
+    "border": "#D795BE",
+}
+
+PUMAZ_BANNER_FONT = "block"
+PUMAZ_BANNER_COLORS = [PUMAZ_COLORS["secondary"], PUMAZ_COLORS["primary"]]
+
+
+PUMAZ_TAGLINE_BORDER_COLOR = PUMAZ_COLORS["border"]  
+PUMAZ_CITATION_BORDER_COLOR = PUMAZ_COLORS["border"] 
+PUMAZ_NOTE_BORDER_COLOR = PUMAZ_COLORS["border"]
+PUMAZ_SECTION_BORDER_COLOR = PUMAZ_COLORS["border"]
+
 # EXPECTED MODALITIES
 ANATOMICAL_MODALITIES = ['CT']
 FUNCTIONAL_MODALITIES = ['PT']

@@ -25,6 +25,8 @@ import requests
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, FileSizeColumn, TransferSpeedColumn, TimeRemainingColumn
 
+from pumaz import constants
+
 console = Console()
 
 
@@ -65,15 +67,21 @@ def download(item_name: str, item_path: str, item_dict: dict) -> str:
         chunk_size = 1024 * 10
 
         progress = Progress(
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(bar_width=None),
-            "[progress.percentage]{task.percentage:>3.0f}%",
-            "•",
-            FileSizeColumn(),
-            TransferSpeedColumn(),
-            TimeRemainingColumn(),
+            TextColumn(f"[{constants.PUMAZ_COLORS['accent']}][bold]{{task.description}}"),
+            BarColumn(
+                bar_width=None,
+                style=constants.PUMAZ_COLORS["secondary"],
+                complete_style=constants.PUMAZ_COLORS["primary"],
+                finished_style=constants.PUMAZ_COLORS["primary"],
+                pulse_style=constants.PUMAZ_COLORS["accent"],
+            ),
+            TextColumn(f"[{constants.PUMAZ_COLORS['info']}]{{task.percentage:>3.0f}}%"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]•"),
+            FileSizeColumn(style=constants.PUMAZ_COLORS["muted"]),
+            TransferSpeedColumn(style=constants.PUMAZ_COLORS["muted"]),
+            TimeRemainingColumn(style=constants.PUMAZ_COLORS["muted"]),
             console=console,
-            expand=True
+            expand=True,
         )
 
         with progress:
@@ -84,15 +92,21 @@ def download(item_name: str, item_path: str, item_dict: dict) -> str:
 
         # Unzip the item
         progress = Progress(  # Create new instance for extraction task
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(bar_width=None),
-            "[progress.percentage]{task.percentage:>3.0f}%",
-            "•",
-            FileSizeColumn(),
-            TransferSpeedColumn(),
-            TimeRemainingColumn(),
+            TextColumn(f"[{constants.PUMAZ_COLORS['accent']}][bold]{{task.description}}"),
+            BarColumn(
+                bar_width=None,
+                style=constants.PUMAZ_COLORS["secondary"],
+                complete_style=constants.PUMAZ_COLORS["primary"],
+                finished_style=constants.PUMAZ_COLORS["primary"],
+                pulse_style=constants.PUMAZ_COLORS["accent"],
+            ),
+            TextColumn(f"[{constants.PUMAZ_COLORS['info']}]{{task.percentage:>3.0f}}%"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]•"),
+            FileSizeColumn(style=constants.PUMAZ_COLORS["muted"]),
+            TransferSpeedColumn(style=constants.PUMAZ_COLORS["muted"]),
+            TimeRemainingColumn(style=constants.PUMAZ_COLORS["muted"]),
             console=console,
-            expand=True
+            expand=True,
         )
 
         with progress:
@@ -111,11 +125,16 @@ def download(item_name: str, item_path: str, item_dict: dict) -> str:
 
         # Delete the zip file
         os.remove(filename)
-        console.print(f" Registration binaries - download complete.", style="green")
+        console.print(
+            f"  Registration binaries - download complete.",
+            style=constants.PUMAZ_COLORS["success"],
+        )
         logging.info(f" Registration binaries - download complete.")
     else:
         console.print(
-            f" A local instance of the system specific registration binary has been detected.", style="green")
+            f" A local instance of the system specific registration binary has been detected.",
+            style=constants.PUMAZ_COLORS["success"],
+        )
         logging.info(f" A local instance of registration binary has been detected.")
 
     return os.path.join(item_path, item_name)

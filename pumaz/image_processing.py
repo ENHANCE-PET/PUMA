@@ -42,7 +42,8 @@ from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCT
 from pumaz.file_utilities import (create_directory, get_files, copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
 from pumaz.resources import check_device
 from rich.console import Console
-from rich.progress import Progress, BarColumn, TimeElapsedColumn
+from rich.progress import TimeElapsedColumn, TextColumn
+from pumaz.display import themed_progress, console as display_console
 from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
@@ -68,22 +69,19 @@ def process_and_moose_ct_files(ct_dir: str, mask_dir: str, moose_model: str, acc
     """
     ct_files = get_files(ct_dir, '*.nii*')
 
-    with Progress(
-            "[progress.description]{task.description}",
-            BarColumn(),
-            "[progress.percentage]{task.percentage:>3.0f}%",
-            "[{task.completed}/{task.total}]",
-            "[white]• Time elapsed:",  # Making static text white
+    with themed_progress(
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]{{task.completed}}/{{task.total}}"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]• Time elapsed:"),
             TimeElapsedColumn(),
-            "[white]• CPU Load:",  # Static text in white
-            "[cyan]{task.fields[cpu]}%",  # Dynamic content in cyan
-            "[white]• Memory Load:",  # Static text in white
-            "[cyan]{task.fields[memory]}%",  # Dynamic content in cyan
-            "[white]• GPU Load:",  # Static text in white
-            "[cyan]{task.fields[gpu]}%",  # Dynamic content in cyan
-            expand=False
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]• CPU:"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['warning']}]{{task.fields[cpu]}}%"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]• Memory:"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['warning']}]{{task.fields[memory]}}%"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]• GPU:"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['warning']}]{{task.fields[gpu]}}%"),
+            expand=False,
     ) as progress:
-        task_description = f"[white] MOOSE-ing CT files | Model: {moose_model} | Accelerator: {accelerator}"
+        task_description = f" MOOSE-ing CT files | Model: {moose_model} | Accelerator: {accelerator}"
         task = progress.add_task(task_description, total=len(ct_files), cpu="0", memory="0", gpu="N/A")
 
         create_directory(mask_dir)
@@ -262,8 +260,8 @@ def preprocess(puma_compliant_subjects: list, regions_to_ignore: list, num_worke
 
     # Process tasks in parallel using mpire
     with WorkerPool(n_jobs=num_workers) as pool:
-        with Progress() as progress:
-            task = progress.add_task("[white] Preprocessing PUMA compliant subjects ", total=len(tasks))
+        with themed_progress(expand=True) as progress:
+            task = progress.add_task(" Preprocessing PUMA compliant subjects", total=len(tasks))
 
             for _ in pool.map(reslice_identity, tasks):
                 progress.update(task, advance=1)
@@ -621,18 +619,17 @@ def align(puma_working_dir: str, ct_dir: str, pt_dir: str, mask_dir: str):
     moving_images = find_images(mask_dir)
     moving_images.remove(reference_image)
 
-    with Progress(
-            "[progress.description]{task.description}",
-            BarColumn(),
-            "[progress.percentage]{task.percentage:>3.0f}%",
-            "[{task.completed}/{task.total}]",
-            "[white]• Time elapsed:",  # Static text in white
+    with themed_progress(
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]{{task.completed}}/{{task.total}}"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]• Time elapsed:"),
             TimeElapsedColumn(),
-            "[white]• CPU Load: [cyan]{task.fields[cpu]}%",  # Static label in white, dynamic content in cyan
-            "[white]• Memory Load: [cyan]{task.fields[memory]}%",  # Static label in white, dynamic content in cyan
-            expand=False
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]• CPU:"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['warning']}]{{task.fields[cpu]}}%"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['muted']}]• Memory:"),
+            TextColumn(f"[{constants.PUMAZ_COLORS['warning']}]{{task.fields[memory]}}%"),
+            expand=False,
     ) as progress:
-        task_description = "[white] Aligning images..."
+        task_description = " Aligning images..."
         task = progress.add_task(task_description, total=len(moving_images), cpu="0", memory="0")
 
         for moving_image in moving_images:
@@ -915,23 +912,23 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False, 
         color_channels = (0, 1, 2)
 
     images = []
-    console = Console()
-    total_steps = len(image_paths) + 2  # Loading images, blending, and saving
-    with Progress() as progress:
-        task = progress.add_task("[white] Processing images...", total=total_steps)
+    status = display_console.status(
+        Text(" Loading images...", style=constants.PUMAZ_COLORS["info"]),
+        spinner="dots",
+    )
 
+    with status:
         # Load, normalize, and verify image shapes
         for path in image_paths:
             img = nib.load(path).get_fdata()
             img_normalized = normalize_data(img)
             images.append(img_normalized)
-            progress.update(task, advance=1, description="[white] Loading images...")
 
         # Check if all images have the same shape
         if not all(img.shape == images[0].shape for img in images):
             raise ValueError(" All images must have the same dimensions.")
 
-        progress.update(task, description="[white] Blending images...")
+        status.update(Text(" Blending images...", style=constants.PUMAZ_COLORS["info"]))
 
         # Create the composite image
         composite_data = np.zeros((*images[0].shape, 3), dtype=np.uint8)
@@ -940,39 +937,40 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False, 
         for data, color_channel in zip(images, color_channels):
             composite_data[..., color_channel] = np.clip(data * 255, 0, 255).astype(np.uint8)
 
-        progress.update(task, advance=1)
+        status.update(Text(" Saving composite image...", style=constants.PUMAZ_COLORS["info"]))
 
-        progress.update(task, description="[white] Saving composite image...")
-
-        # Save the composite image as a new NIfTI file
         shape_3d = composite_data.shape[0:3]
         rgb_dtype = np.dtype([('R', 'u1'), ('G', 'u1'), ('B', 'u1')])
-        composite_data = composite_data.copy().view(dtype=rgb_dtype).reshape(
-            shape_3d)  # copy used to force fresh internal structure
+        composite_data = composite_data.copy().view(dtype=rgb_dtype).reshape(shape_3d)
         composite_image = nib.Nifti1Image(composite_data, nib.load(image_paths[0]).affine)
         nib.save(composite_image, output_path)
 
-        progress.update(task, advance=1)
-        progress.stop()  # Manually stop the progress display
+    channel_palette = {
+        'Red': constants.PUMAZ_COLORS['error'],
+        'Green': constants.PUMAZ_COLORS['success'],
+        'Blue': constants.PUMAZ_COLORS['info'],
+        'RGB': constants.PUMAZ_COLORS['accent'],
+    }
 
-    table = Table(show_header=True, header_style="bold magenta", border_style="white")
+    root_dir = os.path.dirname(output_path)
 
-    # Add columns with specific style adjustments
-    table.add_column("Index", style="dim white", justify="center")
-    table.add_column("Generated File Names", style="white", overflow="fold", justify="center")
-    table.add_column("Modality Type", style="white", justify="center")
-    table.add_column("Channel Assigned", style="white", justify="center")
+    for path, modality, color_channel in zip(image_paths, modality_names, color_channels):
+        channel_name = channel_colors[color_channel]
+        color_style = channel_palette.get(channel_name, constants.PUMAZ_COLORS['accent'])
+        rel_path = os.path.relpath(path, root_dir)
+        line = Text("    • ", style=color_style)
+        line.append(f"{modality}: {rel_path}", style=constants.PUMAZ_COLORS['muted'])
+        line.append(" → ", style=constants.PUMAZ_COLORS['muted'])
+        line.append(channel_name, style=color_style)
+        display_console.print(line)
 
-    # Add rows with your data
-    for idx, (path, modality, color_channel) in enumerate(zip(image_paths, modality_names, color_channels)):
-        table.add_row(str(idx + 1), path, modality, channel_colors[color_channel])
-
-    # Adding the composite image details to the table
-    composite_index = len(image_paths) + 1
-    table.add_row(str(composite_index), output_path, "MPX", "RGB")
-
-    # Print the table
-    console.print(table)
+    rel_output = os.path.relpath(output_path, root_dir)
+    line = Text("    • ", style=channel_palette['RGB'])
+    line.append(f"MPX: {rel_output}", style=constants.PUMAZ_COLORS['muted'])
+    line.append(" → ", style=constants.PUMAZ_COLORS['muted'])
+    line.append("RGB", style=channel_palette['RGB'])
+    display_console.print(line)
+    display_console.print()
 
     # Renaming according to channel assignments
     for image_path, color_channel in zip(image_paths, color_channels):

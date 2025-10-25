@@ -16,6 +16,8 @@ nifti2dicom
 requests
 moosez
 halo
+emoji
+cfonts
 psutil
 gputil
 dask
