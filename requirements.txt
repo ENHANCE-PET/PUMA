@@ -19,3 +19,5 @@ halo
 psutil
 gputil
 dask
+click
+rich-click

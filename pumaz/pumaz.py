@@ -17,7 +17,6 @@
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-import argparse
 import logging
 import os
 import time
@@ -25,6 +24,7 @@ from datetime import datetime
 
 import colorama
 import emoji
+import rich_click as click
 from pumaz import constants
 from pumaz import display
 from pumaz import download
@@ -37,92 +37,56 @@ from rich.console import Console
 
 console = Console()
 
+CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
-def main():
-    """
-    Run the PUMA-Z preprocessing and registration pipeline.
 
-    This function standardizes input data to NIFTI format, checks for PUMA-compliant subjects, and runs the preprocessing
-    and registration pipeline. It also downloads the necessary binaries and sets the appropriate permissions.
+def _parse_ignore_regions(ctx, param, value):
+    if not value:
+        raise click.BadParameter("Provide at least one region (use 'none' to include all regions).")
+    choices_list = [label.lower() for label in constants.MOOSE_LABEL_INDEX.values()] + ['none']
+    value_list = [item.strip().lower() for item in value.split(',')]
+    invalid = [item for item in value_list if item not in choices_list]
+    if invalid:
+        raise click.BadParameter(
+            f"Invalid choice(s): {', '.join(invalid)}. Valid options: {', '.join(choices_list)}."
+        )
+    return value_list
 
-    :return: None
-    :rtype: None
-    :Example:
-        >>> main()
-    """
-    logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
-                        filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'), filemode='w')
-    colorama.init()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--subject_directory", type=str,
-                        help="Subject directory containing the different PET/CT images of the same subject",
-                        required=True)
+def _parse_color_map(ctx, param, value):
+    if value is None:
+        return None
 
-    def str2list(value):
-        choices_list = list(constants.MOOSE_LABEL_INDEX.values()) + ['none']
-        value_list = value.lower().split(',')
-        if all(item in choices_list for item in value_list):
-            return value_list
-        else:
-            raise argparse.ArgumentTypeError(f"invalid choice: {value_list} (choose from {choices_list})")
+    color_map = {}
+    used_colors = set()
+    allowed_colors = {'R', 'G', 'B'}
 
-    def parse_color_dict(value):
-        try:
-            color_map = {}
-            used_colors = set()
-            allowed_colors = {'R', 'G', 'B'}
+    try:
+        for pair in value.split(','):
+            key, val = pair.split(':')
+            tracer = key.strip()
+            color = val.strip().upper()
 
-            for pair in value.split(','):
-                key, val = pair.split(':')
-                key = key.strip()
-                val = val.strip().upper()
+            if color not in allowed_colors:
+                raise click.BadParameter(
+                    f"Invalid color '{color}' for tracer '{tracer}'. Allowed values are: R, G, B."
+                )
 
-                if val not in allowed_colors:
-                    raise argparse.ArgumentTypeError(f"Invalid color '{val}' for tracer '{key}'. Allowed values are: R, G, B.")
+            if color in used_colors:
+                raise click.BadParameter(
+                    f"Color '{color}' is already assigned. Each color can be used only once."
+                )
 
-                if val in used_colors:
-                    raise argparse.ArgumentTypeError(f"Color '{val}' is already assigned. Each color can be used only once.")
+            color_map[tracer] = color
+            used_colors.add(color)
+    except ValueError:
+        raise click.BadParameter("Colors must be in the format tracer:color,... (e.g. psma:R,fdg:G)")
 
-                color_map[key] = val
-                used_colors.add(val)
+    return color_map
 
-            return color_map
 
-        except ValueError:
-            raise argparse.ArgumentTypeError("Colors must be in the format tracer:color,...")
-
-    parser.add_argument("-ir", "--ignore_regions", type=str2list,
-                        help="Comma-separated list of regions to ignore during registration e.g. arms,legs,"
-                             "none. 'none' indicates no regions to ignore.", required=True)
-
-    parser.add_argument("-m", "--multiplex", action='store_true', default=False,
-                        help="Multiplex the aligned PT images.", required=False)
-
-    parser.add_argument("-cs", "--custom_colors", action='store_true', default=False,
-                        help="Manually assign colors to tracer images.", required=False)
-
-    parser.add_argument("-cm", "--color_map", type=parse_color_dict, default=None,
-                        help="Specify custom colors as tracer (e.g. psma:R,fdg:G) (requires -m)")
-
-    parser.add_argument("-c2d", "--convert_to_dicom", action='store_true', default=False,
-                        help="Convert DICOM images to NIFTI format. Set this to true only if your input is DICOM",
-                        required=False)
-
-    parser.add_argument("-ra", "--risk_analysis", action='store_true', default=False,
-                        help="Highlight areas of misalignment in the images.",
-                        required=False)
-
-    args = parser.parse_args()
-
-    subject_folder = os.path.abspath(args.subject_directory)
-    regions_to_ignore = args.ignore_regions
-    multiplex = args.multiplex
-    custom_colors = args.custom_colors
-    color_map = args.color_map
-    convert_to_dicom = args.convert_to_dicom
-    perform_risk_analysis = args.risk_analysis
-
+def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, color_map,
+                 convert_to_dicom, perform_risk_analysis):
     display.logo()
     display.citation()
 
@@ -232,7 +196,6 @@ def main():
         reference_filename = os.path.basename(reference_dict["reference_mask"])
         image_processing.display_misalignment_table(misaligned_regions, reference_filename)
 
-
     # ----------------------------------
     # MULTIPLEXING
     # ----------------------------------
@@ -267,3 +230,81 @@ def main():
     elapsed_time = round(elapsed_time / 60, 2)
     console.print(f" 🐾 PUMA has successfully completed the hunt in {elapsed_time} minutes."
                   f" Track down your results in the directory: {puma_dir} 🐾", style='white')
+
+
+@click.command(context_settings=CONTEXT_SETTINGS)
+@click.option(
+    "-d",
+    "--subject-directory",
+    "subject_directory",
+    type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=str),
+    required=True,
+    help="Directory containing PET/CT tracer folders for a subject.",
+)
+@click.option(
+    "-ir",
+    "--ignore-regions",
+    callback=_parse_ignore_regions,
+    required=True,
+    metavar="regions",
+    help="Comma-separated regions to ignore during registration (e.g. arms,legs,none).",
+)
+@click.option(
+    "-m",
+    "--multiplex",
+    is_flag=True,
+    default=False,
+    help="Generate multiplexed RGB images for aligned PET volumes.",
+)
+@click.option(
+    "-cs",
+    "--custom-colors",
+    is_flag=True,
+    default=False,
+    help="Interactively assign colors to tracer images (requires --multiplex).",
+)
+@click.option(
+    "-cm",
+    "--color-map",
+    callback=_parse_color_map,
+    default=None,
+    metavar="map",
+    help="Set tracer:color pairs (e.g. psma:R,fdg:G). Requires --multiplex.",
+)
+@click.option(
+    "-c2d",
+    "--convert-to-dicom",
+    is_flag=True,
+    default=False,
+    help="Convert aligned NIfTI images back to DICOM.",
+)
+@click.option(
+    "-ra",
+    "--risk-analysis",
+    is_flag=True,
+    default=False,
+    help="Highlight potential misalignment regions using volume comparisons.",
+)
+def cli(subject_directory, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom, risk_analysis):
+    """
+    Run the PUMA-Z preprocessing and registration pipeline with a richly formatted CLI.
+    """
+    logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s', level=logging.INFO,
+                        filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'), filemode='w')
+    colorama.init()
+
+    if color_map and not multiplex:
+        raise click.UsageError("--color-map requires --multiplex.")
+    if custom_colors and not multiplex:
+        raise click.UsageError("--custom-colors requires --multiplex.")
+
+    subject_folder = os.path.abspath(subject_directory)
+    run_pipeline(subject_folder, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom, risk_analysis)
+
+
+def main():
+    cli()
+
+
+if __name__ == "__main__":
+    main()

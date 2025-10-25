@@ -48,6 +48,8 @@ dependencies = [
   "nifti2dicom",
   "requests",
   "moosez",
+  "click",
+  "rich-click",
   "psutil",
   "gputil",
   "dask"
