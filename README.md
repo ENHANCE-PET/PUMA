@@ -45,51 +45,50 @@ Once these specifications are met, you're all set to experience PUMA 1.0's capab
 
 ## Installation Guide 🛠️
 
-Installation is a breeze on Windows, Linux, and MacOS. Follow the steps below to start your journey with PUMA 1.0.
+Pick the workflow that matches your tooling and operating system:
 
-### For Linux 🐧
+- **pip + virtualenv** — the classic approach. Works everywhere and keeps dependencies isolated.
+- **uv sync** — fastest path to a fully managed `.venv` driven by `pyproject.toml`.
+- **uv pip install** — drop-in replacement for `pip install` when you already manage the environment yourself.
 
-1. Create a Python environment named 'puma-env' or as per your preference.
+Regardless of the route you choose, PUMA requires Python 3.10 or newer.
+
+### Linux / macOS
+
+1. Create a virtual environment (feel free to change `puma-env`).
    ```bash
    python3.10 -m venv puma-env
    ```
-
-
-2. Activate the environment.
+2. Activate it.
    ```bash
-   source puma-env/bin/activate  # for Linux
-   source puma-env/bin/activate  # for MacOS
+   source puma-env/bin/activate
+   ```
+3. Install PUMA from PyPI.
+   ```bash
+   pip install pumaz
    ```
 
-3. Install PUMA 1.0.
-   ```bash
-   pip install pumaz 
-   ```
-Congratulations! You're all set to start using PUMA 1.0.
+### Windows 🪟
 
-### For Windows 🪟
-
-1. Create a Python environment, e.g., 'puma-env'.
-   ```bash
+1. Create a virtual environment.
+   ```powershell
    python3.10 -m venv puma-env
    ```
-
-2. Activate the environment.
-   ```bash
+2. Activate it.
+   ```powershell
    .\puma-env\Scripts\activate
    ```
-
-3. Install PUMA 1.0.
-   ```bash
+3. Install PUMA.
+   ```powershell
    pip install pumaz
    ```
 
 ### Using uv 🚀
 
-Prefer the lightning-fast [uv](https://github.com/astral-sh/uv) workflow? Once you have `uv` installed, the bundled `pyproject.toml` lets you bootstrap everything in one go:
+Prefer the lightning-fast [uv](https://github.com/astral-sh/uv) workflow? The bundled `pyproject.toml` lets you bootstrap everything in one go:
 
 ```bash
-uv sync               # create a managed virtualenv and install dependencies
+uv sync               # create a managed .venv and install dependencies
 uv run pumaz --help   # invoke the CLI without manually activating the environment
 ```
 
@@ -100,89 +99,6 @@ Already have an environment and just want the package? Use `uv pip` (a drop-in p
 ```bash
 uv pip install pumaz
 ```
-
-## 🧠 Running PUMA on Apple Silicon (M1/M2/M3 with MPS Backend)
-
-> Yes, it works. But you'll need to follow these steps carefully. Grab a ☕ or 🍺 — this may take a few minutes.
-
-1. Create and activate a virtual environment (We recommend Python 3.10 for stability)
-
-   ```bash
-    python3.10 -m venv puma-env
-    source puma-env/bin/activate
-   ```
-
-2. Install PUMA and the MPS-compatible PyTorch fork
-
-   You’ll need a special PyTorch build tailored for Apple’s Metal backend (MPS), which doesn’t use CUDA.
-
-   ```bash
-    pip install pumaz
-    pip uninstall torch  # ensures clean install; avoids conflicts with puma-installed version
-    git clone https://github.com/LalithShiyam/pytorch-mps.git
-    cd pytorch-mps
-   ```
-
-4. Fix your CMake version (IMPORTANT ⚠️)
-
-   **Do not use CMake 4.x** — it will break the build due to compatibility issues with `protobuf`.
-
-   Check your version:
-
-   ```bash
-    cmake --version
-   ```
-
-   If it's **4.0 or higher**, downgrade to a compatible version (e.g., 3.29.2):
-
-   ```bash
-   pip uninstall cmake -y
-   pip install cmake==3.29.2
-   ```
-
-4. Build the custom PyTorch fork for MPS
-
-   This will build PyTorch without CUDA (which Apple Silicon doesn’t support anyway):
-  
-   ```bash
-   USE_CUDA=0 python setup.py develop --verbose 2>&1 | tee build.log
-   ```
-
-> ✅ This may take some time. If it completes without errors, you’re good to go.
-
-5. Patch `nnUNetTrainer.py` (one-time fix)
-
-   Due to differences in PyTorch exports, `nnUNet` may crash with:
-
-   ```
-   ImportError: cannot import name 'GradScaler' from 'torch'
-   ```
-
-To fix it:
-
-1. Open the following file inside your puma-env folder:
-
-   ```
-   ~/puma-env/lib/python3.10/site-packages/nnunetv2/training/nnUNetTrainer/nnUNetTrainer.py
-   ```
-
-2. Replace this line 43:
-
-   ```python
-   from torch import GradScaler
-   ```
-
-   with:
-
-   ```python
-   from torch.cuda.amp import GradScaler
-   ```
-✅ That’s it!
-
-Now you’re ready to use **PUMA on Apple Silicon** with MPS acceleration. 🏎⚡
-If anything crashes, blame the silicon gods… or just open an issue. We're here to help.
-
-You're now ready to experience the precision and speed of PUMA 1.0.
 
 ## Usage Guide 📚
 
@@ -263,6 +179,70 @@ Here is the directory structure that PUMA 1.0 expects:
 - For NIFTI files, the file should start with the DICOM modality tag (e.g., 'PT_' or 'CT_') followed by the desired name. For example, 'PT_MySample.nii.gz'.
 
 Note: All the PET and CT images related to a tracer should be placed in the same directory named after the tracer.
+
+## Appendix: Apple Silicon (M1/M2/M3 with MPS Backend)
+
+> Yes, it works — but it takes a few extra steps. Grab a ☕ or 🍺 and follow along carefully.
+
+1. **Prepare a clean environment (Python 3.10 recommended).**
+
+   ```bash
+   python3.10 -m venv puma-env
+   source puma-env/bin/activate
+   ```
+
+2. **Install PUMA and fetch the MPS-compatible PyTorch fork.**  
+   Apple’s Metal backend (MPS) needs a custom PyTorch build without CUDA.
+
+   ```bash
+   pip install pumaz
+   pip uninstall torch          # remove the stock wheel that ships with pumaz
+   git clone https://github.com/LalithShiyam/pytorch-mps.git
+   cd pytorch-mps
+   ```
+
+3. **Check your CMake version (IMPORTANT ⚠️).**  
+   CMake 4.x triggers protobuf build failures. Stick to ≤3.29.2.
+
+   ```bash
+   cmake --version
+   ```
+
+   If the reported version is 4.x or newer:
+
+   ```bash
+   pip uninstall cmake -y
+   pip install cmake==3.29.2
+   ```
+
+4. **Build the custom PyTorch fork for MPS.**  
+   This step disables CUDA and can take a while — be patient!
+
+   ```bash
+   USE_CUDA=0 python setup.py develop --verbose 2>&1 | tee build.log
+   ```
+
+5. **Patch `nnUNetTrainer.py` (one-time fix).**  
+   nnU-Net expects `GradScaler` in a CUDA module. Point it at the AMP helper instead.
+
+   ```text
+   File: ~/puma-env/lib/python3.10/site-packages/nnunetv2/training/nnUNetTrainer/nnUNetTrainer.py
+   ```
+
+   Replace line 43:
+
+   ```python
+   from torch import GradScaler
+   ```
+
+   with:
+
+   ```python
+   from torch.cuda.amp import GradScaler
+   ```
+
+✅ That’s it! You’re ready to run **PUMA on Apple Silicon** with MPS acceleration.  
+If anything crashes, blame the silicon gods… or open an issue — we’re happy to help.
 
 ## 🚀 Benchmarks
 
