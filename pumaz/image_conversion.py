@@ -22,8 +22,7 @@ import io
 import os
 import re
 import unicodedata
-from collections import defaultdict
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import SimpleITK
 import dicom2nifti
@@ -38,7 +37,7 @@ from pumaz.display import themed_progress
 console = Console()
 
 
-def convert_dicomdir_series(exam_dir: str, dicomdir_path: str, destination_root: str) -> bool:
+def convert_dicomdir_series(exam_dir: str, destination_root: str) -> bool:
     """Convert CT/PT series for a single exam directory that contains a DICOMDIR."""
     tracer_name = os.path.basename(os.path.normpath(destination_root))
     converted = False
@@ -76,47 +75,6 @@ def convert_dicomdir_series(exam_dir: str, dicomdir_path: str, destination_root:
             converted = True
 
     return converted
-
-
-def parse_dicomdir_series(root_dir: str, dicomdir_path: str) -> Dict[str, str]:
-    dicomdir = pydicom.dcmread(dicomdir_path)
-    modality_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
-
-    def process_series(series_record):
-        modality = getattr(series_record, "Modality", "").upper()
-        if modality not in {"PT", "CT"}:
-            return
-        for image in getattr(series_record, "children", []) or []:
-            file_id = getattr(image, "ReferencedFileID", None)
-            if not file_id:
-                continue
-            if isinstance(file_id, (list, tuple)):
-                rel_path = os.path.join(root_dir, *file_id)
-            else:
-                rel_path = os.path.join(root_dir, file_id)
-            if os.path.isfile(rel_path):
-                directory = os.path.dirname(rel_path)
-                modality_counts[modality][directory] += 1
-
-    patient_records = getattr(dicomdir, "patient_records", []) or []
-    if patient_records:
-        for patient in patient_records:
-            for study in getattr(patient, "children", []) or []:
-                for series in getattr(study, "children", []) or []:
-                    process_series(series)
-    else:
-        for record in getattr(dicomdir, "DirectoryRecordSequence", []) or []:
-            if getattr(record, "DirectoryRecordType", "") == "SERIES":
-                process_series(record)
-
-    selected: Dict[str, str] = {}
-    for modality, directories in modality_counts.items():
-        if not directories:
-            continue
-        selected_dir = max(directories.items(), key=lambda item: item[1])[0]
-        selected[modality] = selected_dir
-
-    return selected
 
 
 def rename_dicom_output(src_path: str, modality: str, tracer_name: str, destination_root: str) -> None:
@@ -183,7 +141,7 @@ def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
         if os.path.isfile(dicomdir_path):
             try:
                 destination_root = os.path.dirname(input_path)
-                if convert_dicomdir_series(input_path, dicomdir_path, destination_root):
+                if convert_dicomdir_series(input_path, destination_root):
                     return
             except Exception as exc:  # fallback to legacy behaviour on failure
                 console.print(
