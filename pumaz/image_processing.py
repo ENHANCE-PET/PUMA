@@ -958,14 +958,14 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False, 
         channel_name = channel_colors[color_channel]
         color_style = channel_palette.get(channel_name, constants.PUMAZ_COLORS['accent'])
         rel_path = os.path.relpath(path, root_dir)
-        line = Text("    • ", style=color_style)
+        line = Text(" • ", style=color_style)
         line.append(f"{modality}: {rel_path}", style=constants.PUMAZ_COLORS['muted'])
         line.append(" → ", style=constants.PUMAZ_COLORS['muted'])
         line.append(channel_name, style=color_style)
         display_console.print(line)
 
     rel_output = os.path.relpath(output_path, root_dir)
-    line = Text("    • ", style=channel_palette['RGB'])
+    line = Text(" • ", style=channel_palette['RGB'])
     line.append(f"MPX: {rel_output}", style=constants.PUMAZ_COLORS['muted'])
     line.append(" → ", style=constants.PUMAZ_COLORS['muted'])
     line.append("RGB", style=channel_palette['RGB'])

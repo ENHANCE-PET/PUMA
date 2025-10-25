@@ -193,6 +193,22 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         'reference_ct': reference_ct,
         'reference_pt': reference_pt
     }
+    console.print()
+    timeline_steps = [
+        ("MOOSE AI CT segmentation: clin_ct_body", True),
+        ("MOOSE AI CT segmentation: clin_ct_PUMA", True),
+        ("Alignment: Greedy registration", True),
+    ]
+    timeline_line = Text(" ")
+    for idx, (label, done) in enumerate(timeline_steps):
+        icon = "🟢" if done else "⚪"
+        color = constants.PUMAZ_COLORS["success"] if done else constants.PUMAZ_COLORS["warning"]
+        timeline_line.append(icon, style=color)
+        timeline_line.append(f" {label} ", style=constants.PUMAZ_COLORS["muted"])
+        if idx < len(timeline_steps) - 1:
+            timeline_line.append("→", style=constants.PUMAZ_COLORS["muted"])
+            timeline_line.append(" ", style=constants.PUMAZ_COLORS["muted"])
+    console.print(timeline_line)
 
     if perform_risk_analysis:
         # ---------------------------------------
@@ -231,22 +247,7 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         n2dConverter.set_reference_image(reference_mask)
         n2dConverter.convert_to_dicom(puma_compliant_subject_folders=puma_compliant_subject_folders)
 
-    timeline_steps = [
-        ("MOOSE Body", True),
-        ("MOOSE PUMA", True),
-        ("Alignment", True),
-    ]
-    timeline_line = Text("  ")
-    for idx, (label, done) in enumerate(timeline_steps):
-        icon = "🟢" if done else "⚪"
-        color = constants.PUMAZ_COLORS["success"] if done else constants.PUMAZ_COLORS["warning"]
-        timeline_line.append(icon, style=color)
-        timeline_line.append(f" {label} ", style=constants.PUMAZ_COLORS["muted"])
-        if idx < len(timeline_steps) - 1:
-            timeline_line.append("→", style=constants.PUMAZ_COLORS["muted"])
-            timeline_line.append(" ", style=constants.PUMAZ_COLORS["muted"])
-    console.print(timeline_line)
-    console.print()
+    
 
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -258,7 +259,7 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
             style="white",
             justify="center",
         ),
-        border_style=constants.PUMAZ_COLORS["primary"],
+        border_style=constants.PUMAZ_COLORS["border"],
         padding=(1, 2),
     )
     console.print(success_panel)
