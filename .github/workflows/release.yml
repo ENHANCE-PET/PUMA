@@ -26,14 +26,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install build twine
 
-      - name: Determine release version
-        id: version
-        run: |
-          VERSION=$(python -c "import re; content = open('pyproject.toml').read(); match = re.search(r'^version\s*=\s*[\"'\''\"'\'''\''']([^\"'\'']+)[\"'\''\"'\'''\''']', content, re.MULTILINE); print(match.group(1) if match else exit('Version not found'))")
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "📦 Building version: $VERSION"
-
       - name: Build package
         run: |
           python -m build --sdist --wheel
@@ -59,42 +51,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Create Docker context directory
+      - name: Extract version from tag
+        id: extract_version
         run: |
-          mkdir -p docker-context
-          cp Dockerfile docker-context/
-          
-      - name: Create optimized Dockerfile
-        run: |
-          cat > docker-context/Dockerfile << EOF
-          # Base image
-          FROM python:3.10-slim
-          
-          # Set working directory
-          WORKDIR /app
-          
-          # Wait for PyPI propagation and install pumaz
-          RUN pip install --no-cache-dir --upgrade pip && \\
-              for i in {1..5}; do \\
-                pip install pumaz==${VERSION} && break || \\
-                (echo "Attempt \$i failed, waiting 30s..." && sleep 30); \\
-              done
-          
-          # Entry point for pumaz CLI
-          ENTRYPOINT ["pumaz"]
-          
-          # Default command
-          CMD ["-h"]
-          EOF
+          VERSION=$(echo "${GITHUB_REF#refs/tags/}" | sed -E 's/pumaz-v\.([0-9]+\.[0-9]+\.[0-9]+)/v\1/')
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "📦 Building version: $VERSION"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./docker-context
-          file: ./docker-context/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/pumaz:${{ steps.version.outputs.version }}
+            ${{ secrets.DOCKER_USERNAME }}/pumaz:${{ env.VERSION }}
             ${{ secrets.DOCKER_USERNAME }}/pumaz:latest
           platforms: linux/amd64,linux/arm64
 
