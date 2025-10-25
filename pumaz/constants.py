@@ -18,8 +18,69 @@
 
 import os
 from datetime import datetime
+from importlib import metadata
+from pathlib import Path
 
 from pumaz import file_utilities
+
+
+def _load_version_from_pyproject() -> str | None:
+    """Best-effort extraction of the project version from pyproject.toml."""
+    pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    if not pyproject_path.is_file():
+        return None
+
+    try:
+        import tomllib  # Python 3.11+
+    except ModuleNotFoundError:
+        tomllib = None
+
+    if tomllib is not None:  # pragma: no cover - depends on runtime
+        try:
+            with pyproject_path.open("rb") as pyproject_file:
+                data = tomllib.load(pyproject_file)
+            return data.get("project", {}).get("version")
+        except (OSError, ValueError, AttributeError):
+            return None
+
+    try:  # pragma: no cover - optional dependency
+        import tomli
+    except ModuleNotFoundError:  # pragma: no cover - best-effort fallback
+        tomli = None
+
+    if tomli is not None:
+        try:
+            with pyproject_path.open("rb") as pyproject_file:
+                data = tomli.load(pyproject_file)
+            return data.get("project", {}).get("version")
+        except (OSError, ValueError, AttributeError):
+            return None
+
+    # Last resort: perform a simple line scan for `version =`
+    try:
+        for line in pyproject_path.read_text(encoding="utf-8").splitlines():
+            cleaned = line.strip()
+            if cleaned.startswith("version"):
+                _, value = cleaned.split("=", 1)
+                return value.strip().strip('"').strip("'")
+    except OSError:
+        return None
+
+    return None
+
+
+def _resolve_package_version() -> str:
+    """Resolve the installed package version with a source fallback."""
+    fallback = _load_version_from_pyproject()
+    if fallback is not None:
+        return fallback
+    try:
+        return metadata.version("pumaz")
+    except metadata.PackageNotFoundError:
+        return "0.0.0"
+
+
+PUMAZ_VERSION = _resolve_package_version()
 
 project_root = file_utilities.get_virtual_env_root()
 BINARY_PATH = os.path.join(project_root, 'bin')
@@ -107,7 +168,7 @@ MOOSE_FILLER_LABEL = 24
 
 # FOLDER NAMES
 
-PUMA_WORKING_FOLDER = 'PUMAZ-v1' + '-' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+PUMA_WORKING_FOLDER = f'PUMAZ-v{PUMAZ_VERSION}-{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
 TRANSFORMS_FOLDER = 'transforms'
 ALIGNED_MASK_FOLDER = 'aligned_MASK'
 ALIGNED_CT_FOLDER = 'aligned_CT'

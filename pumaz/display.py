@@ -18,8 +18,6 @@
 # ----------------------------------------------------------------------------------------------------------------------
 
 import logging
-
-import importlib.metadata
 import emoji
 import pyfiglet
 from pumaz import constants
@@ -69,7 +67,7 @@ def logo():
     :Example:
         >>> logo()
     """
-    version = importlib.metadata.version("pumaz")
+    version = constants.PUMAZ_VERSION
     console.print()
     # add a space before the banner
     console.print()

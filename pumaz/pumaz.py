@@ -95,9 +95,10 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
     console.print()
     display.citation()
 
-    logging.info('----------------------------------------------------------------------------------------------------')
-    logging.info('                                     STARTING PUMA-Z V.1.0.0                                       ')
-    logging.info('----------------------------------------------------------------------------------------------------')
+    version_message = f"STARTING PUMA-Z V{constants.PUMAZ_VERSION}"
+    logging.info('-' * 100)
+    logging.info(version_message.center(100))
+    logging.info('-' * 100)
 
     # ----------------------------------
     # INPUT VALIDATION AND PREPARATION
