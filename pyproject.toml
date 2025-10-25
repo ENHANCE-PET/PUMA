@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pumaz"
+version = "1.7.8"
+description = "PUMA (PET Universal Multi-tracer Aligner) aligns multi-tracer PET/CT studies using advanced diffeomorphic imaging."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Lalith Kumar Shiyam Sundar", email = "Lalith.shiyamsundar@meduniwien.ac.at" },
+  { name = "Sebastian Gutschmayer", email = "Sebastian.Gutschmayer@meduniwien.ac.at" },
+  { name = "Manuel Pires", email = "Manuel.pires@meduniwien.ac.at" }
+]
+keywords = [
+  "PET tracer alignment",
+  "diffeomorphic imaging",
+  "image processing",
+  "multiplexed tracers"
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Healthcare Industry",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Scientific/Engineering :: Medical Science Apps."
+]
+dependencies = [
+  "nibabel",
+  "halo",
+  "SimpleITK",
+  "pydicom",
+  "numpy",
+  "mpire",
+  "openpyxl",
+  "matplotlib",
+  "pyfiglet",
+  "natsort",
+  "colorama",
+  "rich",
+  "pandas",
+  "dicom2nifti",
+  "nifti2dicom",
+  "requests",
+  "moosez",
+  "psutil",
+  "gputil",
+  "dask"
+]
+
+[project.urls]
+Homepage = "https://github.com/QIMP-Team/PUMA"
+
+[project.scripts]
+pumaz = "pumaz.pumaz:main"
+
+[tool.setuptools.packages.find]
+include = ["pumaz*"]

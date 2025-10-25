@@ -57,9 +57,16 @@ def citation():
     :Example:
         >>> citation()
     """
-    console.print(" TBD", style="white")
-    console.print(" Copyright 2023, Quantitative Imaging and Medical Physics Team, Medical University of Vienna",
-                  style="white")
+    console.print(" Fully Automated Image-Based Multiplexing of Serial PET/CT Imaging for Facilitating "
+                  "Comprehensive Disease Phenotyping", style="white")
+    console.print(" Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires, Daria Ferrara, "
+                  "Toni Nguyen, Yasser Gaber Abdelhafez, Benjamin Spencer, Simon R. Cherry, Ramsey D. Badawi, "
+                  "David Kersting, Wolfgang P. Fendler, Moon-Sung Kim, Martin Lyngby Lassen, Philip Hasbak, "
+                  "Fabian Schmidt, Pia Linder, Xingyu Mu, Zewen Jiang, Elisabetta M. Abenavoli, Roberto Sciagrà, "
+                  "Armin Frille, Hubert Wirtz, Swen Hesse, Osama Sabri, Dale Bailey, David Chan, Jason Callahan, "
+                  "Rodney J. Hicks, Thomas Beyer", style="white")
+    console.print(" Journal of Nuclear Medicine, September 2025, jnumed.125.269688; "
+                  "DOI: https://doi.org/10.2967/jnumed.125.269688", style="white")
 
 
 def expectations():
@@ -91,4 +98,3 @@ def expectations():
     warning_message = " Skipping subjects without the required modalities (check file prefix).\n" \
                       " These subjects will be excluded from analysis and their data will not be used."
     logging.warning(warning_message)
-

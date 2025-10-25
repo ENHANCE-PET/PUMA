@@ -83,6 +83,24 @@ Congratulations! You're all set to start using PUMA 1.0.
    ```bash
    pip install pumaz
    ```
+
+### Using uv 🚀
+
+Prefer the lightning-fast [uv](https://github.com/astral-sh/uv) workflow? Once you have `uv` installed, the bundled `pyproject.toml` lets you bootstrap everything in one go:
+
+```bash
+uv sync               # create a managed virtualenv and install dependencies
+uv run pumaz --help   # invoke the CLI without manually activating the environment
+```
+
+uv pins the environment in `.venv` by default. If you want to work inside it directly, run `source .venv/bin/activate` (or `.\.venv\Scripts\activate` on Windows) after `uv sync`.
+
+Already have an environment and just want the package? Use `uv pip` (a drop-in pip replacement):
+
+```bash
+uv pip install pumaz
+```
+
 ## 🧠 Running PUMA on Apple Silicon (M1/M2/M3 with MPS Backend)
 
 > Yes, it works. But you'll need to follow these steps carefully. Grab a ☕ or 🍺 — this may take a few minutes.
@@ -249,6 +267,14 @@ Note: All the PET and CT images related to a tracer should be placed in the same
 ## 🚀 Benchmarks
 
 To be updated.
+
+## 📚 Citation
+
+If you use PUMA in your research, please cite:
+
+> Fully Automated Image-Based Multiplexing of Serial PET/CT Imaging for Facilitating Comprehensive Disease Phenotyping  
+> Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires, Daria Ferrara, Toni Nguyen, Yasser Gaber Abdelhafez, Benjamin Spencer, Simon R. Cherry, Ramsey D. Badawi, David Kersting, Wolfgang P. Fendler, Moon-Sung Kim, Martin Lyngby Lassen, Philip Hasbak, Fabian Schmidt, Pia Linder, Xingyu Mu, Zewen Jiang, Elisabetta M. Abenavoli, Roberto Sciagrà, Armin Frille, Hubert Wirtz, Swen Hesse, Osama Sabri, Dale Bailey, David Chan, Jason Callahan, Rodney J. Hicks, Thomas Beyer  
+> Journal of Nuclear Medicine, September 2025, jnumed.125.269688; DOI: https://doi.org/10.2967/jnumed.125.269688
 
 ## A Note on QIMP Python Packages: The 'Z' Factor 📚🚀
 
