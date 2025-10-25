@@ -22,6 +22,8 @@ import io
 import os
 import re
 import unicodedata
+from collections import defaultdict
+from typing import Dict, Optional, Tuple
 
 import SimpleITK
 import dicom2nifti
@@ -36,6 +38,120 @@ from pumaz.display import themed_progress
 console = Console()
 
 
+def convert_dicomdir_series(exam_dir: str, dicomdir_path: str, destination_root: str) -> bool:
+    """Convert CT/PT series for a single exam directory that contains a DICOMDIR."""
+    tracer_name = os.path.basename(os.path.normpath(destination_root))
+    converted = False
+
+    for candidate in sorted(os.listdir(exam_dir)):
+        image_dir = os.path.join(exam_dir, candidate)
+        if not os.path.isdir(image_dir) or candidate.upper() == "DICOMDIR":
+            continue
+
+        dicom_file = find_first_dicom(image_dir)
+        if not dicom_file:
+            continue
+
+        modality = getattr(pydicom.dcmread(dicom_file, stop_before_pixels=True), "Modality", "").upper()
+        if modality not in {"PT", "CT"}:
+            continue
+
+        existing = [
+            f for f in os.listdir(destination_root)
+            if f.startswith(f"{modality}_") and f.endswith((".nii", ".nii.gz"))
+        ]
+        if existing:
+            continue
+
+        dcm2niix(image_dir, destination_root)
+
+        for nifti_file in os.listdir(destination_root):
+            if not nifti_file.endswith((".nii", ".nii.gz")):
+                continue
+            if nifti_file.startswith(("PT_", "CT_")):
+                continue
+
+            src_path = os.path.join(destination_root, nifti_file)
+            rename_dicom_output(src_path, modality, tracer_name, destination_root)
+            converted = True
+
+    return converted
+
+
+def parse_dicomdir_series(root_dir: str, dicomdir_path: str) -> Dict[str, str]:
+    dicomdir = pydicom.dcmread(dicomdir_path)
+    modality_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+    def process_series(series_record):
+        modality = getattr(series_record, "Modality", "").upper()
+        if modality not in {"PT", "CT"}:
+            return
+        for image in getattr(series_record, "children", []) or []:
+            file_id = getattr(image, "ReferencedFileID", None)
+            if not file_id:
+                continue
+            if isinstance(file_id, (list, tuple)):
+                rel_path = os.path.join(root_dir, *file_id)
+            else:
+                rel_path = os.path.join(root_dir, file_id)
+            if os.path.isfile(rel_path):
+                directory = os.path.dirname(rel_path)
+                modality_counts[modality][directory] += 1
+
+    patient_records = getattr(dicomdir, "patient_records", []) or []
+    if patient_records:
+        for patient in patient_records:
+            for study in getattr(patient, "children", []) or []:
+                for series in getattr(study, "children", []) or []:
+                    process_series(series)
+    else:
+        for record in getattr(dicomdir, "DirectoryRecordSequence", []) or []:
+            if getattr(record, "DirectoryRecordType", "") == "SERIES":
+                process_series(record)
+
+    selected: Dict[str, str] = {}
+    for modality, directories in modality_counts.items():
+        if not directories:
+            continue
+        selected_dir = max(directories.items(), key=lambda item: item[1])[0]
+        selected[modality] = selected_dir
+
+    return selected
+
+
+def rename_dicom_output(src_path: str, modality: str, tracer_name: str, destination_root: str) -> None:
+    """Rename the converted NIFTI to match PUMA naming expectations."""
+    extension = ".nii.gz" if src_path.endswith(".nii.gz") else ".nii"
+    clean_tracer = remove_accents(tracer_name)
+    base_name = f"{modality}_{clean_tracer}{extension}"
+    destination = os.path.join(destination_root, base_name)
+    counter = 1
+    while os.path.exists(destination):
+        base_name = f"{modality}_{clean_tracer}_{counter}{extension}"
+        destination = os.path.join(destination_root, base_name)
+        counter += 1
+
+    os.replace(src_path, destination)
+
+    # Move accompanying JSON if it sits with the source NIFTI
+    src_json = os.path.splitext(src_path)[0] + ".json"
+    if os.path.exists(src_json):
+        dest_json = os.path.splitext(destination)[0] + ".json"
+        os.replace(src_json, dest_json)
+
+
+def find_first_dicom(directory: str) -> Optional[str]:
+    """Return the first DICOM file found within directory (recursively)."""
+    for root, _, files in os.walk(directory):
+        for filename in sorted(files):
+            if filename.startswith("."):
+                continue
+            full_path = os.path.join(root, filename)
+            if is_dicom_file(full_path):
+                return full_path
+    return None
+
+
 def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
     """
     Converts any image format known to ITK to NIFTI.
@@ -48,10 +164,10 @@ def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
     :rtype: None
     :raises: None
 
-    This function converts any image format known to ITK to NIFTI. If the input path is a directory, it creates a DICOM
-    lookup and runs the `dcm2niix` command to convert the images to NIFTI. If the input path is a file, it reads the image
-    using SimpleITK and writes it to a NIFTI file. If an output directory is not specified, the NIFTI file is written to
-    the same directory as the input file.
+    This function converts any image format known to ITK to NIFTI. If the input path is a directory, it either parses a
+    DICOMDIR (if present) or runs the `dcm2niix` command to convert the images to NIFTI. If the input path is a file, it
+    reads the image using SimpleITK and writes it to a NIFTI file. If an output directory is not specified, the NIFTI
+    file is written to the same directory as the input file.
 
     :Example:
         >>> non_nifti_to_nifti('/path/to/input/image.jpg', '/path/to/output/directory')
@@ -63,6 +179,17 @@ def non_nifti_to_nifti(input_path: str, output_directory: str = None) -> None:
 
     # Processing a directory
     if os.path.isdir(input_path):
+        dicomdir_path = os.path.join(input_path, "DICOMDIR")
+        if os.path.isfile(dicomdir_path):
+            try:
+                destination_root = os.path.dirname(input_path)
+                if convert_dicomdir_series(input_path, dicomdir_path, destination_root):
+                    return
+            except Exception as exc:  # fallback to legacy behaviour on failure
+                console.print(
+                    f"  [yellow]DICOMDIR parsing failed for {input_path}: {exc}. Falling back to directory scan.[/yellow]"
+                )
+
         dicom_info = create_dicom_lookup(input_path)
         nifti_dir = dcm2niix(input_path)
         rename_nifti_files(nifti_dir, dicom_info)
@@ -124,7 +251,7 @@ def standardize_to_nifti(parent_dir: str):
             progress.update(task, advance=1, description=f" Standardizing {subject}...")
 
 
-def dcm2niix(input_path: str) -> str:
+def dcm2niix(input_path: str, output_dir: Optional[str] = None) -> str:
     """
     Converts DICOM images into Nifti images using dcm2niix.
 
@@ -140,7 +267,8 @@ def dcm2niix(input_path: str) -> str:
     :Example:
         >>> dcm2niix('/path/to/dicom/folder')
     """
-    output_dir = os.path.dirname(input_path)
+    if output_dir is None:
+        output_dir = os.path.dirname(input_path)
 
     # redirect standard output and standard error to discard output
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -227,7 +355,11 @@ def create_dicom_lookup(dicom_dir):
 
     # loop over the DICOM files
     for filename in os.listdir(dicom_dir):
+        if filename.upper() == "DICOMDIR":
+            continue
         full_path = os.path.join(dicom_dir, filename)
+        if os.path.isdir(full_path):
+            continue
         if is_dicom_file(full_path):
             # read the DICOM file
             ds = pydicom.dcmread(full_path)
@@ -238,7 +370,9 @@ def create_dicom_lookup(dicom_dir):
             sequence_name = ds.SequenceName if 'SequenceName' in ds else None
             protocol_name = ds.ProtocolName if 'ProtocolName' in ds else None
             series_instance_UID = ds.SeriesInstanceUID if 'SeriesInstanceUID' in ds else None
-            modality = ds.Modality
+            modality = getattr(ds, "Modality", None)
+            if modality is None:
+                continue
 
             # anticipate the filename dicom2nifti will produce and store the modality tag with it
             if series_number is not None:

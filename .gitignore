@@ -34,3 +34,6 @@ docs/_build/
 .DS_Store
 Thumbs.db
 .idea/
+
+# Logs
+*.log
