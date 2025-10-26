@@ -162,7 +162,7 @@ def section(title: str, icon: str = ""):
     console.print()
 
 
-def expectations(options_lines: list[str]):
+def expectations(options_lines: list[str], subject_directory: str | None = None):
     """
     Display the expected modalities for PUMA.
 
@@ -185,6 +185,11 @@ def expectations(options_lines: list[str]):
         style=constants.PUMAZ_COLORS["accent"],
     )
     note_text.append("\n")
+    if subject_directory:
+        note_text.append(
+            f"Current subject directory: {subject_directory}\n",
+            style=constants.PUMAZ_COLORS["info"],
+        )
     note_text.append("Chosen arguments:\n", style=constants.PUMAZ_COLORS["accent"])
     for option in options_lines:
         note_text.append(f" • {option}\n")

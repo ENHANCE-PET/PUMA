@@ -21,6 +21,7 @@ import logging
 import os
 import time
 from datetime import datetime
+from pathlib import Path
 
 import colorama
 import emoji
@@ -117,7 +118,7 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
     ]
 
     console.print()
-    display.expectations(options_summary)
+    display.expectations(options_summary, subject_folder)
 
     # ----------------------------------
     # DISPLAYING INPUT CHOICES
@@ -157,7 +158,26 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
 
     tracer_dirs = [os.path.join(subject_folder, d) for d in os.listdir(subject_folder)
                    if os.path.isdir(os.path.join(subject_folder, d)) and not d.startswith('PUMAZ-v1')]
-    puma_compliant_subject_folders = input_validation.select_puma_compliant_subject_folders(tracer_dirs)
+    try:
+        puma_compliant_subject_folders = input_validation.select_puma_compliant_subject_folders(tracer_dirs)
+    except input_validation.MissingModalitiesError as exc:
+        error_lines = Text(justify="left", style=constants.PUMAZ_COLORS["error"])
+        error_lines.append(
+            f"{emoji.emojize(':cross_mark:')} Missing required modalities detected:\n",
+            style=f"bold {constants.PUMAZ_COLORS['error']}",
+        )
+        for subject_path, reasons in exc.failures:
+            error_lines.append(f" • {subject_path}\n")
+            for reason in reasons:
+                error_lines.append(f"    - {reason}\n")
+        console.print(
+            Panel(
+                Align.left(error_lines),
+                border_style=constants.PUMAZ_COLORS["error"],
+                padding=(1, 2),
+            )
+        )
+        raise
     console.print()
 
     num_subject_folders = len(puma_compliant_subject_folders)
@@ -266,14 +286,135 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
     console.print(success_panel)
 
 
+def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom,
+              perform_risk_analysis):
+    """
+    Run the PUMAZ pipeline for multiple subject directories, continuing past failures.
+    """
+    total_subjects = len(subject_directories)
+    failures = []
+    for index, subject_folder in enumerate(subject_directories, start=1):
+        console.print()
+        console.rule(f"[{constants.PUMAZ_COLORS['secondary']}]Subject {index}/{total_subjects}: {subject_folder}")
+        try:
+            run_pipeline(
+                subject_folder,
+                ignore_regions,
+                multiplex,
+                custom_colors,
+                color_map,
+                convert_to_dicom,
+                perform_risk_analysis,
+            )
+        except KeyboardInterrupt:
+            console.print()
+            console.print(
+                Panel(
+                    Text("Batch execution interrupted by user.", style=constants.PUMAZ_COLORS["warning"]),
+                    border_style=constants.PUMAZ_COLORS["warning"],
+                    padding=(1, 2),
+                )
+            )
+            raise
+        except SystemExit as exc:
+            logging.exception("PUMAZ exited for subject %s", subject_folder)
+            code = exc.code
+            if code is None or code == 0:
+                error_message = "SystemExit"
+            elif isinstance(code, int):
+                error_message = f"SystemExit({code})"
+            else:
+                error_message = str(code)
+            failures.append((subject_folder, error_message))
+            console.print(
+                Panel(
+                    Text(
+                        f"{emoji.emojize(':cross_mark:')} Failed subject: {subject_folder}\nReason: {error_message}",
+                        style=constants.PUMAZ_COLORS["error"],
+                        justify="left",
+                    ),
+                    border_style=constants.PUMAZ_COLORS["error"],
+                    padding=(1, 2),
+                )
+            )
+        except Exception as exc:  # pragma: no cover - defensive batch execution
+            logging.exception("PUMAZ failed for subject %s", subject_folder)
+            error_message = str(exc) or exc.__class__.__name__
+            failures.append((subject_folder, error_message))
+            console.print(
+                Panel(
+                    Text(
+                        f"{emoji.emojize(':cross_mark:')} Failed subject: {subject_folder}\nReason: {error_message}",
+                        style=constants.PUMAZ_COLORS["error"],
+                        justify="left",
+                    ),
+                    border_style=constants.PUMAZ_COLORS["error"],
+                    padding=(1, 2),
+                )
+            )
+
+    failure_log_path = None
+    if failures:
+        failure_log_path = Path.cwd() / f"pumaz-failures-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"
+        with failure_log_path.open("w", encoding="utf-8") as failure_file:
+            for subject_folder, reason in failures:
+                failure_file.write(f"{subject_folder}\t{reason}\n")
+
+    summary_text = Text(justify="left")
+    summary_text.append(
+        f"Processed {total_subjects} subject(s).\n",
+        style=f"bold {constants.PUMAZ_COLORS['info']}",
+    )
+    summary_text.append(
+        f"Successful: {total_subjects - len(failures)}\n",
+        style=f"bold {constants.PUMAZ_COLORS['success']}",
+    )
+
+    if failures:
+        summary_text.append(
+            f"Failed: {len(failures)}\n",
+            style=f"bold {constants.PUMAZ_COLORS['warning']}",
+        )
+        if failure_log_path is not None:
+            summary_text.append(
+                f"Failure log: {failure_log_path}\n",
+                style=f"bold {constants.PUMAZ_COLORS['warning']}",
+            )
+    else:
+        summary_text.append(
+            "Failed: 0\n",
+            style=f"bold {constants.PUMAZ_COLORS['success']}",
+        )
+
+    summary_panel = Panel(
+        Align.left(summary_text),
+        title=Text(
+            f"{emoji.emojize(':clipboard:')} Batch Summary",
+            style=f"bold {constants.PUMAZ_COLORS['secondary']}",
+        ),
+        border_style=constants.PUMAZ_COLORS["border"],
+        padding=(1, 2),
+    )
+    console.print()
+    console.print(summary_panel)
+    return failures
+
+
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option(
     "-d",
     "--subject-directory",
-    "subject_directory",
+    "subject_directories",
     type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=str),
-    required=True,
-    help="Directory containing PET/CT tracer folders for a subject.",
+    multiple=True,
+    help="Directory containing PET/CT tracer folders for a subject. Repeat for batch runs.",
+)
+@click.option(
+    "-sr",
+    "--subjects-root",
+    type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=str),
+    default=None,
+    help="Process every immediate subdirectory under this root as a subject.",
 )
 @click.option(
     "-ir",
@@ -319,7 +460,8 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
     default=False,
     help="Highlight potential misalignment regions using volume comparisons.",
 )
-def cli(subject_directory, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom, risk_analysis):
+def cli(subject_directories, subjects_root, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom,
+        risk_analysis):
     """
     PUMA (PET Universal Multi-tracer Aligner) standardizes, registers, and multiplexes serial PET/CT studies.
     """
@@ -332,8 +474,49 @@ def cli(subject_directory, ignore_regions, multiplex, custom_colors, color_map, 
     if custom_colors and not multiplex:
         raise click.UsageError("--custom-colors requires --multiplex.")
 
-    subject_folder = os.path.abspath(subject_directory)
-    run_pipeline(subject_folder, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom, risk_analysis)
+    resolved_subjects = [os.path.abspath(subject) for subject in subject_directories]
+
+    if subjects_root is not None:
+        root_path = Path(subjects_root)
+        discovered_subjects = sorted(child for child in root_path.iterdir() if child.is_dir())
+        if not discovered_subjects:
+            raise click.BadParameter(
+                f"No subject directories found under '{subjects_root}'.",
+                param_hint="--subjects-root",
+            )
+        resolved_subjects.extend(str(child.resolve()) for child in discovered_subjects)
+
+    # Deduplicate while preserving order
+    seen = set()
+    ordered_subjects = []
+    for subject in resolved_subjects:
+        if subject not in seen:
+            ordered_subjects.append(subject)
+            seen.add(subject)
+
+    if not ordered_subjects:
+        raise click.UsageError("Provide at least one --subject-directory or a valid --subjects-root.")
+
+    if len(ordered_subjects) == 1:
+        run_pipeline(
+            ordered_subjects[0],
+            ignore_regions,
+            multiplex,
+            custom_colors,
+            color_map,
+            convert_to_dicom,
+            risk_analysis,
+        )
+    else:
+        run_batch(
+            ordered_subjects,
+            ignore_regions,
+            multiplex,
+            custom_colors,
+            color_map,
+            convert_to_dicom,
+            risk_analysis,
+        )
 
 
 def main():

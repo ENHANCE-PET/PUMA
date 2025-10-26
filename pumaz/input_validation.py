@@ -19,6 +19,7 @@
 
 import logging
 import os
+from typing import List, Sequence, Tuple
 
 import pydicom
 from dask import delayed, compute
@@ -30,6 +31,19 @@ from rich.progress import Progress, TextColumn, TimeElapsedColumn, SpinnerColumn
 console = Console()
 
 
+class MissingModalitiesError(RuntimeError):
+    """Raised when a tracer directory lacks required CT/PT modalities."""
+
+    def __init__(self, failures: Sequence[Tuple[str, Sequence[str]]]):
+        self.failures: List[Tuple[str, Sequence[str]]] = list(failures)
+        details = "\n".join(f"- {path}: {', '.join(reasons)}" for path, reasons in self.failures)
+        message = (
+            "Missing or invalid modality requirements detected for the following tracer directories:\n"
+            f"{details}"
+        )
+        super().__init__(message)
+
+
 def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
     """
     Selects the subjects that have the files that have names that are compliant with the pumaz.
@@ -37,14 +51,37 @@ def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
     :return: The list of tracer paths that are pumaz compliant.
     """
     # go through each subject in the parent directory
-    puma_compliant_subjects = []
+    puma_compliant_subjects: list[str] = []
+    failures: list[Tuple[str, list[str]]] = []
     for subject_path in tracer_paths:
         # go through each subject and see if the files have the appropriate modality prefixes
         files = [file for file in os.listdir(subject_path) if file.endswith('.nii') or file.endswith('.nii.gz')]
-        anatomical_prefixes = [file.startswith(tag) for tag in constants.ANATOMICAL_MODALITIES for file in files]
-        functional_prefixes = [file.startswith(tag) for tag in constants.FUNCTIONAL_MODALITIES for file in files]
+        try:
+            dicom_modalities = identify_medical_image_data(subject_path)
+        except Exception:  # pragma: no cover - defensive, diagnostic only
+            dicom_modalities = {}
 
-        if sum(anatomical_prefixes) == 1 and sum(functional_prefixes) == 1:
+        ct_count = sum(file.startswith(tag) for tag in constants.ANATOMICAL_MODALITIES for file in files)
+        pt_count = sum(file.startswith(tag) for tag in constants.FUNCTIONAL_MODALITIES for file in files)
+
+        ct_present = bool(ct_count) or any(tag in dicom_modalities for tag in constants.ANATOMICAL_MODALITIES)
+        pt_present = bool(pt_count) or any(tag in dicom_modalities for tag in constants.FUNCTIONAL_MODALITIES)
+
+        issues: list[str] = []
+
+        if not ct_present:
+            issues.append("missing CT volume")
+        elif ct_count > 1:
+            issues.append(f"found {ct_count} CT volumes")
+
+        if not pt_present:
+            issues.append("missing PT volume")
+        elif pt_count > 1:
+            issues.append(f"found {pt_count} PT volumes")
+
+        if issues:
+            failures.append((subject_path, issues))
+        else:
             puma_compliant_subjects.append(subject_path)
     console.print(
         f" Number of PUMA-compliant tracer directories: {len(puma_compliant_subjects)} out of {len(tracer_paths)}",
@@ -52,6 +89,9 @@ def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
     )
     logging.info(f" Number of puma compliant tracer directories: {len(puma_compliant_subjects)} out of "
                  f"{len(tracer_paths)}")
+
+    if failures:
+        raise MissingModalitiesError(failures)
 
     return puma_compliant_subjects
 
