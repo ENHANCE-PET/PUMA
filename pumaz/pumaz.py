@@ -44,8 +44,70 @@ console = Console()
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
 
+def _print_panel(title: str, lines: list[str], border_color: str) -> None:
+    message = Text(justify="left")
+    for line in lines:
+        message.append(f"{line}\n")
+    console.print(
+        Panel(
+            Align.left(message),
+            title=Text(title, style=f"bold {border_color}"),
+            border_style=border_color,
+            padding=(1, 2),
+        )
+    )
+
+
+def _binary_override_help() -> list[str]:
+    return [
+        "Set PUMAZ_BINARY_PATH to point to a prepared binaries folder:",
+        "  • PowerShell     : setx PUMAZ_BINARY_PATH \"C:\\\\path\\\\to\\\\pumaz\\\\bin\"",
+        "  • Command Prompt : set PUMAZ_BINARY_PATH=C:\\\\path\\\\to\\\\pumaz\\\\bin",
+        "  • Bash/Zsh       : export PUMAZ_BINARY_PATH=\"/path/to/pumaz/bin\"",
+        "Restart your shell after updating the environment variable.",
+    ]
+
+
+def perform_environment_check() -> bool:
+    """Check whether registration binaries are present and executable."""
+    binary_path = constants.BINARY_PATH
+    info_lines = [f"Binary directory: {binary_path}"]
+    issues: list[str] = []
+
+    if not os.path.isdir(binary_path):
+        issues.append("Binary directory does not exist.")
+    if not os.access(binary_path, os.W_OK):
+        issues.append("Current user lacks write access to the binary directory.")
+
+    for name, path in (("greedy", constants.GREEDY_PATH), ("c3d", constants.C3D_PATH)):
+        if os.path.isfile(path):
+            if os.access(path, os.X_OK):
+                info_lines.append(f"{name}: {path} (executable)")
+            else:
+                issues.append(f"{name} exists but is not executable: {path}")
+        else:
+            issues.append(f"{name} missing at expected path: {path}")
+
+    if issues:
+        _print_panel(
+            f"{emoji.emojize(':toolbox:')} Environment Verification",
+            info_lines + ["", "Issues detected:"] + [f"• {issue}" for issue in issues] + [""] + _binary_override_help(),
+            constants.PUMAZ_COLORS["warning"],
+        )
+        return False
+
+    _print_panel(
+        f"{emoji.emojize(':check_mark_button:')} Environment Verification",
+        info_lines + ["", "All required binaries are present and executable."],
+        constants.PUMAZ_COLORS["success"],
+    )
+    return True
+
+
 def _parse_ignore_regions(ctx, param, value):
     if not value:
+        if ctx.params.get("verify_environment"):
+            return []
         raise click.BadParameter("Provide at least one region (use 'none' to include all regions).")
     choices_list = [label.lower() for label in constants.MOOSE_LABEL_INDEX.values()] + ['none']
     value_list = [item.strip().lower() for item in value.split(',')]
@@ -131,14 +193,82 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
 
     display.section("Binaries Download", ":globe_with_meridians:")
     binary_path = constants.BINARY_PATH
-    file_utilities.create_directory(binary_path)
+    try:
+        file_utilities.create_directory(binary_path)
+    except OSError as exc:
+        _print_panel(
+            f"{emoji.emojize(':warning:')} Binary Directory Error",
+            [
+                f"Unable to create or access the binaries directory at {binary_path}.",
+                f"System error: {exc}",
+            ] + _binary_override_help(),
+            constants.PUMAZ_COLORS["error"],
+        )
+        raise SystemExit(1)
+    if not os.access(binary_path, os.W_OK):
+        _print_panel(
+            f"{emoji.emojize(':locked:')} Insufficient Permissions",
+            [
+                f"The current user cannot write to {binary_path}.",
+            ] + _binary_override_help(),
+            constants.PUMAZ_COLORS["error"],
+        )
+        raise SystemExit(1)
     system_os, system_arch = file_utilities.get_system()
     console.print(
         f" [{constants.PUMAZ_COLORS['text']}]Detected system: {system_os} | Detected architecture: {system_arch}[/]"
     )
-    download.download(item_name=f'puma-{system_os}-{system_arch}', item_path=binary_path, item_dict=resources.PUMA_BINARIES)
-    file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
-    file_utilities.set_permissions(constants.C3D_PATH, system_os)
+    try:
+        download.download(
+            item_name=f'puma-{system_os}-{system_arch}',
+            item_path=binary_path,
+            item_dict=resources.PUMA_BINARIES,
+            expected_files=[constants.GREEDY_PATH, constants.C3D_PATH],
+        )
+    except download.BinaryDownloadError as exc:
+        _print_panel(
+            f"{emoji.emojize(':no_entry:')} Download Failed",
+            [
+                str(exc),
+                "If this system has restricted network access, download the binaries manually and place them in the binaries directory.",
+            ] + _binary_override_help(),
+            constants.PUMAZ_COLORS["error"],
+        )
+        raise SystemExit(1)
+    except download.BinaryExtractionError as exc:
+        _print_panel(
+            f"{emoji.emojize(':warning:')} Extraction Failed",
+            [
+                str(exc),
+                "Delete the partial archive and retry, or provide a verified copy manually.",
+            ],
+            constants.PUMAZ_COLORS["error"],
+        )
+        raise SystemExit(1)
+    try:
+        file_utilities.set_permissions(constants.GREEDY_PATH, system_os)
+        file_utilities.set_permissions(constants.C3D_PATH, system_os)
+    except file_utilities.PermissionSetupError as exc:
+        details = [f"Binary path: {exc.file_path}", str(exc)]
+        if exc.hint and "PUMAZ_BINARY_PATH" in exc.hint:
+            details.append("")
+            details.extend(_binary_override_help())
+        _print_panel(
+            f"{emoji.emojize(':locked_with_pen:')} Permission Setup Failed",
+            details,
+            constants.PUMAZ_COLORS["error"],
+        )
+        raise SystemExit(1)
+    for name, path in (("greedy", constants.GREEDY_PATH), ("c3d", constants.C3D_PATH)):
+        if not os.path.isfile(path) or not os.access(path, os.X_OK):
+            _print_panel(
+                f"{emoji.emojize(':warning:')} Binary Validation Failed",
+                [
+                    f"{name} was not located at {path} or is not executable.",
+                ] + _binary_override_help(),
+                constants.PUMAZ_COLORS["error"],
+            )
+            raise SystemExit(1)
     console.print()
 
     # ----------------------------------
@@ -417,10 +547,16 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
     help="Process every immediate subdirectory under this root as a subject.",
 )
 @click.option(
+    "--verify-environment",
+    is_flag=True,
+    default=False,
+    help="Check that required binaries are available and exit.",
+)
+@click.option(
     "-ir",
     "--ignore-regions",
     callback=_parse_ignore_regions,
-    required=True,
+    required=False,
     metavar="regions",
     help="Comma-separated regions to ignore during registration (e.g. arms,legs,none).",
 )
@@ -460,7 +596,7 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
     default=False,
     help="Highlight potential misalignment regions using volume comparisons.",
 )
-def cli(subject_directories, subjects_root, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom,
+def cli(subject_directories, subjects_root, verify_environment, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom,
         risk_analysis):
     """
     PUMA (PET Universal Multi-tracer Aligner) standardizes, registers, and multiplexes serial PET/CT studies.
@@ -469,10 +605,16 @@ def cli(subject_directories, subjects_root, ignore_regions, multiplex, custom_co
                         filename=datetime.now().strftime('pumaz-v.1.0.0.%H-%M-%d-%m-%Y.log'), filemode='w')
     colorama.init()
 
+    if verify_environment:
+        ready = perform_environment_check()
+        raise SystemExit(0 if ready else 1)
+
     if color_map and not multiplex:
         raise click.UsageError("--color-map requires --multiplex.")
     if custom_colors and not multiplex:
         raise click.UsageError("--custom-colors requires --multiplex.")
+    if not ignore_regions:
+        raise click.UsageError("Provide at least one --ignore-regions value (use 'none' for all regions).")
 
     resolved_subjects = [os.path.abspath(subject) for subject in subject_directories]
 

@@ -62,16 +62,23 @@ def convert_dicomdir_series(exam_dir: str, destination_root: str) -> bool:
         if existing:
             continue
 
+        before_conversion = set(os.listdir(destination_root))
         dcm2niix(image_dir, destination_root)
+        dicom_lookup = create_dicom_lookup(image_dir)
 
         for nifti_file in os.listdir(destination_root):
+            if nifti_file in before_conversion:
+                continue
             if not nifti_file.endswith((".nii", ".nii.gz")):
                 continue
             if nifti_file.startswith(("PT_", "CT_")):
                 continue
 
             src_path = os.path.join(destination_root, nifti_file)
-            rename_dicom_output(src_path, modality, tracer_name, destination_root)
+            modality_for_file = _modality_from_lookup(nifti_file, dicom_lookup)
+            if modality_for_file not in {"PT", "CT"}:
+                modality_for_file = modality
+            rename_dicom_output(src_path, modality_for_file, tracer_name, destination_root)
             converted = True
 
     return converted
@@ -96,6 +103,27 @@ def rename_dicom_output(src_path: str, modality: str, tracer_name: str, destinat
     if os.path.exists(src_json):
         dest_json = os.path.splitext(destination)[0] + ".json"
         os.replace(src_json, dest_json)
+
+
+def _modality_from_lookup(nifti_filename: str, dicom_lookup: dict) -> Optional[str]:
+    """Resolve the modality for a converted NIfTI file using a DICOM lookup map."""
+    base = os.path.splitext(nifti_filename)[0]
+    candidates = (
+        nifti_filename,
+        base + ".nii",
+        base + ".nii.gz",
+    )
+    for candidate in candidates:
+        modality = dicom_lookup.get(candidate)
+        if modality:
+            return modality
+
+    for key, value in dicom_lookup.items():
+        key_base = os.path.splitext(key)[0]
+        if key_base == base or key_base.startswith(base) or base.startswith(key_base):
+            return value
+
+    return None
 
 
 def find_first_dicom(directory: str) -> Optional[str]:

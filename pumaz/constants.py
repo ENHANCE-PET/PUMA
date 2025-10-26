@@ -17,6 +17,7 @@
 # ----------------------------------------------------------------------------------------------------------
 
 import os
+from pathlib import Path
 from datetime import datetime
 from importlib import metadata
 from pathlib import Path
@@ -83,7 +84,11 @@ def _resolve_package_version() -> str:
 PUMAZ_VERSION = _resolve_package_version()
 
 project_root = file_utilities.get_virtual_env_root()
-BINARY_PATH = os.path.join(project_root, 'bin')
+_BINARY_OVERRIDE = os.environ.get("PUMAZ_BINARY_PATH")
+if _BINARY_OVERRIDE:
+    BINARY_PATH = str(Path(_BINARY_OVERRIDE).expanduser().resolve())
+else:
+    BINARY_PATH = os.path.join(project_root, 'bin')
 
 # SET PATHS TO BINARIES
 if file_utilities.get_system()[0] == 'windows':

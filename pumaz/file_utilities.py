@@ -27,6 +27,21 @@ import sys
 from multiprocessing import Pool
 
 
+class PermissionSetupError(RuntimeError):
+    """Raised when executable permissions cannot be configured for a binary."""
+
+    def __init__(self, file_path: str, message: str, hint: str | None = None):
+        self.file_path = file_path
+        self.hint = hint
+        super().__init__(message)
+
+    def __str__(self) -> str:  # pragma: no cover - simple accessors
+        base = super().__str__()
+        if self.hint:
+            return f"{base}\nHint: {self.hint}"
+        return base
+
+
 def set_permissions(file_path: str, system_type: str) -> None:
     """
     Sets the permissions of a file based on the operating system.
@@ -49,25 +64,57 @@ def set_permissions(file_path: str, system_type: str) -> None:
     """
     if not os.path.exists(file_path):
         logging.error(f"File not found: {file_path}")
-        raise FileNotFoundError(f"File not found: {file_path}")
+        raise PermissionSetupError(
+            file_path,
+            f"Required binary not found at '{file_path}'.",
+            "Download the registration binaries for this platform or update PUMAZ_BINARY_PATH.",
+        )
 
     try:
         if system_type.lower() == 'windows':
-            subprocess.check_call(["icacls", file_path, "/grant", "*S-1-1-0:(F)"], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            try:
+                subprocess.check_call(
+                    ["icacls", file_path, "/grant", "*S-1-1-0:(F)"],
+                    stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                )
+            except subprocess.CalledProcessError as exc:
+                raise PermissionSetupError(
+                    file_path,
+                    "Failed to grant execute permissions via icacls.",
+                    "Run the command as an administrator or ask IT to provision the binary.",
+                ) from exc
         elif system_type.lower() in ['linux', 'mac']:
-            os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
+            try:
+                os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
+            except PermissionError as exc:
+                raise PermissionSetupError(
+                    file_path,
+                    "Insufficient privileges to modify execute permissions.",
+                    f"Use 'chmod 755 \"{file_path}\"' with elevated rights or contact your administrator.",
+                ) from exc
         else:
             logging.error(f"Unsupported operating system type provided: {system_type}")
-            raise ValueError(f"Unsupported operating system type: {system_type}")
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to set permissions for file '{file_path}' on a Windows system. Subprocess error: {e}")
-        raise e
-    except PermissionError as e:
-        logging.error(f"Insufficient permissions to change file permissions for '{file_path}' on a {system_type} system. Error: {e}")
-        raise e
-    except Exception as e:
-        logging.error(f"An unexpected error occurred while setting permissions for file '{file_path}'. Error details: {e}")
-        raise e
+            raise PermissionSetupError(
+                file_path,
+                f"Unsupported operating system type: {system_type}",
+            )
+    except PermissionSetupError:
+        raise
+    except Exception as exc:
+        logging.error(f"An unexpected error occurred while setting permissions for '{file_path}'. Error details: {exc}")
+        raise PermissionSetupError(
+            file_path,
+            "Unexpected error while configuring execute permissions.",
+            "Review the logs for details or set permissions manually.",
+        ) from exc
+
+    if not os.access(file_path, os.X_OK):
+        raise PermissionSetupError(
+            file_path,
+            "Binary is still not executable after attempting to set permissions.",
+            f"Manually run 'chmod 755 \"{file_path}\"' (Linux/macOS) or adjust ACLs via icacls on Windows.",
+        )
 
 
 def get_virtual_env_root():
