@@ -1,281 +1,132 @@
 ![Puma-logo](Images/Puma-logo.png)
 
-## PUMA 1.0 🐾 -  One Image multiple perspectives 🎭
-[![PyPI version](https://img.shields.io/pypi/v/pumaz?color=FF1493&style=flat-square&logo=pypi)](https://pypi.org/project/pumaz/) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-red.svg?style=flat-square&logo=gnu&color=FF0000)](https://www.gnu.org/licenses/gpl-3.0) [![Monthly Downloads](https://img.shields.io/pypi/dm/pumaz?label=Downloads%20(Monthly)&color=9400D3&style=flat-square&logo=python)](https://pypi.org/project/pumaz/) [![Daily Downloads](https://img.shields.io/pypi/dd/pumaz?label=Downloads%20(Daily)&color=9400D3&style=flat-square&logo=python)](https://pypi.org/project/pumaz/) 
-[![Commercial License](https://img.shields.io/badge/Commercial%20Use-Contact%20Zenta-orange?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iOTIiIHZpZXdCb3g9IjAgMCA5MiA5MiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDUuODk2NiIgY3k9IjcuOTEyOTYiIHI9IjYuMjkxNzEiIHRyYW5zZm9ybT0icm90YXRlKDkwIDQ1Ljg5NjYgNy45MTI5NikiIGZpbGw9IiNFNkU0REUiIHN0cm9rZT0iI0U2RTRERSIgc3Ryb2tlLXdpZHRoPSIzLjI0MjUxIi8+CjxjaXJjbGUgY3g9IjgzLjg3ODEiIGN5PSIyNi45MDQyIiByPSI2LjI5MTcxIiB0cmFuc2Zvcm09InJvdGF0ZSg5MCA4My44NzgxIDI2LjkwNDIpIiBmaWxsPSIjRTZFNERFIiBzdHJva2U9IiNFNkU0REUiIHN0cm9rZS13aWR0aD0iMy4yNDI1MSIvPgo8Y2lyY2xlIGN4PSI3LjkxMzIxIiBjeT0iMjYuOTA0MiIgcj0iNi4yOTE3MSIgdHJhbnNmb3JtPSJyb3RhdGUoOTAgNy45MTMyMSAyNi45MDQyKSIgZmlsbD0iI0U2RTRERSIgc3Ryb2tlPSIjRTZFNERFIiBzdHJva2Utd2lkdGg9IjMuMjQyNTEiLz4KPGNpcmNsZSBjeD0iNy45MTMyMSIgY3k9IjQ1Ljg5NjQiIHI9IjYuMjkxNzEiIHRyYW5zZm9ybT0icm90YXRlKDkwIDcuOTEzMjEgNDUuODk2NCkiIGZpbGw9IiNFNkU0REUiIHN0cm9rZT0iI0U2RTRERSIgc3Ryb2tlLXdpZHRoPSIzLjI0MjUxIi8+CjxjaXJjbGUgY3g9IjY0Ljg4NjgiIGN5PSI4My44Nzg4IiByPSI2LjI5MTcxIiB0cmFuc2Zvcm09InJvdGF0ZSg5MCA2NC44ODY4IDgzLjg3ODgpIiBmaWxsPSIjRTZFNERFIiBzdHJva2U9IiNFNkU0REUiIHN0cm9rZS13aWR0aD0iMy4yNDI1MSIvPgo8Y2lyY2xlIGN4PSIyNi45MDQ0IiBjeT0iODMuODc4OCIgcj0iNi4yOTE3MSIgdHJhbnNmb3JtPSJyb3RhdGUoOTAgMjYuOTA0NCA4My44Nzg4KSIgZmlsbD0iI0U2RTRERSIgc3Ryb2tlPSIjRTZFNERFIiBzdHJva2Utd2lkdGg9IjMuMjQyNTEiLz4KPGNpcmNsZSBjeD0iNy45MTMyMSIgY3k9IjY0Ljg4NzYiIHI9IjYuMjkxNzEiIHRyYW5zZm9ybT0icm90YXRlKDkwIDcuOTEzMjEgNjQuODg3NikiIGZpbGw9IiNFNkU0REUiIHN0cm9rZT0iI0U2RTRERSIgc3Ryb2tlLXdpZHRoPSIzLjI0MjUxIi8+CjxyZWN0IHg9IjkwLjE2OTgiIHk9IjM5LjYwNDciIHdpZHRoPSIzMS41NzQ1IiBoZWlnaHQ9IjEyLjU4MzQiIHJ4PSI2LjI5MTcxIiB0cmFuc2Zvcm09InJvdGF0ZSg5MCA5MC4xNjk4IDM5LjYwNDcpIiBmaWxsPSIjRTZFNERFIiBzdHJva2U9IiNFNkU0REUiIHN0cm9rZS13aWR0aD0iMy4yNDI1MSIvPgo8cmVjdCB4PSI3MS4xNzg1IiB5PSIxLjYyMTI2IiB3aWR0aD0iMzEuNTc0NSIgaGVpZ2h0PSIxMi41ODM0IiByeD0iNi4yOTE3MSIgdHJhbnNmb3JtPSJyb3RhdGUoOTAgNzEuMTc4NSAxLjYyMTI2KSIgZmlsbD0iI0U2RTRERSIgc3Ryb2tlPSIjRTZFNERFIiBzdHJva2Utd2lkdGg9IjMuMjQyNTEiLz4KPHJlY3QgeD0iNTIuMTg4MyIgeT0iNTguNTk1OSIgd2lkdGg9IjMxLjU3NDUiIGhlaWdodD0iMTIuNTgzNCIgcng9IjYuMjkxNzEiIHRyYW5zZm9ybT0icm90YXRlKDkwIDUyLjE4ODMgNTguNTk1OSkiIGZpbGw9IiNFNkU0REUiIHN0cm9rZT0iI0U2RTRERSIgc3Ryb2tlLXdpZHRoPSIzLjI0MjUxIi8+CjxyZWN0IHg9IjMzLjE5NjEiIHk9IjIyLjE5NTUiIHdpZHRoPSIzMS41NzQ1IiBoZWlnaHQ9IjEyLjU4MzQiIHJ4PSI2LjI5MTcxIiB0cmFuc2Zvcm09InJvdGF0ZSg5MCAzMy4xOTYxIDIyLjE5NTUpIiBmaWxsPSIjRTZFNERFIiBzdHJva2U9IiNFNkU0REUiIHN0cm9rZS13aWR0aD0iMy4yNDI1MSIvPgo8cmVjdCB4PSIzMy4xOTYxIiB5PSIxLjYyMTI2IiB3aWR0aD0iMzEuNTc0NSIgaGVpZ2h0PSIxMi41ODM0IiByeD0iNi4yOTE3MSIgdHJhbnNmb3JtPSJyb3RhdGUoOTAgMzMuMTk2MSAxLjYyMTI2KSIgZmlsbD0iI0U2RTRERSIgc3Ryb2tlPSIjRTZFNERFIiBzdHJva2Utd2lkdGg9IjMuMjQyNTEiLz4KPHJlY3QgeD0iMTQuMjA0OSIgeT0iMzkuNjA0NyIgd2lkdGg9IjMxLjU3NDUiIGhlaWdodD0iMTIuNTgzNCIgcng9IjYuMjkxNzEiIHRyYW5zZm9ybT0icm90YXRlKDkwIDE0LjIwNDkgMzkuNjA0NykiIGZpbGw9IiNFNkU0REUiIHN0cm9rZT0iI0U2RTRERSIgc3Ryb2tlLXdpZHRoPSIzLjI0MjUxIi8+Cjwvc3ZnPgo=)](mailto:lalith@zenta.solutions)
+## PUMA 1.0 — Multiplexed PET, Ready for Practice
+[![PyPI version](https://img.shields.io/pypi/v/pumaz?color=0b7285&style=flat-square&logo=pypi)](https://pypi.org/project/pumaz/) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-555555.svg?style=flat-square&logo=gnu)](https://www.gnu.org/licenses/gpl-3.0) [![Monthly Downloads](https://img.shields.io/pypi/dm/pumaz?label=Monthly%20Downloads&color=6a4c93&style=flat-square&logo=python)](https://pypi.org/project/pumaz/)
 
-**🌈 PET Reimagined: From Monochrome to a Palette of Possibilities with PUMA 1.0**
+---
 
-Step into the vibrant new world of PET imaging with PUMA 1.0 🌟, where traditional monochrome scans are transformed into a dynamic spectrum of diagnostic data. 🎨
+**PUMA turns serial PET/CT acquisitions into a single, context-rich view.** The pipeline multiplexes tracer studies, aligns anatomy, and produces consistent reporting assets so clinicians and researchers can read more in less time. 
 
-With PUMA 1.0, experience the power of multiplexing: a process that fuses multiple tracer images into a single, multicolored composite that reveals not just the presence of disease but its multifaceted physiological context. 🔄 The multiplexed approach provides a more comprehensive view, helping clinicians uncover nuanced insights about tumors and their microenvironments. 🔍
+### Why teams choose PUMA 🧠
+- **Multiplexed insight** – Fuse several tracer volumes into colour-encoded composites without sacrificing quantitative context.
+- **Trusted accuracy** – nnU-Net driven segmentations and diffeomorphic registration keep tumour boundaries and uptake values reliable.
+- **Workflow friendly** – One CLI coordinates preprocessing, registration, blending, and export, keeping radiologists and physicists in sync.
+- **Platform agnostic** – Linux, Windows, and macOS (including Apple Silicon) run the same wheel; PyTorch’s upstream MPS backend covers 3D convolutions with no custom build.
 
-Whether you're in a high-tech lab or a remote clinic, PUMA 1.0 delivers high-quality, multiplexed PET scans that are as rich in detail as they are in color. 🏥 It’s not just an upgrade—it’s a whole new way of seeing PET data, turning every image into a detailed map of insight and opportunity. 🗺️
+### Quick start 🚀
+1. Install the package: `pip install pumaz`
+2. Arrange tracer folders as described in 🔗 [Workflow essentials](#workflow-essentials).
+3. Launch a run:
 
-## 🎉 Key Features
-
-### 🚀 Versatile and Powerful
-Run PUMA 1.0 on any device, any OS, from x86 to ARM64 (hello, Apple Silicon fans!). Whether you’re on a high-end GPU or a humble CPU, PUMA adapts to your needs without breaking a sweat.
-
-### 🔍 Precision Meets Speed
-Harness the power of AI with MOOSE-driven segmentations and ‘greedy’ library’s wizardry for diffeomorphic image registration. PUMA 1.0 nails the perfect balance of sharp accuracy and zippy performance.
-
-### 🎨 Art of Imaging
-Why settle for ordinary when you can visualize in vibrant RGB? Each color shines a spotlight on a different tracer, turning complex data into a vivid, easy-to-interpret display. With processing times ranging from just 5 to 12 minutes, you're all set for a speedy yet thorough diagnostic journey.
-
-## 🚀 Why PUMA?
-
-
-https://github.com/ENHANCE-PET/PUMA/assets/48599863/03368642-a288-44cb-8eaf-4833380a26c8
-
-
-## Requirements ✅
-
-Before stepping into the future with PUMA 1.0, here's what you need for an optimal experience:
-
-- **Operating System**: Windows, Mac, or Linux - PUMA 1.0 is versatile and works across all these platforms.
-
-- **Memory**: Make sure your system has enough memory (8-16 GB) to run the tasks smoothly.
-
-- **GPU**: You would benefit from a cuda-enabled GPU (NVIDIA), 8 GB or more, or MPS (Apple silicon) - if you like quick results ⚡️. But if you don't fret not, PUMA runs a cpu-tuned version if there is no GPU.
-
-- **Python**: PUMA 1.0 operates the best with Python 3.10.
-
-Once these specifications are met, you're all set to experience PUMA 1.0's capabilities.
-
-## Installation Guide 🛠️
-
-Pick the workflow that matches your tooling and operating system:
-
-- **pip + virtualenv** — the classic approach. Works everywhere and keeps dependencies isolated.
-- **uv sync** — fastest path to a fully managed `.venv` driven by `pyproject.toml`.
-- **uv pip install** — drop-in replacement for `pip install` when you already manage the environment yourself.
-
-Regardless of the route you choose, PUMA requires Python 3.10 or newer.
-
-### Linux / macOS
-
-1. Create a virtual environment (feel free to change `puma-env`).
-   ```bash
-   python3.10 -m venv puma-env
-   ```
-2. Activate it.
-   ```bash
-   source puma-env/bin/activate
-   ```
-3. Install PUMA from PyPI.
-   ```bash
-   pip install pumaz
-   ```
-
-### Windows 🪟
-
-1. Create a virtual environment.
-   ```powershell
-   python3.10 -m venv puma-env
-   ```
-2. Activate it.
-   ```powershell
-   .\puma-env\Scripts\activate
-   ```
-3. Install PUMA.
-   ```powershell
-   pip install pumaz
-   ```
-
-### Using uv 🚀
-
-Prefer the lightning-fast [uv](https://github.com/astral-sh/uv) workflow? The bundled `pyproject.toml` lets you bootstrap everything in one go:
+<div align="center">
 
 ```bash
-uv sync               # create a managed .venv and install dependencies
-uv run pumaz --help   # invoke the CLI without manually activating the environment
+pumaz -d /path/to/patient -m -ir arms,legs,head
 ```
 
-uv pins the environment in `.venv` by default. If you want to work inside it directly, run `source .venv/bin/activate` (or `.\.venv\Scripts\activate` on Windows) after `uv sync`.
+</div>
 
-Already have an environment and just want the package? Use `uv pip` (a drop-in pip replacement):
+PUMA aligns each tracer, multiplexes RGB composites when requested, and writes results to a timestamped `PUMAZ-v<version>-YYYY-MM-DD-HH-MM-SS` folder beside your subject data. A run log (`pumaz-v.<clock>.log`) is saved in the working directory.
 
+### Installation 🛠️
+- **Using uv (recommended)**  
+  ```bash
+  curl -Ls https://astral.sh/uv/install.sh | sh  # install uv if needed
+  uv venv .venv
+  source .venv/bin/activate
+  uv pip install pumaz
+  ```
+  To add PUMA to an existing `uv` project, run `uv add pumaz`.
+- **Using pip**  
+  ```bash
+  pip install pumaz
+  ```
+- **From source (development work)**  
+  ```bash
+  git clone https://github.com/LalithShiyam/PUMA.git
+  cd PUMA
+  uv pip install -e .
+  ```
+  Use Python 3.10+ and create a virtual environment when possible.
+
+### Usage essentials 🧾
+Retrieve the full command reference with:
 ```bash
-uv pip install pumaz
+pumaz --help
 ```
 
-## Usage Guide 📚
+Common flags:
+- `-d /path/to/patient` – Root directory that contains one subfolder per tracer.
+- `-ir arms,legs` – Skip specified body regions during registration (`none` by default).
+- `-m` – Produce multiplexed RGB composites alongside individual tracer outputs.
+- `-cm Tracer1:R,...` – Assign explicit colour channels to each tracer (mutually exclusive with `-cs`).
+- `-cs` – Interactively choose channel assignments when `-m` is enabled.
+- `-c2d` – Convert aligned NIfTI volumes back to DICOM.
 
-Start your journey with PUMA 1.0 by using our straightforward command-line tool. It requires the directory path containing different tracer images, and each image should be stored in separate folders. Here's how you can get started:
-
-```bash
-
-   pumaz \
-       -d   <path_to_image_dir>              # Directory path containing the images to be analyzed
-       -ir  <regions_to_ignore>              # Regions to ignore: arms, legs, head, none
-       -m                                    # Optional: Enable multiplexed RGB image output
-       -cs  <color_selection>                # Optional: Custom color selection for RGB output (requires -m)
-       -cm  <color_map>                      # Optional: Assign specific colors to each tracer (e.g., psma:R,fdg:G) (requires -m)
-       -c2d <convert_back_to_dicom>          # Optional: Once set, the generated nifti images will be converted back to DICOM
-```
-
-- `<path_to_image_dir>` refers to the parent directory containing different tracer images in their respective sub-directories.
-
-- `-ir` specifies the regions to be ignored during registration. If you don't want to ignore any regions, use `none`. If you want to ignore the arms, legs, or head during registration, pass the corresponding regions delimited by a `,`. For example: `-ir head,arms` to ignore the head and arms.
-
-- `-m` will activate the output of a multiplexed RGB image of the combined tracer images.
-
-- `-cs`, when passed along with `-m`, PUMA will ask you to provide a custom order of color channels for the corresponding tracer images. That way, you can freely decide which tracer image is associated with which channel.
-- `-cm`, when passed along with `-m`, provides a predefined color channel assignment for each tracer using the format `tracer:color,....`. The `tracer` part must match the name of each subdirectory inside your image parent directory (e.g., `Tracer1`, `Tracer2`, etc.).  Valid colors are R, G, and B. Each color may only be used once.
-Example: `-cm Tracer1:R,Tracer2:G` assigns Red to Tracer1 and Green to Tracer2. This option requires -m and is mutually exclusive with -cs.
-- `-c2d`, when set the generated aligned nifti images will be converted back to DICOM.
-  
-For assistance or additional information, you can always type:
-
-```bash
-pumaz -h
-```
-
-
-### Example usage:
-Apply PUMA to images in a directory, ignoring arms and legs, with multiplexed RGB output and custom colors:
-
-```bash
-pumaz -d /path/to/images -ir arms,legs -m -cs -c2d 
-```
-
-
-## Directory Structure and Naming Conventions for PUMA 📂🏷️
-
-PUMA 1.0 requires your data to be structured in a certain way. It supports DICOM directories and NIFTI files. For NIFTI files, users need to ensure that the files are named with the correct modality tag at the start.
-
-### Required Directory Structure 🌳
-
-Here is the directory structure that PUMA 1.0 expects:
+### Workflow essentials 🧬
+Organise every patient or study with one directory per tracer; each tracer must contain PET and CT data as DICOM folders or NIfTI files prefixed by modality:
 
 ```
-📁 Parent_Directory
-│
-└───📂 Tracer1 # can be named anything
-│   │
-│   └───📁 PET_DICOM_Directory or 🗃️ PT_xxxx.nii.gz # If it's DICOM, the folder name can be anything, but if nifti use a prefix 'PT' for PET
-│   │
-│   └───📁 CT_DICOM_Directory or 🗃️ CT_xxxx.nii.gz # If it's DICOM, the folder name can be anything, but if nifti use a prefix 'CT' for CT
-│
-└───📂 Tracer2
-│   │
-│   └───📁 PET_DICOM_Directory or 🗃️ PT_xxxx.nii.gz
-│   │
-│   └───📁 CT_DICOM_Directory or 🗃️ CT_xxxx.nii.gz
-...
-
-└───📂 Tracer3
-    │
-    └───📁 PET_DICOM_Directory or 🗃️ PT_xxxx.nii.gz
-    │
-    └───📁 CT_DICOM_Directory or 🗃️ CT_xxxx.nii.gz
-
+Parent_Directory/
+├── Tracer1/
+│   ├── PT_series.nii.gz    # or PET DICOM directory
+│   └── CT_series.nii.gz    # or CT DICOM directory
+├── Tracer2/
+│   ├── PT_series.nii.gz
+│   └── CT_series.nii.gz
+└── Tracer3/
+    ├── PT_series.nii.gz
+    └── CT_series.nii.gz
 ```
 
-### Naming Conventions 🏷️
+Ensure PET/CT pairs are spatially corresponding within each tracer directory for best results.
 
-- For DICOM directories, no specific naming is required.
-- For NIFTI files, the file should start with the DICOM modality tag (e.g., 'PT_' or 'CT_') followed by the desired name. For example, 'PT_MySample.nii.gz'.
+### Output artefacts 📁
+Each run emits a timestamped workspace (`PUMAZ-v<version>-<timestamp>`) alongside your tracer folders:
 
-Note: All the PET and CT images related to a tracer should be placed in the same directory named after the tracer.
+| Path | Contents |
+|------|----------|
+| `CT/` | Resliced CT volumes staged for registration |
+| `PT/` | Resliced PET volumes indexed by tracer order |
+| `aligned_CT/` | Final aligned CT volumes |
+| `aligned_MASK/` | Aligned segmentation masks |
+| `aligned_PT/` | Aligned PET volumes; includes `RGB-composite.nii.gz` and `grayscale-composite.nii.gz` when multiplexing |
+| `body_masks/` | Body-region masks with ignored labels removed |
+| `puma_masks/` | 24-label PUMA segmentations |
+| `transforms/` | Affine and warp fields for every tracer |
 
-## Appendix: Apple Silicon (M1/M2/M3 with MPS Backend)
+- Logs live alongside the run (`pumaz-v.<clock>.log`); batch failures append to `pumaz-failures-YYYYMMDD-HHMMSS.log`.
+- Passing `--convert-to-dicom` creates `_dicom` folders inside `aligned_PT/` with `Processed-by-PUMA` metadata.
 
-> Yes, it works — but it takes a few extra steps. Grab a ☕ or 🍺 and follow along carefully.
+### Platform support 💻
+PUMA runs on CPU or GPU across major operating systems. PyTorch ≥2.1 ships native Metal (MPS) support, so Apple Silicon users can install the standard wheel—no custom forks or 3D-convolution patches required.
 
-1. **Prepare a clean environment (Python 3.10 recommended).**
+### Benchmarks 📊
+Performance benchmarks and reference datasets are in preparation. If you want early numbers or to contribute your own results, open an issue.
 
-   ```bash
-   python3.10 -m venv puma-env
-   source puma-env/bin/activate
-   ```
+### Support and roadmap 🤝
+- File bugs or feature requests on the 🔗 [issue tracker](https://github.com/LalithShiyam/PUMA/issues).
+- Commercial support and integration services are available via 🔗 [Zenta Solutions](mailto:lalith.shiyam@zenta.solutions).
+- The near-term roadmap includes automated QA scoring, longitudinal dashboards, and cloud-friendly batching.
 
-2. **Install PUMA and fetch the MPS-compatible PyTorch fork.**  
-   Apple’s Metal backend (MPS) needs a custom PyTorch build without CUDA.
-
-   ```bash
-   pip install pumaz
-   pip uninstall torch          # remove the stock wheel that ships with pumaz
-   git clone https://github.com/LalithShiyam/pytorch-mps.git
-   cd pytorch-mps
-   ```
-
-3. **Check your CMake version (IMPORTANT ⚠️).**  
-   CMake 4.x triggers protobuf build failures. Stick to ≤3.29.2.
-
-   ```bash
-   cmake --version
-   ```
-
-   If the reported version is 4.x or newer:
-
-   ```bash
-   pip uninstall cmake -y
-   pip install cmake==3.29.2
-   ```
-
-4. **Build the custom PyTorch fork for MPS.**  
-   This step disables CUDA and can take a while — be patient!
-
-   ```bash
-   USE_CUDA=0 python setup.py develop --verbose 2>&1 | tee build.log
-   ```
-
-5. **Patch `nnUNetTrainer.py` (one-time fix).**  
-   nnU-Net expects `GradScaler` in a CUDA module. Point it at the AMP helper instead.
-
-   ```text
-   File: ~/puma-env/lib/python3.10/site-packages/nnunetv2/training/nnUNetTrainer/nnUNetTrainer.py
-   ```
-
-   Replace line 43:
-
-   ```python
-   from torch import GradScaler
-   ```
-
-   with:
-
-   ```python
-   from torch.cuda.amp import GradScaler
-   ```
-
-✅ That’s it! You’re ready to run **PUMA on Apple Silicon** with MPS acceleration.  
-If anything crashes, blame the silicon gods… or open an issue — we’re happy to help.
-
-## 🚀 Benchmarks
-
-To be updated.
-
-## 📚 Citation
-
+### Citation 📚
 If you use PUMA in your research, please cite:
 
-> Fully Automated Image-Based Multiplexing of Serial PET/CT Imaging for Facilitating Comprehensive Disease Phenotyping  
-> Lalith Kumar Shiyam Sundar, Sebastian Gutschmayer, Manuel Pires, Daria Ferrara, Toni Nguyen, Yasser Gaber Abdelhafez, Benjamin Spencer, Simon R. Cherry, Ramsey D. Badawi, David Kersting, Wolfgang P. Fendler, Moon-Sung Kim, Martin Lyngby Lassen, Philip Hasbak, Fabian Schmidt, Pia Linder, Xingyu Mu, Zewen Jiang, Elisabetta M. Abenavoli, Roberto Sciagrà, Armin Frille, Hubert Wirtz, Swen Hesse, Osama Sabri, Dale Bailey, David Chan, Jason Callahan, Rodney J. Hicks, Thomas Beyer  
-> Journal of Nuclear Medicine, September 2025, jnumed.125.269688; DOI: https://doi.org/10.2967/jnumed.125.269688
+> **L.K. Shiyam Sundar, S. Gutschmayer, M. Pires, _et al._**  
+> “Fully Automated Image-Based Multiplexing of Serial PET/CT Imaging for Facilitating Comprehensive Disease Phenotyping.”  
+> _Journal of Nuclear Medicine_, September 2025. doi:[10.2967/jnumed.125.269688](https://doi.org/10.2967/jnumed.125.269688)
 
-## A Note on QIMP Python Packages: The 'Z' Factor 📚🚀
+### The QIMP “Z” signature ✨
+Every QIMP library carries a trailing “z” to signal curiosity for what comes next. It nods to the unknown variable in science and to our commitment to keep stretching medical imaging beyond the expected. When you install `pumaz`, you join that exploration.
 
-All of our Python packages here at QIMP carry a special signature – a distinctive 'Z' at the end of their names. The 'Z' is more than just a letter to us; it's a symbol of our forward-thinking approach and commitment to continuous innovation.
+### License ⚖️
+The open-source edition ships under GPLv3. For commercial licensing or OEM partnerships, contact [lalith.shiyam@zenta.solutions](mailto:lalith.shiyam@zenta.solutions).
 
-Our PUMA package, for example, is named as 'pumaz', pronounced "puma-see". So, why 'Z'?
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Commercial License](https://img.shields.io/badge/Commercial--Use-Contact--Zenta-orange)](mailto:lalith.shiyam@zenta.solutions)
 
-Well, in the world of mathematics and science, 'Z' often represents the unknown, the variable that's yet to be discovered, or the final destination in a series. We at QIMP believe in always pushing boundaries, venturing into uncharted territories, and staying on the cutting edge of technology. The 'Z' embodies this philosophy. It represents our constant quest to uncover what lies beyond the known, to explore the undiscovered, and to bring you the future of medical imaging.
+### Contributors 🙌
 
-Each time you see a 'Z' in one of our package names, be reminded of the spirit of exploration and discovery that drives our work. With QIMP, you're not just installing a package; you're joining us on a journey to the frontiers of medical image processing. Here's to exploring the 'Z' dimension together! 🚀
- 
-## 📄 License 
-The open-source version of this software is released under the GPLv3 License.
-For commercial use or integration into proprietary products, please contact us at lalith.shiyam@zenta.solutions to obtain a commercial license through Zenta.
-
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Commercial License](https://img.shields.io/badge/Commercial--Use-Contact--Zenta-orange)](mailto:lalith.shiyam@zenta.solutions)
-
-## Contributors ✨
-
-Thanks goes to these wonderful people  ✨:
+Thanks to every contributor—large and small—for shaping PUMA.
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -295,4 +146,4 @@ Thanks goes to these wonderful people  ✨:
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind are welcome.
