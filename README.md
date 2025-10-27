@@ -63,7 +63,7 @@ Common flags:
 - `-cs` – Interactively choose channel assignments when `-m` is enabled.
 - `-c2d` – Convert aligned NIfTI volumes back to DICOM.
 
-### Workflow essentials 🧬
+### <a id="workflow-essentials"></a>Workflow essentials 🧬
 Organise every patient or study with one directory per tracer; each tracer must contain PET and CT data as DICOM folders or NIfTI files prefixed by modality:
 
 ```
