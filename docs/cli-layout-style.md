@@ -38,6 +38,17 @@ This document captures the current display aesthetic introduced in `pumaz.displa
 - Default `transient=True` so the bar clears when complete unless a caller overrides it.
 - If porting to another tool, expose a thin wrapper (e.g., `lionz.display.themed_progress`) so every task shares the same progress aesthetic.
 
+## Colour Theme
+- All CLI colours live in `constants.PUMAZ_COLORS`. Treat it as the single source of truth and import from there instead of hard-coding hex values.
+- Current intent:
+  - `primary` — celebratory/action highlights (completed steps, key banners).
+  - `secondary` — headings, subtitles, and other structural text.
+  - `muted` / `text` — default body text, accent lines, progress bar backgrounds.
+  - `accent` — inline emphasis that should pop without reading as a warning.
+  - `info`, `warning`, `error`, `success` — semantic states; keep their meanings consistent across projects.
+- Whenever a new tool needs different branding, clone the dictionary and adjust values, but maintain the key names so shared helpers continue to work.
+- Prefer hex colours for Rich output; only fall back to ANSI when interacting with non-Rich streams.
+
 ## Implementation Pattern
 Re-use the section helper as the foundation for this style.
 
