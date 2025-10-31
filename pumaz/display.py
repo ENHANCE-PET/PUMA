@@ -149,16 +149,14 @@ def citation():
 
 
 def section(title: str, icon: str = ""):
-    """Render a themed section heading."""
-    heading = emoji.emojize(f"{icon} {title}" if icon else title)
-    header_text = Text(heading.strip(), style=f"bold {constants.PUMAZ_COLORS['secondary']}", justify="left")
-    panel = Panel(
-        Align.left(header_text),
-        border_style=constants.PUMAZ_SECTION_BORDER_COLOR,
-        padding=(0, 2),
-        expand=True,
-    )
-    console.print(panel)
+    """Render a themed section heading without a surrounding panel."""
+    heading = emoji.emojize(f"{icon} {title}" if icon else title).strip()
+    header_text = Text(heading, style=f"bold {constants.PUMAZ_COLORS['secondary']}", justify="left")
+    accent_width = max(12, min(console.width - 4, 48))
+    accent_line = Text("─" * accent_width, style=constants.PUMAZ_COLORS["muted"])
+    console.print()
+    console.print(header_text)
+    console.print(accent_line)
     console.print()
 
 
