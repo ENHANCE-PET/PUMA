@@ -14,6 +14,30 @@ This document captures the current display aesthetic introduced in `pumaz.displa
 - **Lean typography**: Reserve bold text for section titles and key labels; keep body copy in the default `PUMAZ_COLORS["text"]`.
 - **Accent line**: Follow each heading with a muted horizontal rule to anchor the reader without boxing the whole section.
 
+## Banner Pattern
+- Try to call `cfonts.say` first, fall back to `cfonts.render`, then `pyfiglet.figlet_format("speed")`. This keeps the banner consistent even when optional dependencies are missing.
+- Print a blank line before and after the banner output so it does not crowd adjacent content.
+- Subtitle: use bold secondary colour; tag line: secondary colour; both centered with `Align.center`.
+- Adjust `PUMAZ_BANNER_COLORS` if a sibling project needs a different palette, but retain the two-tone gradient for familiarity.
+
+## Citation Panel
+- Title uses the `:books:` icon, bold secondary colour, left-aligned.
+- Wrap the citation body in a `Panel` to frame the long text; keep padding `(1, 2)` so it feels intentional but not heavy.
+- Body copy stays white for maximum contrast; end with a blank `console.print()` to separate the next section.
+- Maintain the panel even in the flattened layout—it is a reference block users may copy verbatim.
+
+## Notes and Warnings
+- Use a `Panel` titled `:memo:` (or `:warning:` for alerts) with borders from `PUMAZ_CITATION_BORDER_COLOR` so all contextual blocks match.
+- Compose the message with muted body text, accent subheadings, and bold warning sentences.
+- Use the ` • ` bullet prefix inside panels to list arguments or steps cleanly.
+- Log the same message via `logging` for audit trails; keep CLI and logs aligned.
+
+## Progress Displays
+- Construct progress bars with `themed_progress` so colour semantics stay consistent (`muted` background, `primary` completion, `info` percentage).
+- Allow additional columns (ETA, transfer speed) via `*additional_columns` to encourage reuse rather than re-styling.
+- Default `transient=True` so the bar clears when complete unless a caller overrides it.
+- If porting to another tool, expose a thin wrapper (e.g., `lionz.display.themed_progress`) so every task shares the same progress aesthetic.
+
 ## Implementation Pattern
 Re-use the section helper as the foundation for this style.
 
