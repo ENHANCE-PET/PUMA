@@ -49,6 +49,18 @@ This document captures the current display aesthetic introduced in `pumaz.displa
 - Whenever a new tool needs different branding, clone the dictionary and adjust values, but maintain the key names so shared helpers continue to work.
 - Prefer hex colours for Rich output; only fall back to ANSI when interacting with non-Rich streams.
 
+| Key        | Hex Code  | Typical Usage                              |
+|------------|-----------|--------------------------------------------|
+| primary    | `#ff79c6` | celebratory accents, completed steps       |
+| secondary  | `#4163ca` | headings, subtitles, structural text       |
+| success    | `#34c658` | confirmations, healthy status messages     |
+| warning    | `#f0c37b` | gentle alerts, next-step nudges            |
+| error      | `#eb7777` | failures, actionable errors                |
+| info       | `#2b60dc` | informational callouts, progress text      |
+| accent     | `#bd93f9` | inline emphasis inside panels or paragraphs|
+| muted/text | `#44475a` | body copy, accent rules, background bars   |
+| border     | `#D795BE` | panel borders, subtle separators           |
+
 ## Implementation Pattern
 Re-use the section helper as the foundation for this style.
 
