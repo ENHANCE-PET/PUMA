@@ -14,7 +14,7 @@ pandas
 dicom2nifti
 nifti2dicom
 requests
-moosez
+moosez==3.0.30
 halo
 emoji
 cfonts
