@@ -74,20 +74,30 @@ def download(item_name: str, item_path: str, item_dict: dict, *, expected_files:
     :Example:
         >>> download('registration_binaries', '/path/to/item', {'registration_binaries': {'url': 'http://example.com/binaries.zip', 'filename': 'binaries.zip', 'directory': 'binaries'}})
     """
-    item_info = item_dict[item_name]
-    url = item_info["url"]
-    filename = os.path.join(item_path, item_info["filename"])
-    directory = os.path.join(item_path, item_info["directory"])
-
     binaries_ready = _expected_files_ready(expected_files)
 
     if binaries_ready:
+        directory_hint = os.path.dirname(expected_files[0]) if expected_files else item_path
         console.print(
-            f" Registration binaries detected at {directory}.",
+            f" Registration binaries detected at {directory_hint}.",
             style=constants.PUMAZ_COLORS["success"],
         )
-        logging.info(f" Registration binaries detected at {directory}.")
+        logging.info(f" Registration binaries detected at {directory_hint}.")
         return os.path.join(item_path, item_name)
+
+    try:
+        item_info = item_dict[item_name]
+    except KeyError as exc:
+        supported = ", ".join(sorted(item_dict))
+        raise BinaryDownloadError(
+            f"Registration binaries are not packaged for '{item_name}'. "
+            "Provide compatible binaries via PUMAZ_BINARY_PATH (see README) or run on a supported platform "
+            f"({supported})."
+        ) from exc
+
+    url = item_info["url"]
+    filename = os.path.join(item_path, item_info["filename"])
+    directory = os.path.join(item_path, item_info["directory"])
 
     needs_download = not os.path.isdir(directory)
 

@@ -168,12 +168,12 @@ def get_system():
         raise ValueError("Unsupported OS type")
 
     # Convert architecture output to match your keys
-    if architecture in ["x86_64", "amd64"]:
+    if architecture in ("x86_64", "amd64"):
         architecture = "x86_64"
-    elif "arm" in architecture:
+    elif architecture in ("aarch64", "arm64") or architecture.startswith(("arm", "aarch")):
         architecture = "arm64"
     else:
-        raise ValueError("Unsupported architecture")
+        raise ValueError(f"Unsupported architecture: {architecture}")
 
     return system, architecture
 

@@ -39,6 +39,11 @@ PUMA_BINARIES = {
         "filename": "beast-binaries-linux-x86_64.zip",
         "directory": "beast-binaries-linux-x86_64",
     },
+    "puma-linux-arm64": {
+        "url": "https://enhance-pet.s3.eu-central-1.amazonaws.com/awesome/beast-binaries-linux-arm64.zip",
+        "filename": "beast-binaries-linux-arm64.zip",
+        "directory": "beast-binaries-linux-arm64",
+    },
     "puma-mac-x86_64": {
         "url": "https://enhance-pet.s3.eu-central-1.amazonaws.com/awesome/beast-binaries-mac-x86_64.zip",
         "filename": "beast-binaries-mac-x86_64.zip",
