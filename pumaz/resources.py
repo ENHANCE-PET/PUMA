@@ -30,27 +30,27 @@ console = Console()
 
 PUMA_BINARIES = {
     "puma-windows-x86_64": {
-        "url": "https://enhance-pet.s3.eu-central-1.amazonaws.com/awesome/beast-binaries-windows-x86_64.zip",
+        "url": "https://github.com/mprires/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-windows-x86_64.zip",
         "filename": "beast-binaries-windows-x86_64.zip",
         "directory": "beast-binaries-windows-x86_64",
     },
     "puma-linux-x86_64": {
-        "url": "https://enhance-pet.s3.eu-central-1.amazonaws.com/awesome/beast-binaries-linux-x86_64.zip",
+        "url": "https://github.com/mprires/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-linux-x86_64.zip",
         "filename": "beast-binaries-linux-x86_64.zip",
         "directory": "beast-binaries-linux-x86_64",
     },
     "puma-linux-arm64": {
-        "url": "https://enhance-pet.s3.eu-central-1.amazonaws.com/awesome/beast-binaries-linux-arm64.zip",
+        "url": "https://github.com/mprires/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-linux-arm64.zip",
         "filename": "beast-binaries-linux-arm64.zip",
         "directory": "beast-binaries-linux-arm64",
     },
     "puma-mac-x86_64": {
-        "url": "https://enhance-pet.s3.eu-central-1.amazonaws.com/awesome/beast-binaries-mac-x86_64.zip",
+        "url": "https://github.com/mprires/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-mac-x86_64.zip",
         "filename": "beast-binaries-mac-x86_64.zip",
         "directory": "beast-binaries-mac-x86_64",
     },
     "puma-mac-arm64": {
-        "url": "https://enhance-pet.s3.eu-central-1.amazonaws.com/awesome/beast-binaries-mac-arm64.zip",
+        "url": "https://github.com/mprires/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-mac-arm64.zip",
         "filename": "beast-binaries-mac-arm64.zip",
         "directory": "beast-binaries-mac-arm64",
     },
