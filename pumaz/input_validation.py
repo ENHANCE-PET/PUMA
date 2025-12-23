@@ -22,9 +22,7 @@ import os
 from typing import List, Sequence, Tuple
 
 import pydicom
-from dask import delayed, compute
 from pumaz import constants
-from pumaz import image_conversion
 from rich.console import Console
 from rich.progress import Progress, TextColumn, TimeElapsedColumn, SpinnerColumn
 
@@ -61,8 +59,12 @@ def select_puma_compliant_subject_folders(tracer_paths: list) -> list:
         except Exception:  # pragma: no cover - defensive, diagnostic only
             dicom_modalities = {}
 
-        ct_count = sum(file.startswith(tag) for tag in constants.ANATOMICAL_MODALITIES for file in files)
-        pt_count = sum(file.startswith(tag) for tag in constants.FUNCTIONAL_MODALITIES for file in files)
+        ct_count = sum(
+            file.upper().startswith(tag) for tag in constants.ANATOMICAL_MODALITIES for file in files
+        )
+        pt_count = sum(
+            file.upper().startswith(tag) for tag in constants.FUNCTIONAL_MODALITIES for file in files
+        )
 
         ct_present = bool(ct_count) or any(tag in dicom_modalities for tag in constants.ANATOMICAL_MODALITIES)
         pt_present = bool(pt_count) or any(tag in dicom_modalities for tag in constants.FUNCTIONAL_MODALITIES)
@@ -150,9 +152,8 @@ def process_file(file_path: str):
     ValueError: If the 'Modality' tag is not found in the DICOM file or if there is a problem reading the DICOM file.
     """
     try:
-        with open(file_path, 'rb') as dcm_file:
-            dicom_data = pydicom.filereader.read_partial(dcm_file, specific_tags=['Modality'])
-        modality = dicom_data.get('Modality', None)
+        dicom_data = pydicom.dcmread(file_path, stop_before_pixels=True, specific_tags=['Modality'])
+        modality = getattr(dicom_data, 'Modality', None)
         if modality:
             return modality, os.path.dirname(file_path)
         else:
@@ -168,8 +169,8 @@ def identify_medical_image_data(directory):
     This function walks through the given directory and its subdirectories to identify the type of medical imaging data
     present. It checks for the presence of 'PT' and 'CT' directories and adds their paths to the result dictionary.
     If these directories are not found, it processes each file in the directory and its subdirectories to identify the
-    modality. The function uses Dask to process the files in parallel. The result is a dictionary with modality tags as
-    keys and the topmost directory path for each modality as values.
+    modality. The function scans subdirectories recursively and returns a dictionary with modality tags as keys and the
+    directory paths where the first matching series was detected.
 
     Args:
         directory (str): The path to the directory to be checked.
@@ -188,25 +189,24 @@ def identify_medical_image_data(directory):
     if os.path.isdir(pt_path) and os.path.isdir(ct_path):
         result['PT'] = pt_path
         result['CT'] = ct_path
-    else:
-        tasks = []
-        # get only the subdirectories
-        subdirs = [subdir for subdir in os.listdir(directory) if os.path.isdir(os.path.join(directory, subdir))]
-        # Walk through the directory and its subdirectories
-        for subdir in subdirs:
-            # get all the file paths in the subdirectory and is_dicom_file
-            files = [file for file in os.listdir(os.path.join(directory, subdir)) if
-                     os.path.isfile(os.path.join(directory, subdir, file)) and
-                     image_conversion.is_dicom_file(os.path.join(directory, subdir, file))]
-            for file in files:
-                file_path = os.path.join(directory, subdir, file)
-                tasks.append(delayed(process_file)(file_path))
+        return result
 
-        # Use Dask to process the files in parallel
-        results = compute(*tasks)
-        for modality, subdir in results:
-            # Add the modality and the topmost directory path to the result dictionary
+    for root, dirnames, filenames in os.walk(directory):
+        dirnames[:] = [name for name in dirnames if not name.startswith('.')]
+        for filename in filenames:
+            if filename.startswith('.'):
+                continue
+            lower_name = filename.lower()
+            if lower_name.endswith(('.nii', '.nii.gz', '.json', '.txt')):
+                continue
+            file_path = os.path.join(root, filename)
+            try:
+                modality, series_dir = process_file(file_path)
+            except ValueError:
+                continue
             if modality and modality not in result:
-                result[modality] = subdir
+                result[modality] = series_dir
+                if 'PT' in result and 'CT' in result:
+                    return result
 
     return result

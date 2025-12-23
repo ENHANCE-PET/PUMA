@@ -359,8 +359,14 @@ def find_images(directory: str, pattern='*.nii*'):
 
 def get_image_by_modality(directory: str, modalities: list) -> str:
     for modality in modalities:
-        pattern = os.path.join(directory, f'{modality}*.nii*')
-        files = glob.glob(pattern)
+        patterns = [
+            os.path.join(directory, f'{modality}*.nii*'),
+            os.path.join(directory, f'{modality.lower()}*.nii*'),
+        ]
+        files = []
+        for pattern in patterns:
+            files.extend(glob.glob(pattern))
+        files = sorted(set(files))
         if len(files) == 1:
             return files[0]
 
@@ -368,7 +374,7 @@ def get_image_by_modality(directory: str, modalities: list) -> str:
 def get_modality(file_path: str, modalities: list) -> str:
     file_name = os.path.basename(file_path)
     for modality in modalities:
-        if file_name.startswith(modality):
+        if file_name.upper().startswith(modality.upper()):
             return modality
 
 
