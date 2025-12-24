@@ -19,6 +19,7 @@
 
 import contextlib
 import io
+import inspect
 import os
 import re
 import unicodedata
@@ -67,6 +68,13 @@ def _new_nifti_files(output_dir: str, before_files: set[str]) -> list[str]:
     except OSError:
         return []
     return [f for f in after_files - before_files if f.endswith((".nii", ".nii.gz"))]
+
+
+def _call_with_supported_kwargs(func, **kwargs):
+    """Call func with only the keyword arguments it supports."""
+    supported = inspect.signature(func).parameters
+    filtered = {key: value for key, value in kwargs.items() if key in supported}
+    return func(**filtered)
 
 
 
@@ -547,39 +555,53 @@ class NiftiToDicomConverter:
         self._find_moving_images(puma_compliant_subject_folders)
 
         ref_dicom_dir_info = input_validation.identify_modalities(reference_img_dicom_dir)
+        ref_pt_dir = ref_dicom_dir_info.get('PT')
+        if not ref_pt_dir:
+            raise ValueError(f"Reference PT DICOM series not found under {reference_img_dicom_dir}.")
 
         # Ensure we are creating a dictionary with hashable keys
         moving_nifti_dicom_dirs = {moving_nifti_img: moving_dicom_dir for moving_nifti_img, moving_dicom_dir in
                                    zip(self.moving_nifti_imgs, self.moving_img_dicom_dirs) if moving_nifti_img}
 
         for moving_nifti_imgs, moving_dicom_dir in moving_nifti_dicom_dirs.items():
-            for moving_nifti_img in moving_nifti_imgs:  # Process each NIfTI image individually
-                output_dicom_dir = os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER,
-                                                os.path.splitext(os.path.basename(moving_nifti_img))[0] +
-                                                '_' + constants.DICOM_FOLDER)
-                moving_dicom_dir_info = input_validation.identify_modalities(moving_dicom_dir)
-                converter.nifti_to_dicom_with_resampling(
-                    nifti_image_path=moving_nifti_img,
-                    original_dicom_directory=moving_dicom_dir_info.get('PT'),
-                    dicom_output_directory=output_dicom_dir,
-                    spatial_info_dicom_directory=ref_dicom_dir_info.get('PT'),
-                    series_description=constants.DESCRIPTION,
-                    verbose=False,
+            moving_dicom_dir_info = input_validation.identify_modalities(moving_dicom_dir)
+            moving_pt_dir = moving_dicom_dir_info.get('PT')
+            if not moving_pt_dir:
+                console.print(
+                    f"[yellow]Skipping DICOM conversion for {moving_dicom_dir}: PT series not found.[/yellow]"
                 )
-
-        # Convert MPX images to DICOM
-
-        mpx_img = file_utilities.get_files(
-            os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
-            f'{constants.MULTIPLEXED_COMPOSITE_IMAGE}'
-        )[0]
-
-        mpx_dicom_dir = os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER,
-                                     constants.MULTIPLEXED_COMPOSITE_IMAGE + '_' + constants.DICOM_FOLDER)
-
-        converter.write_rgb_dicom_from_nifti(nifti_file_path=mpx_img,
-                                             reference_dicom_series=ref_dicom_dir_info.get('PT'),
-                                             output_directory=mpx_dicom_dir)
+                continue
+            for moving_nifti_img in moving_nifti_imgs:  # Process each NIfTI image individually
+                nifti_stem, _ = _split_nii_extension(os.path.basename(moving_nifti_img))
+                output_dicom_dir = os.path.join(
+                    self.puma_dir,
+                    constants.ALIGNED_PET_FOLDER,
+                    f"{nifti_stem}_{constants.DICOM_FOLDER}",
+                )
+                try:
+                    _call_with_supported_kwargs(
+                        converter.save_dicom_from_nifti_image,
+                        ref_dir=ref_pt_dir,
+                        nifti_path=moving_nifti_img,
+                        output_dir=output_dicom_dir,
+                        series_description=constants.DESCRIPTION,
+                        header_dir=moving_pt_dir,
+                        force_overwrite=True,
+                        parametric_map=False,
+                        verbose=False,
+                    )
+                except Exception as exc:
+                    console.print(
+                        f"[yellow]Falling back to resampling-based DICOM conversion for {moving_nifti_img}: {exc}[/yellow]"
+                    )
+                    converter.nifti_to_dicom_with_resampling(
+                        nifti_image_path=moving_nifti_img,
+                        original_dicom_directory=moving_pt_dir,
+                        dicom_output_directory=output_dicom_dir,
+                        spatial_info_dicom_directory=ref_pt_dir,
+                        series_description=constants.DESCRIPTION,
+                        verbose=False,
+                    )
 
         reference_nifti_img = file_utilities.get_files(
             os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
@@ -589,7 +611,8 @@ class NiftiToDicomConverter:
         console.print(f"🔍 Reference tracer image directory: {reference_img_dicom_dir}. Kindly use the "
                       f"CT from here when overlaying the aligned PT dicom or the MPX images!", style="white")
 
-        self._move_reference_dicom_dir(ref_dicom_dir_info.get('PT'),
+        self.convert_rgb_dicom(ref_pt_dir=ref_pt_dir)
+        self._move_reference_dicom_dir(ref_pt_dir,
                                        os.path.splitext(os.path.basename(reference_nifti_img))[0])
 
     def _move_reference_dicom_dir(self, reference_img_dicom_dir, reference_img_dirname):
@@ -599,3 +622,45 @@ class NiftiToDicomConverter:
         file_utilities.create_directory(aligned_reference_dir)
         reference_dcm_files = file_utilities.get_files(reference_img_dicom_dir, '*')
         file_utilities.copy_files_to_destination(reference_dcm_files, aligned_reference_dir)
+
+    def convert_rgb_dicom(self, ref_pt_dir: Optional[str] = None) -> None:
+        """Convert the multiplexed RGB composite NIfTI into a DICOM series."""
+        if not self.reference_img:
+            raise ValueError("Reference image not set.")
+
+        reference_img_dirname, reference_img_dicom_dir = self._get_reference_image_info()
+        ref_dicom_dir_info = input_validation.identify_modalities(reference_img_dicom_dir)
+        ref_pt_dir = ref_pt_dir or ref_dicom_dir_info.get('PT')
+        if not ref_pt_dir:
+            console.print(
+                f"[yellow]Reference PT DICOM series not found under {reference_img_dirname}; "
+                "skipping RGB DICOM export.[/yellow]"
+            )
+            return
+
+        mpx_candidates = file_utilities.get_files(
+            os.path.join(self.puma_dir, constants.ALIGNED_PET_FOLDER),
+            f'{constants.MULTIPLEXED_COMPOSITE_IMAGE}'
+        )
+        if not mpx_candidates:
+            console.print(
+                f"[yellow]RGB composite not found under {constants.ALIGNED_PET_FOLDER}; "
+                "skipping RGB DICOM export.[/yellow]"
+            )
+            return
+
+        mpx_img = mpx_candidates[0]
+        mpx_dicom_dir = os.path.join(
+            self.puma_dir,
+            constants.ALIGNED_PET_FOLDER,
+            constants.MULTIPLEXED_COMPOSITE_IMAGE + '_' + constants.DICOM_FOLDER,
+        )
+        _call_with_supported_kwargs(
+            converter.write_rgb_dicom_from_nifti,
+            nifti_file_path=mpx_img,
+            reference_dicom_series=ref_pt_dir,
+            output_directory=mpx_dicom_dir,
+            bits_per_channel='auto',
+            composite_alpha=True,
+            max_workers=None,
+        )

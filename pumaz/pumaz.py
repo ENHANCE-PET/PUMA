@@ -388,6 +388,14 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET', rgb_image, custom_colors, color_map)
         grayscale_image = os.path.join(aligned_pt_dir, constants.GRAYSCALE_COMPOSITE_IMAGE)
         image_processing.rgb2gray(rgb_image, grayscale_image)
+        if not convert_to_dicom:
+            display.section("Converting RGB to DICOM", ":file_folder:")
+            logging.info(' ')
+            logging.info(' CONVERTING RGB TO DICOM:')
+            logging.info(' ')
+            n2dConverter = image_conversion.NiftiToDicomConverter(subject_folder=subject_folder, puma_dir=puma_dir)
+            n2dConverter.set_reference_image(reference_mask)
+            n2dConverter.convert_rgb_dicom()
 
     if convert_to_dicom:
         display.section("Converting to DICOM", ":file_folder:")
