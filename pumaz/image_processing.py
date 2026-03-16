@@ -23,6 +23,7 @@ import multiprocessing
 import os
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -412,21 +413,21 @@ class ImageRegistration:
         :rtype: str
         """
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
-        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+        combined_mask_cmd = " ".join(f"{key} {shlex.quote(value)}" for key, value in mask_options.items() if value)
 
         # Initialize the command with moments 1 <center of mass>
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -moments 1 -o " \
-                     fr"{self.transform_files['moments']} "
+        cmd_to_run = (f"{shlex.quote(GREEDY_PATH)} -d 3 -i "
+                      f"{shlex.quote(self.fixed_img)} {shlex.quote(self.moving_img)} "
+                      f"{combined_mask_cmd} -moments 1 -o "
+                      f"{shlex.quote(self.transform_files['moments'])}")
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -ia {self.transform_files['moments']} -dof 6 -o " \
-                     fr"{self.transform_files['rigid']} " \
-                     f"-n {self.multi_resolution_iterations} -m SSD"
+        cmd_to_run = (f"{shlex.quote(GREEDY_PATH)} -d 3 -a -i "
+                      f"{shlex.quote(self.fixed_img)} {shlex.quote(self.moving_img)} "
+                      f"{combined_mask_cmd} -ia {shlex.quote(self.transform_files['moments'])} -dof 6 -o "
+                      f"{shlex.quote(self.transform_files['rigid'])} "
+                      f"-n {self.multi_resolution_iterations} -m SSD")
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
 
         logging.info(
@@ -442,22 +443,22 @@ class ImageRegistration:
         :rtype: str
         """
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
-        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+        combined_mask_cmd = " ".join(f"{key} {shlex.quote(value)}" for key, value in mask_options.items() if value)
 
         # Initialize the command with moments 1 <center of mass>
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -moments 1 -o " \
-                     fr"{self.transform_files['moments']} "
+        cmd_to_run = (f"{shlex.quote(GREEDY_PATH)} -d 3 -i "
+                      f"{shlex.quote(self.fixed_img)} {shlex.quote(self.moving_img)} "
+                      f"{combined_mask_cmd} -moments 1 -o "
+                      f"{shlex.quote(self.transform_files['moments'])}")
 
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -ia {self.transform_files['moments']} -dof 12 -o " \
-                     fr"{self.transform_files['affine']} " \
-                     f"-n {self.multi_resolution_iterations} -m SSD"
+        cmd_to_run = (f"{shlex.quote(GREEDY_PATH)} -d 3 -a -i "
+                      f"{shlex.quote(self.fixed_img)} {shlex.quote(self.moving_img)} "
+                      f"{combined_mask_cmd} -ia {shlex.quote(self.transform_files['moments'])} -dof 12 -o "
+                      f"{shlex.quote(self.transform_files['affine'])} "
+                      f"-n {self.multi_resolution_iterations} -m SSD")
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
 
         logging.info(
@@ -474,15 +475,15 @@ class ImageRegistration:
         """
         self.affine()
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
-        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+        combined_mask_cmd = " ".join(f"{key} {shlex.quote(value)}" for key, value in mask_options.items() if value)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -m SSD -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -it " \
-                     fr"{self.transform_files['affine']} " \
-                     f"-o " \
-                     fr"{self.transform_files['warp']} -oinv {self.transform_files['inverse_warp']} " \
-                     f"-sv -n {self.multi_resolution_iterations}"
+        cmd_to_run = (f"{shlex.quote(GREEDY_PATH)} -d 3 -m SSD -i "
+                      f"{shlex.quote(self.fixed_img)} {shlex.quote(self.moving_img)} "
+                      f"{combined_mask_cmd} -it "
+                      f"{shlex.quote(self.transform_files['affine'])} "
+                      f"-o "
+                      f"{shlex.quote(self.transform_files['warp'])} -oinv {shlex.quote(self.transform_files['inverse_warp'])} "
+                      f"-sv -n {self.multi_resolution_iterations}")
 
         subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
@@ -551,15 +552,14 @@ class ImageRegistration:
         :return: The command to resample the moving image.
         :rtype: str
         """
-        cmd = f"{GREEDY_PATH} -d 3 -rf " \
-              fr"{self.fixed_img} -ri LINEAR -rm " \
-              fr"{self.moving_img} {resampled_moving_img}"
+        cmd = (f"{shlex.quote(GREEDY_PATH)} -d 3 -rf "
+               f"{shlex.quote(self.fixed_img)} -ri LINEAR -rm "
+               f"{shlex.quote(self.moving_img)} {shlex.quote(resampled_moving_img)}")
         if segmentation and resampled_seg:
-            cmd += f" -ri LABEL 0.2vox -rm " \
-                   fr"{segmentation} {resampled_seg}"
+            cmd += (f" -ri LABEL 0.2vox -rm "
+                    f"{shlex.quote(segmentation)} {shlex.quote(resampled_seg)}")
         for transform_file in transform_files:
-            cmd += f" -r " \
-                   fr"{transform_file}"
+            cmd += f" -r {shlex.quote(transform_file)}"
         return cmd
 
 
@@ -1022,7 +1022,7 @@ def rgb2gray(rgb_file: str, gray_file: str):
     :type gray_file: str
     :return: None
     """
-    c3d_cmd = f"{C3D_PATH} -mcs {rgb_file} -wsum {RED_WEIGHT} {GREEN_WEIGHT} {BLUE_WEIGHT} -o {gray_file}"
+    c3d_cmd = f"{shlex.quote(C3D_PATH)} -mcs {shlex.quote(rgb_file)} -wsum {RED_WEIGHT} {GREEN_WEIGHT} {BLUE_WEIGHT} -o {shlex.quote(gray_file)}"
     subprocess.run(c3d_cmd, shell=True, capture_output=True)
     logging.info(f" Converted {os.path.basename(rgb_file)} to grayscale.")
 
