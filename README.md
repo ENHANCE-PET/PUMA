@@ -43,7 +43,7 @@ PUMA aligns each tracer, multiplexes RGB composites when requested, and writes r
   ```
 - **From source (development work)**  
   ```bash
-  git clone https://github.com/LalithShiyam/PUMA.git
+  git clone https://github.com/ENHANCE-PET/PUMA.git
   cd PUMA
   uv pip install -e .
   ```
@@ -105,7 +105,7 @@ PUMA runs on CPU or GPU across major operating systems. PyTorch ≥2.1 ships nat
 Performance benchmarks and reference datasets are in preparation. If you want early numbers or to contribute your own results, open an issue.
 
 ### Support and roadmap 🤝
-- File bugs or feature requests on the 🔗 [issue tracker](https://github.com/LalithShiyam/PUMA/issues).
+- File bugs or feature requests on the 🔗 [issue tracker](https://github.com/ENHANCE-PET/PUMA/issues).
 - Commercial support and integration services are available via 🔗 [Zenta Solutions](mailto:lalith.shiyam@zenta.solutions).
 - The near-term roadmap includes automated QA scoring, longitudinal dashboards, and cloud-friendly batching.
 
@@ -134,9 +134,9 @@ Thanks to every contributor—large and small—for shaping PUMA.
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/W7ebere"><img src="https://avatars.githubusercontent.com/u/166598214?v=4?s=100" width="100px;" alt="W7ebere"/><br /><sub><b>W7ebere</b></sub></a><br /><a href="https://github.com/LalithShiyam/PUMA/commits?author=W7ebere" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mprires"><img src="https://avatars.githubusercontent.com/u/48754309?v=4?s=100" width="100px;" alt="Manuel Pires"/><br /><sub><b>Manuel Pires</b></sub></a><br /><a href="https://github.com/LalithShiyam/PUMA/commits?author=mprires" title="Code">💻</a> <a href="https://github.com/LalithShiyam/PUMA/commits?author=mprires" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Keyn34"><img src="https://avatars.githubusercontent.com/u/87951050?v=4?s=100" width="100px;" alt="Sebastian Gutschmayer"/><br /><sub><b>Sebastian Gutschmayer</b></sub></a><br /><a href="https://github.com/LalithShiyam/PUMA/commits?author=Keyn34" title="Code">💻</a> <a href="https://github.com/LalithShiyam/PUMA/commits?author=Keyn34" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/W7ebere"><img src="https://avatars.githubusercontent.com/u/166598214?v=4?s=100" width="100px;" alt="W7ebere"/><br /><sub><b>W7ebere</b></sub></a><br /><a href="https://github.com/ENHANCE-PET/PUMA/commits?author=W7ebere" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mprires"><img src="https://avatars.githubusercontent.com/u/48754309?v=4?s=100" width="100px;" alt="Manuel Pires"/><br /><sub><b>Manuel Pires</b></sub></a><br /><a href="https://github.com/ENHANCE-PET/PUMA/commits?author=mprires" title="Code">💻</a> <a href="https://github.com/ENHANCE-PET/PUMA/commits?author=mprires" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Keyn34"><img src="https://avatars.githubusercontent.com/u/87951050?v=4?s=100" width="100px;" alt="Sebastian Gutschmayer"/><br /><sub><b>Sebastian Gutschmayer</b></sub></a><br /><a href="https://github.com/ENHANCE-PET/PUMA/commits?author=Keyn34" title="Code">💻</a> <a href="https://github.com/ENHANCE-PET/PUMA/commits?author=Keyn34" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
