@@ -34,7 +34,7 @@ dependencies = [
   "nibabel",
   "halo",
   "SimpleITK",
-  "pydicom",
+  "pydicom>=2.4.5",
   "numpy",
   "mpire",
   "openpyxl",
@@ -46,15 +46,15 @@ dependencies = [
   "pandas",
   "dicom2nifti",
   "nifti2dicom",
-  "requests",
-  "moosez==3.0.30",
+  "requests>=2.33.0",
+  "moosez>=3.2.1,<4",
   "emoji",
   "click",
   "rich-click",
   "cfonts",
   "psutil",
   "gputil",
-  "dask"
+  "dask>=2026.1.0"
 ]
 
 [project.urls]
