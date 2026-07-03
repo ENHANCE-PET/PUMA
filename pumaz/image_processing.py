@@ -18,6 +18,7 @@
 # ----------------------------------------------------------------------------------------------------------------------
 import contextlib
 import glob
+import json
 import logging
 import multiprocessing
 import os
@@ -36,7 +37,9 @@ import psutil
 from moosez import moose
 from mpire import WorkerPool
 from pumaz import constants
+from pumaz import display_presets
 from pumaz import file_utilities
+from pumaz import visualization
 from pumaz.constants import (GREEDY_PATH, C3D_PATH, ANATOMICAL_MODALITIES, FUNCTIONAL_MODALITIES, RED_WEIGHT,
                              GREEN_WEIGHT, BLUE_WEIGHT, MOOSE_FILLER_LABEL, PUMA_LABELS)
 from pumaz.file_utilities import (create_directory, get_files, copy_reference_image, move_files, find_images, get_image_by_modality, get_modality)
@@ -877,7 +880,153 @@ def get_color_channel_assignments_from_map(color_map, tracer_images):
 
     return color_channel_assignments
 
-def blend_images(image_paths, modality_names, output_path, custom_colors=False, color_map=None):
+def _channel_symbol(channel_index: int) -> str:
+    return ("R", "G", "B")[channel_index]
+
+
+def _infer_tracer_label(path: str) -> str:
+    filename = os.path.basename(path)
+    match = re.search(r'PT_(.*?)_PT', filename)
+    if match:
+        return match.group(1)
+    if filename.endswith(".nii.gz"):
+        filename = filename[:-7]
+    elif filename.endswith(".nii"):
+        filename = filename[:-4]
+    return re.sub(r"_(RED|GREEN|BLUE)$", "", filename, flags=re.IGNORECASE)
+
+
+def _foreground_values(sample: np.ndarray) -> np.ndarray:
+    finite = sample[np.isfinite(sample)]
+    positive = finite[finite > 0]
+    return positive if positive.size else finite
+
+
+def _robust_window(values: np.ndarray, low_percentile: float, high_percentile: float) -> tuple[float, float]:
+    if values.size == 0:
+        raise ValueError("No finite voxels found for adaptive multiplex window estimation.")
+    low, high = np.percentile(values, [low_percentile, high_percentile])
+    low = float(low)
+    high = float(high)
+    if not np.isfinite(low) or not np.isfinite(high) or high <= low:
+        finite_min = float(np.nanmin(values))
+        finite_max = float(np.nanmax(values))
+        if finite_max <= finite_min:
+            finite_max = finite_min + 1.0
+        return finite_min, finite_max
+    return low, high
+
+
+def _normalize_window(values: np.ndarray, low: float, high: float, gamma: float) -> np.ndarray:
+    normalized = (values.astype(np.float32, copy=False) - low) / (high - low)
+    normalized = np.clip(normalized, 0.0, 1.0)
+    if gamma != 1.0:
+        normalized = np.power(normalized, gamma, dtype=np.float32)
+    return normalized
+
+
+def _apply_blackpoint(values: np.ndarray, blackpoint: float) -> np.ndarray:
+    if blackpoint <= 0:
+        return values
+    if blackpoint >= 1:
+        return np.zeros_like(values)
+    return np.clip((values - blackpoint) / (1.0 - blackpoint), 0.0, 1.0)
+
+
+def _balance_statistic(values: np.ndarray, method: str) -> float:
+    active = values[np.isfinite(values) & (values > 0)]
+    if active.size == 0:
+        return 0.0
+    if method == "mean":
+        return float(np.mean(active))
+    if method.startswith("p"):
+        return float(np.percentile(active, float(method[1:])))
+    raise ValueError(f"Unknown multiplex balance statistic: {method}")
+
+
+def _sample_stride(shape: tuple[int, ...], sample_voxels: int = 1_000_000) -> int:
+    total_voxels = int(np.prod(shape))
+    if total_voxels <= sample_voxels:
+        return 1
+    return max(1, int(np.ceil((total_voxels / sample_voxels) ** (1.0 / 3.0))))
+
+
+def _report_path_for(output_path: str) -> str:
+    output = pathlib.Path(output_path)
+    return str(output.with_name(f"{visualization.strip_nii_suffix(output)}_window_report.json"))
+
+
+def _add_suffix(path: str, suffix: str) -> str:
+    p = pathlib.Path(path)
+    if p.name.endswith(".nii.gz"):
+        return str(p.with_name(f"{p.name[:-7]}{suffix}.nii.gz"))
+    if p.name.endswith(".nii"):
+        return str(p.with_name(f"{p.name[:-4]}{suffix}.nii"))
+    return str(p.with_name(f"{p.stem}{suffix}{p.suffix}"))
+
+
+def _save_rgb_nifti(rgb: np.ndarray, reference_image: nib.Nifti1Image, output_path: str) -> None:
+    rgb_dtype = np.dtype([('R', 'u1'), ('G', 'u1'), ('B', 'u1')])
+    composite_data = np.ascontiguousarray(rgb).view(dtype=rgb_dtype).reshape(rgb.shape[:3])
+    composite_image = nib.Nifti1Image(composite_data, reference_image.affine)
+    composite_image.header.set_xyzt_units(*reference_image.header.get_xyzt_units())
+    nib.save(composite_image, output_path)
+
+
+def _rename_inputs_by_channel(image_paths: list[str], color_channels: list[int]) -> None:
+    for image_path, color_channel in zip(image_paths, color_channels):
+        directory = os.path.dirname(image_path)
+        filename = os.path.basename(image_path)
+        channel_prefix = constants.CHANNEL_PREFIXES[color_channel]
+
+        if filename.endswith('.nii.gz'):
+            base_name = filename.rsplit('.nii.gz')[0]
+            extension = '.nii.gz'
+        elif filename.endswith('.nii'):
+            base_name = filename.rsplit('.nii')[0]
+            extension = '.nii'
+        else:
+            return
+
+        if base_name.endswith(channel_prefix):
+            continue
+
+        new_image_path = os.path.join(directory, f"{base_name}{channel_prefix}{extension}")
+        os.rename(image_path, new_image_path)
+
+
+def _print_multiplex_summary(image_paths: list[str], modality_names: list[str], output_path: str,
+                             color_channels: list[int]) -> None:
+    channel_colors = ['Red', 'Green', 'Blue']
+    channel_palette = {
+        'Red': constants.PUMAZ_COLORS['error'],
+        'Green': constants.PUMAZ_COLORS['success'],
+        'Blue': constants.PUMAZ_COLORS['info'],
+        'RGB': constants.PUMAZ_COLORS['accent'],
+    }
+    root_dir = os.path.dirname(output_path)
+
+    for path, modality, color_channel in zip(image_paths, modality_names, color_channels):
+        channel_name = channel_colors[color_channel]
+        color_style = channel_palette.get(channel_name, constants.PUMAZ_COLORS['accent'])
+        rel_path = os.path.relpath(path, root_dir)
+        line = Text(" • ", style=color_style)
+        line.append(f"{modality}: {rel_path}", style=constants.PUMAZ_COLORS['muted'])
+        line.append(" -> ", style=constants.PUMAZ_COLORS['muted'])
+        line.append(channel_name, style=color_style)
+        display_console.print(line)
+
+    rel_output = os.path.relpath(output_path, root_dir)
+    line = Text(" • ", style=channel_palette['RGB'])
+    line.append(f"MPX: {rel_output}", style=constants.PUMAZ_COLORS['muted'])
+    line.append(" -> ", style=constants.PUMAZ_COLORS['muted'])
+    line.append("RGB", style=channel_palette['RGB'])
+    display_console.print(line)
+    display_console.print()
+
+
+def blend_images(image_paths, modality_names, output_path, custom_colors=False, color_map=None,
+                 display_preset: str = "legacy", rename_inputs: bool = True):
     """
     Blend up to three NIfTI images into a single composite RGB image and create a summary table.
 
@@ -903,95 +1052,127 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False, 
     if len(image_paths) != len(modality_names):
         raise ValueError(" The number of image paths and modality names must match.")
 
-    channel_colors = ['Red', 'Green', 'Blue']
     if custom_colors:
         color_channels = get_color_channel_assignments(image_paths)
     elif color_map is not None:
         color_channels = get_color_channel_assignments_from_map(color_map, image_paths)
     else:
-        color_channels = (0, 1, 2)
+        color_channels = list(range(len(image_paths)))
 
-    images = []
+    color_channels = list(color_channels)
+    preset = display_presets.get_display_preset(display_preset)
+
     status = display_console.status(
         Text(" Loading images...", style=constants.PUMAZ_COLORS["info"]),
         spinner="dots",
     )
 
     with status:
-        # Load, normalize, and verify image shapes
-        for path in image_paths:
-            img = nib.load(path).get_fdata()
-            img_normalized = normalize_data(img)
-            images.append(img_normalized)
-
-        # Check if all images have the same shape
-        if not all(img.shape == images[0].shape for img in images):
+        nifti_images = [nib.load(path) for path in image_paths]
+        if not all(img.shape == nifti_images[0].shape for img in nifti_images):
             raise ValueError(" All images must have the same dimensions.")
 
         status.update(Text(" Blending images...", style=constants.PUMAZ_COLORS["info"]))
+        composite_data = np.zeros((*nifti_images[0].shape, 3), dtype=np.uint8)
 
-        # Create the composite image
-        composite_data = np.zeros((*images[0].shape, 3), dtype=np.uint8)
+        if preset.mode == "legacy":
+            for image, color_channel in zip(nifti_images, color_channels):
+                data = image.get_fdata()
+                data = normalize_data(data)
+                composite_data[..., color_channel] = np.clip(data * 255, 0, 255).astype(np.uint8)
+            report = {
+                "display_preset": preset.name,
+                "mode": preset.mode,
+                "inputs": image_paths,
+                "output": output_path,
+            }
+        else:
+            weights = preset.channel_weights()
+            gammas = preset.channel_gammas()
+            blackpoints = preset.channel_blackpoints()
+            stride = _sample_stride(nifti_images[0].shape)
+            channel_reports = []
+            pre_scale_stats = []
 
-        # Assign each image to its respective channel
-        for data, color_channel in zip(images, color_channels):
-            composite_data[..., color_channel] = np.clip(data * 255, 0, 255).astype(np.uint8)
+            for path, image, color_channel in zip(image_paths, nifti_images, color_channels):
+                channel = _channel_symbol(color_channel)
+                sample = np.asarray(image.dataobj[::stride, ::stride, ::stride], dtype=np.float32)
+                foreground = _foreground_values(sample)
+                low, high = _robust_window(foreground, preset.window_low, preset.window_high)
+                normalized = _normalize_window(foreground, low, high, gammas[channel])
+                normalized = _apply_blackpoint(normalized, blackpoints[channel])
+                pre_scale = 0.0 if preset.balance == "none" else _balance_statistic(normalized, preset.balance)
+                pre_scale_stats.append(pre_scale)
+                channel_reports.append({
+                    "input": path,
+                    "label": _infer_tracer_label(path),
+                    "channel": channel,
+                    "low": low,
+                    "high": high,
+                    "sampled_foreground_voxels": int(foreground.size),
+                    "balance_stat_before_scale": pre_scale,
+                    "channel_weight": weights[channel],
+                    "channel_gamma": gammas[channel],
+                    "channel_blackpoint": blackpoints[channel],
+                })
+
+            if preset.balance == "none":
+                auto_scales = [1.0] * len(channel_reports)
+            else:
+                nonzero_stats = [value for value in pre_scale_stats if value > 0]
+                target = float(np.median(nonzero_stats)) if nonzero_stats else 1.0
+                auto_scales = [
+                    float(np.clip(target / value, 0.45, 2.75)) if value > 0 else 1.0
+                    for value in pre_scale_stats
+                ]
+
+            chunk_depth = 24
+            for z0 in range(0, nifti_images[0].shape[2], chunk_depth):
+                z1 = min(nifti_images[0].shape[2], z0 + chunk_depth)
+                for image, color_channel, channel_report, auto_scale in zip(
+                        nifti_images, color_channels, channel_reports, auto_scales):
+                    channel = channel_report["channel"]
+                    block = np.asarray(image.dataobj[:, :, z0:z1], dtype=np.float32)
+                    block = np.nan_to_num(block, nan=channel_report["low"],
+                                          posinf=channel_report["high"], neginf=channel_report["low"])
+                    block = _normalize_window(block, channel_report["low"], channel_report["high"],
+                                              channel_report["channel_gamma"])
+                    block = _apply_blackpoint(block, channel_report["channel_blackpoint"])
+                    final_scale = auto_scale * channel_report["channel_weight"]
+                    block = np.clip(block * final_scale, 0.0, 1.0)
+                    composite_data[:, :, z0:z1, color_channel] = np.rint(block * 255).astype(np.uint8)
+
+            for channel_report, auto_scale in zip(channel_reports, auto_scales):
+                channel_report["auto_balance_scale"] = auto_scale
+                channel_report["final_scale"] = auto_scale * channel_report["channel_weight"]
+
+            report = {
+                "display_preset": preset.name,
+                "mode": preset.mode,
+                "output": output_path,
+                "window_low": preset.window_low,
+                "window_high": preset.window_high,
+                "balance": preset.balance,
+                "channels": channel_reports,
+            }
 
         status.update(Text(" Saving composite image...", style=constants.PUMAZ_COLORS["info"]))
+        _save_rgb_nifti(composite_data, nifti_images[0], output_path)
+        pathlib.Path(_report_path_for(output_path)).write_text(json.dumps(report, indent=2), encoding="utf-8")
 
-        shape_3d = composite_data.shape[0:3]
-        rgb_dtype = np.dtype([('R', 'u1'), ('G', 'u1'), ('B', 'u1')])
-        composite_data = composite_data.copy().view(dtype=rgb_dtype).reshape(shape_3d)
-        composite_image = nib.Nifti1Image(composite_data, nib.load(image_paths[0]).affine)
-        nib.save(composite_image, output_path)
+    _print_multiplex_summary(image_paths, modality_names, output_path, color_channels)
+    if rename_inputs:
+        _rename_inputs_by_channel(image_paths, color_channels)
 
-    channel_palette = {
-        'Red': constants.PUMAZ_COLORS['error'],
-        'Green': constants.PUMAZ_COLORS['success'],
-        'Blue': constants.PUMAZ_COLORS['info'],
-        'RGB': constants.PUMAZ_COLORS['accent'],
+    return {
+        "rgb_image": output_path,
+        "window_report": _report_path_for(output_path),
+        "display_preset": preset.name,
     }
 
-    root_dir = os.path.dirname(output_path)
 
-    for path, modality, color_channel in zip(image_paths, modality_names, color_channels):
-        channel_name = channel_colors[color_channel]
-        color_style = channel_palette.get(channel_name, constants.PUMAZ_COLORS['accent'])
-        rel_path = os.path.relpath(path, root_dir)
-        line = Text(" • ", style=color_style)
-        line.append(f"{modality}: {rel_path}", style=constants.PUMAZ_COLORS['muted'])
-        line.append(" → ", style=constants.PUMAZ_COLORS['muted'])
-        line.append(channel_name, style=color_style)
-        display_console.print(line)
-
-    rel_output = os.path.relpath(output_path, root_dir)
-    line = Text(" • ", style=channel_palette['RGB'])
-    line.append(f"MPX: {rel_output}", style=constants.PUMAZ_COLORS['muted'])
-    line.append(" → ", style=constants.PUMAZ_COLORS['muted'])
-    line.append("RGB", style=channel_palette['RGB'])
-    display_console.print(line)
-    display_console.print()
-
-    # Renaming according to channel assignments
-    for image_path, color_channel in zip(image_paths, color_channels):
-        directory = os.path.dirname(image_path)
-        filename = os.path.basename(image_path)
-        channel_prefix = constants.CHANNEL_PREFIXES[color_channel]
-
-        if filename.endswith('.nii.gz'):
-            base_name = filename.rsplit('.nii.gz')[0]
-            extension = '.nii.gz'
-        elif filename.endswith('.nii'):
-            base_name = filename.rsplit('.nii')[0]
-            extension = '.nii'
-        else:
-            return
-
-        new_image_path = os.path.join(directory, f"{base_name}{channel_prefix}{extension}")
-        os.rename(image_path, new_image_path)
-
-
-def multiplex(directory, extension, modality, output_image_path, custom_colors=False, color_map=None):
+def multiplex(directory, extension, modality, output_image_path, custom_colors=False, color_map=None,
+              display_preset: str = "legacy", display_gallery: bool = False):
     """
     Multiplex the images in a directory into a single composite RGB image.
     :param custom_colors: Specifies if user defined RGB channel assignment should be used.
@@ -1006,9 +1187,48 @@ def multiplex(directory, extension, modality, output_image_path, custom_colors=F
     :type output_image_path: str
     :return: None
     """
-    nifti_files = get_files(directory, extension)
+    nifti_files = [
+        path for path in get_files(directory, extension)
+        if os.path.basename(path).endswith((".nii", ".nii.gz"))
+        and "RGB-composite" not in os.path.basename(path)
+        and "grayscale-composite" not in os.path.basename(path)
+    ]
     modalities = [modality] * len(nifti_files)
-    blend_images(nifti_files, modalities, output_image_path, custom_colors,color_map)
+    results = {}
+
+    if display_gallery:
+        gallery_pngs = []
+        for preset_name in display_presets.GALLERY_PRESETS:
+            preset_output = _add_suffix(output_image_path, f"_{preset_name}")
+            preset_result = blend_images(
+                nifti_files, modalities, preset_output, custom_colors, color_map,
+                display_preset=preset_name, rename_inputs=False
+            )
+            preset_mip = str(pathlib.Path(preset_output).with_name(
+                f"{visualization.strip_nii_suffix(preset_output)}_mip.png"
+            ))
+            visualization.save_mip_png(preset_output, preset_mip, title=f"PUMA {preset_name} MIP")
+            gallery_pngs.append((preset_name, preset_mip))
+            results[preset_name] = preset_result
+
+        gallery_path = str(pathlib.Path(output_image_path).with_name("PUMA-display-gallery.png"))
+        visualization.save_gallery_png(gallery_pngs, gallery_path)
+        results["gallery_png"] = gallery_path
+
+    selected = blend_images(
+        nifti_files, modalities, output_image_path, custom_colors, color_map,
+        display_preset=display_preset, rename_inputs=True
+    )
+    results["selected"] = selected
+
+    if display_preset != "legacy" or display_gallery:
+        mip_png = str(pathlib.Path(output_image_path).with_name(
+            f"{visualization.strip_nii_suffix(output_image_path)}_mip.png"
+        ))
+        visualization.save_mip_png(output_image_path, mip_png, title=f"PUMA {display_preset} MIP")
+        results["mip_png"] = mip_png
+
+    return results
 
 
 def rgb2gray(rgb_file: str, gray_file: str):

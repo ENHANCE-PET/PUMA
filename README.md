@@ -61,6 +61,9 @@ Common flags:
 - `-m` – Produce multiplexed RGB composites alongside individual tracer outputs.
 - `-cm Tracer1:R,...` – Assign explicit colour channels to each tracer (mutually exclusive with `-cs`).
 - `-cs` – Interactively choose channel assignments when `-m` is enabled.
+- `--display-preset legacy|balanced|green-suppressed|red-focus` – Choose the RGB display transfer function for multiplexed PET. `legacy` keeps the original min-max behavior; adaptive presets write a reproducible window report.
+- `--display-gallery` – Generate balanced, green-suppressed, and red-focus MIP PNGs plus a comparison sheet.
+- `--export-rotating-mip` – Export a spacing-aware upright rotating MIP MP4 for the selected display preset.
 - `-c2d` – Convert aligned NIfTI volumes back to DICOM.
 
 ### <a id="workflow-essentials"></a>Workflow essentials 🧬
@@ -90,7 +93,7 @@ Each run emits a timestamped workspace (`PUMAZ-v<version>-<timestamp>`) alongsid
 | `PT/` | Resliced PET volumes indexed by tracer order |
 | `aligned_CT/` | Final aligned CT volumes |
 | `aligned_MASK/` | Aligned segmentation masks |
-| `aligned_PT/` | Aligned PET volumes; includes `RGB-composite.nii.gz` and `grayscale-composite.nii.gz` when multiplexing |
+| `aligned_PT/` | Aligned PET volumes; includes `RGB-composite.nii.gz`, `grayscale-composite.nii.gz`, display-window reports, MIP PNGs, gallery PNGs, and optional rotating MIP MP4 when requested |
 | `body_masks/` | Body-region masks with ignored labels removed |
 | `puma_masks/` | 24-label PUMA segmentations |
 | `transforms/` | Affine and warp fields for every tracer |

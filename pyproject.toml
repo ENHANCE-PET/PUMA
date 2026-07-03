@@ -42,6 +42,8 @@ dependencies = [
   "mpire",
   "openpyxl",
   "matplotlib",
+  "opencv-python-headless<5",
+  "pillow",
   "pyfiglet",
   "natsort",
   "colorama",

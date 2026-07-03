@@ -28,12 +28,14 @@ import emoji
 import rich_click as click
 from pumaz import constants
 from pumaz import display
+from pumaz import display_presets
 from pumaz import download
 from pumaz import file_utilities
 from pumaz import image_conversion
 from pumaz import image_processing
 from pumaz import input_validation
 from pumaz import resources
+from pumaz import visualization
 from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
@@ -152,7 +154,9 @@ def _parse_color_map(ctx, param, value):
 
 
 def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, color_map,
-                 convert_to_dicom, perform_risk_analysis):
+                 convert_to_dicom, perform_risk_analysis, display_preset, display_gallery,
+                 export_rotating_mip, rotating_mip_frames, rotating_mip_width,
+                 rotating_mip_fps, rotating_mip_interpolation):
     console.print()
     display.logo()
     console.print()
@@ -174,6 +178,9 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         f"Multiplexing: {multiplex}",
         f"Custom Colors: {custom_colors}",
         f"Color map: {color_map}",
+        f"Display preset: {display_preset}",
+        f"Display gallery: {display_gallery}",
+        f"Rotating MIP export: {export_rotating_mip}",
         f"Convert to DICOM: {convert_to_dicom}",
         f"Regions to Ignore: {', '.join(regions_to_ignore) if regions_to_ignore else 'None'}",
         f"Risk Analysis: {perform_risk_analysis}",
@@ -385,9 +392,22 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         logging.info(' ')
         aligned_pt_dir = os.path.join(puma_dir, constants.ALIGNED_PET_FOLDER)
         rgb_image = os.path.join(aligned_pt_dir, constants.MULTIPLEXED_COMPOSITE_IMAGE)
-        image_processing.multiplex(aligned_pt_dir, '*nii*', 'PET', rgb_image, custom_colors, color_map)
+        multiplex_result = image_processing.multiplex(
+            aligned_pt_dir, '*nii*', 'PET', rgb_image, custom_colors, color_map,
+            display_preset=display_preset, display_gallery=display_gallery
+        )
         grayscale_image = os.path.join(aligned_pt_dir, constants.GRAYSCALE_COMPOSITE_IMAGE)
         image_processing.rgb2gray(rgb_image, grayscale_image)
+        if export_rotating_mip:
+            rotating_mip = os.path.join(aligned_pt_dir, "RGB-composite_rotating-mip.mp4")
+            visualization.render_rotating_mip_mp4(
+                multiplex_result["selected"]["rgb_image"],
+                rotating_mip,
+                frames=rotating_mip_frames,
+                fps=rotating_mip_fps,
+                width=rotating_mip_width,
+                interpolation=rotating_mip_interpolation,
+            )
 
     if convert_to_dicom:
         display.section("Converting to DICOM", ":file_folder:")
@@ -417,7 +437,8 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
 
 
 def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom,
-              perform_risk_analysis):
+              perform_risk_analysis, display_preset, display_gallery, export_rotating_mip,
+              rotating_mip_frames, rotating_mip_width, rotating_mip_fps, rotating_mip_interpolation):
     """
     Run the PUMAZ pipeline for multiple subject directories, continuing past failures.
     """
@@ -435,6 +456,13 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
                 color_map,
                 convert_to_dicom,
                 perform_risk_analysis,
+                display_preset,
+                display_gallery,
+                export_rotating_mip,
+                rotating_mip_frames,
+                rotating_mip_width,
+                rotating_mip_fps,
+                rotating_mip_interpolation,
             )
         except KeyboardInterrupt:
             console.print()
@@ -583,6 +611,53 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
     help="Set tracer:color pairs (e.g. psma:R,fdg:G). Requires --multiplex.",
 )
 @click.option(
+    "--display-preset",
+    type=click.Choice(tuple(display_presets.DISPLAY_PRESETS.keys()), case_sensitive=False),
+    default="legacy",
+    show_default=True,
+    help="RGB display window preset used when multiplexing.",
+)
+@click.option(
+    "--display-gallery",
+    is_flag=True,
+    default=False,
+    help="Generate balanced, green-suppressed, and red-focus MIP comparison outputs.",
+)
+@click.option(
+    "--export-rotating-mip",
+    is_flag=True,
+    default=False,
+    help="Export a spacing-aware upright rotating MIP MP4 for the selected display preset.",
+)
+@click.option(
+    "--rotating-mip-frames",
+    type=click.IntRange(min=1),
+    default=120,
+    show_default=True,
+    help="Number of frames for --export-rotating-mip.",
+)
+@click.option(
+    "--rotating-mip-width",
+    type=click.IntRange(min=1),
+    default=1600,
+    show_default=True,
+    help="Output width in pixels for --export-rotating-mip.",
+)
+@click.option(
+    "--rotating-mip-fps",
+    type=click.FloatRange(min=0.1),
+    default=24.0,
+    show_default=True,
+    help="Frames per second for --export-rotating-mip.",
+)
+@click.option(
+    "--rotating-mip-interpolation",
+    type=click.Choice(("nearest", "linear", "cubic"), case_sensitive=False),
+    default="cubic",
+    show_default=True,
+    help="OpenCV interpolation mode for --export-rotating-mip.",
+)
+@click.option(
     "-c2d",
     "--convert-to-dicom",
     is_flag=True,
@@ -596,8 +671,9 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
     default=False,
     help="Highlight potential misalignment regions using volume comparisons.",
 )
-def cli(subject_directories, subjects_root, verify_environment, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom,
-        risk_analysis):
+def cli(subject_directories, subjects_root, verify_environment, ignore_regions, multiplex, custom_colors, color_map,
+        display_preset, display_gallery, export_rotating_mip, rotating_mip_frames, rotating_mip_width,
+        rotating_mip_fps, rotating_mip_interpolation, convert_to_dicom, risk_analysis):
     """
     PUMA (PET Universal Multi-tracer Aligner) standardizes, registers, and multiplexes serial PET/CT studies.
     """
@@ -613,6 +689,12 @@ def cli(subject_directories, subjects_root, verify_environment, ignore_regions, 
         raise click.UsageError("--color-map requires --multiplex.")
     if custom_colors and not multiplex:
         raise click.UsageError("--custom-colors requires --multiplex.")
+    if display_preset != "legacy" and not multiplex:
+        raise click.UsageError("--display-preset requires --multiplex unless set to legacy.")
+    if display_gallery and not multiplex:
+        raise click.UsageError("--display-gallery requires --multiplex.")
+    if export_rotating_mip and not multiplex:
+        raise click.UsageError("--export-rotating-mip requires --multiplex.")
     if not ignore_regions:
         raise click.UsageError("Provide at least one --ignore-regions value (use 'none' for all regions).")
 
@@ -648,6 +730,13 @@ def cli(subject_directories, subjects_root, verify_environment, ignore_regions, 
             color_map,
             convert_to_dicom,
             risk_analysis,
+            display_preset,
+            display_gallery,
+            export_rotating_mip,
+            rotating_mip_frames,
+            rotating_mip_width,
+            rotating_mip_fps,
+            rotating_mip_interpolation,
         )
     else:
         run_batch(
@@ -658,6 +747,13 @@ def cli(subject_directories, subjects_root, verify_environment, ignore_regions, 
             color_map,
             convert_to_dicom,
             risk_analysis,
+            display_preset,
+            display_gallery,
+            export_rotating_mip,
+            rotating_mip_frames,
+            rotating_mip_width,
+            rotating_mip_fps,
+            rotating_mip_interpolation,
         )
 
 
