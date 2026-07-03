@@ -70,10 +70,13 @@ Common flags:
 
 Recommended display workflow:
 ```bash
-# 1) Run registration once and generate review galleries for all subjects.
+# Single subject: run registration once and generate a display review gallery.
+pumaz -d /path/to/patient -ir none -m --review-display-presets
+
+# Batch: run registration once per subject and generate review galleries.
 pumaz --subjects-root /path/to/subjects -ir none -m --review-display-presets
 
-# 2) Review each PUMA-display-gallery.png, then apply the chosen preset
+# Review each PUMA-display-gallery.png, then apply the chosen preset
 #    to already aligned PET volumes without rerunning registration.
 pumaz-display /path/to/PUMAZ-run/aligned_PT --display-preset red-focus --export-rotating-mip
 ```
