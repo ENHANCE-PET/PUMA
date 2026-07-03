@@ -995,6 +995,37 @@ def _rename_inputs_by_channel(image_paths: list[str], color_channels: list[int])
         os.rename(image_path, new_image_path)
 
 
+def _infer_color_channel_assignments(image_paths: list[str]) -> list[int]:
+    """Infer RGB channels from PUMA suffixes, then fill any remaining channels by order."""
+    assignments: dict[int, int] = {}
+    used_channels = set()
+
+    for index, image_path in enumerate(image_paths):
+        filename = os.path.basename(image_path)
+        if filename.endswith(".nii.gz"):
+            stem = filename[:-7]
+        elif filename.endswith(".nii"):
+            stem = filename[:-4]
+        else:
+            stem = pathlib.Path(filename).stem
+
+        upper_stem = stem.upper()
+        for channel_index, suffix in enumerate(constants.CHANNEL_PREFIXES):
+            if upper_stem.endswith(suffix.upper()) and channel_index not in used_channels:
+                assignments[index] = channel_index
+                used_channels.add(channel_index)
+                break
+
+    remaining_channels = [channel for channel in range(3) if channel not in used_channels]
+    color_channels = []
+    for index in range(len(image_paths)):
+        if index in assignments:
+            color_channels.append(assignments[index])
+        else:
+            color_channels.append(remaining_channels.pop(0))
+    return color_channels
+
+
 def _print_multiplex_summary(image_paths: list[str], modality_names: list[str], output_path: str,
                              color_channels: list[int]) -> None:
     channel_colors = ['Red', 'Green', 'Blue']
@@ -1057,7 +1088,7 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False, 
     elif color_map is not None:
         color_channels = get_color_channel_assignments_from_map(color_map, image_paths)
     else:
-        color_channels = list(range(len(image_paths)))
+        color_channels = _infer_color_channel_assignments(image_paths)
 
     color_channels = list(color_channels)
     preset = display_presets.get_display_preset(display_preset)
@@ -1172,7 +1203,8 @@ def blend_images(image_paths, modality_names, output_path, custom_colors=False, 
 
 
 def multiplex(directory, extension, modality, output_image_path, custom_colors=False, color_map=None,
-              display_preset: str = "legacy", display_gallery: bool = False):
+              display_preset: str = "legacy", display_gallery: bool = False,
+              review_display_presets: bool = False, rename_inputs: bool = True):
     """
     Multiplex the images in a directory into a single composite RGB image.
     :param custom_colors: Specifies if user defined RGB channel assignment should be used.
@@ -1196,7 +1228,7 @@ def multiplex(directory, extension, modality, output_image_path, custom_colors=F
     modalities = [modality] * len(nifti_files)
     results = {}
 
-    if display_gallery:
+    if display_gallery or review_display_presets:
         gallery_pngs = []
         for preset_name in display_presets.GALLERY_PRESETS:
             preset_output = _add_suffix(output_image_path, f"_{preset_name}")
@@ -1214,10 +1246,15 @@ def multiplex(directory, extension, modality, output_image_path, custom_colors=F
         gallery_path = str(pathlib.Path(output_image_path).with_name("PUMA-display-gallery.png"))
         visualization.save_gallery_png(gallery_pngs, gallery_path)
         results["gallery_png"] = gallery_path
+        results["review_presets"] = list(display_presets.GALLERY_PRESETS)
+
+    if review_display_presets:
+        results["review_only"] = True
+        return results
 
     selected = blend_images(
         nifti_files, modalities, output_image_path, custom_colors, color_map,
-        display_preset=display_preset, rename_inputs=True
+        display_preset=display_preset, rename_inputs=rename_inputs
     )
     results["selected"] = selected
 

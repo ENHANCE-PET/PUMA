@@ -53,6 +53,7 @@ PUMA aligns each tracer, multiplexes RGB composites when requested, and writes r
 Retrieve the full command reference with:
 ```bash
 pumaz --help
+pumaz-display --help
 ```
 
 Common flags:
@@ -63,8 +64,24 @@ Common flags:
 - `-cs` – Interactively choose channel assignments when `-m` is enabled.
 - `--display-preset legacy|balanced|green-suppressed|red-focus` – Choose the RGB display transfer function for multiplexed PET. `legacy` keeps the original min-max behavior; adaptive presets write a reproducible window report.
 - `--display-gallery` – Generate balanced, green-suppressed, and red-focus MIP PNGs plus a comparison sheet.
+- `--review-display-presets` – Batch-safe review mode: generate preset galleries and stop before final RGB/DICOM export.
 - `--export-rotating-mip` – Export a spacing-aware upright rotating MIP MP4 for the selected display preset.
 - `-c2d` – Convert aligned NIfTI volumes back to DICOM.
+
+Recommended display workflow:
+```bash
+# 1) Run registration once and generate review galleries for all subjects.
+pumaz --subjects-root /path/to/subjects -ir none -m --review-display-presets
+
+# 2) Review each PUMA-display-gallery.png, then apply the chosen preset
+#    to already aligned PET volumes without rerunning registration.
+pumaz-display /path/to/PUMAZ-run/aligned_PT --display-preset red-focus --export-rotating-mip
+```
+
+For batch finalization, pass multiple `aligned_PT` folders to `pumaz-display`:
+```bash
+pumaz-display /case1/PUMAZ-run/aligned_PT /case2/PUMAZ-run/aligned_PT --display-preset red-focus --export-rotating-mip
+```
 
 ### <a id="workflow-essentials"></a>Workflow essentials 🧬
 Organise every patient or study with one directory per tracer; each tracer must contain PET and CT data as DICOM folders or NIfTI files prefixed by modality:

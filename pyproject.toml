@@ -67,6 +67,7 @@ Homepage = "https://github.com/QIMP-Team/PUMA"
 
 [project.scripts]
 pumaz = "pumaz.pumaz:main"
+pumaz-display = "pumaz.display_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["pumaz*"]

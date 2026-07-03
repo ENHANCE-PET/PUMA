@@ -60,6 +60,36 @@ def _print_panel(title: str, lines: list[str], border_color: str) -> None:
     )
 
 
+def _quote_cli_value(value: str) -> str:
+    return '"' + value.replace('"', '\\"') + '"'
+
+
+def _display_review_next_steps(aligned_pt_dir: str, color_map, gallery_path: str, presets: list[str]) -> None:
+    command_parts = [
+        "pumaz-display",
+        _quote_cli_value(aligned_pt_dir),
+        "--display-preset",
+        "<chosen-preset>",
+        "--export-rotating-mip",
+    ]
+    if color_map:
+        color_map_value = ",".join(f"{tracer}:{channel}" for tracer, channel in color_map.items())
+        command_parts.extend(["--color-map", color_map_value])
+
+    _print_panel(
+        "Display Review Queue",
+        [
+            f"Gallery: {gallery_path}",
+            f"Available presets: {', '.join(presets)}",
+            f"Aligned PET directory: {aligned_pt_dir}",
+            "",
+            "Review the gallery, then apply a preset without rerunning registration:",
+            " ".join(command_parts),
+        ],
+        constants.PUMAZ_COLORS["info"],
+    )
+
+
 def _binary_override_help() -> list[str]:
     return [
         "Set PUMAZ_BINARY_PATH to point to a prepared binaries folder:",
@@ -155,7 +185,7 @@ def _parse_color_map(ctx, param, value):
 
 def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, color_map,
                  convert_to_dicom, perform_risk_analysis, display_preset, display_gallery,
-                 export_rotating_mip, rotating_mip_frames, rotating_mip_width,
+                 review_display_presets, export_rotating_mip, rotating_mip_frames, rotating_mip_width,
                  rotating_mip_fps, rotating_mip_interpolation):
     console.print()
     display.logo()
@@ -180,6 +210,7 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         f"Color map: {color_map}",
         f"Display preset: {display_preset}",
         f"Display gallery: {display_gallery}",
+        f"Review display presets: {review_display_presets}",
         f"Rotating MIP export: {export_rotating_mip}",
         f"Convert to DICOM: {convert_to_dicom}",
         f"Regions to Ignore: {', '.join(regions_to_ignore) if regions_to_ignore else 'None'}",
@@ -394,8 +425,23 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         rgb_image = os.path.join(aligned_pt_dir, constants.MULTIPLEXED_COMPOSITE_IMAGE)
         multiplex_result = image_processing.multiplex(
             aligned_pt_dir, '*nii*', 'PET', rgb_image, custom_colors, color_map,
-            display_preset=display_preset, display_gallery=display_gallery
+            display_preset=display_preset, display_gallery=display_gallery,
+            review_display_presets=review_display_presets
         )
+        if review_display_presets:
+            _display_review_next_steps(
+                aligned_pt_dir,
+                color_map,
+                multiplex_result["gallery_png"],
+                multiplex_result["review_presets"],
+            )
+            return {
+                "review_only": True,
+                "subject_folder": subject_folder,
+                "aligned_pt_dir": aligned_pt_dir,
+                "gallery_png": multiplex_result["gallery_png"],
+                "review_presets": multiplex_result["review_presets"],
+            }
         grayscale_image = os.path.join(aligned_pt_dir, constants.GRAYSCALE_COMPOSITE_IMAGE)
         image_processing.rgb2gray(rgb_image, grayscale_image)
         if export_rotating_mip:
@@ -434,21 +480,23 @@ def run_pipeline(subject_folder, regions_to_ignore, multiplex, custom_colors, co
         padding=(1, 2),
     )
     console.print(success_panel)
+    return {"subject_folder": subject_folder, "puma_dir": puma_dir}
 
 
 def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, color_map, convert_to_dicom,
-              perform_risk_analysis, display_preset, display_gallery, export_rotating_mip,
+              perform_risk_analysis, display_preset, display_gallery, review_display_presets, export_rotating_mip,
               rotating_mip_frames, rotating_mip_width, rotating_mip_fps, rotating_mip_interpolation):
     """
     Run the PUMAZ pipeline for multiple subject directories, continuing past failures.
     """
     total_subjects = len(subject_directories)
     failures = []
+    review_outputs = []
     for index, subject_folder in enumerate(subject_directories, start=1):
         console.print()
         console.rule(f"[{constants.PUMAZ_COLORS['secondary']}]Subject {index}/{total_subjects}: {subject_folder}")
         try:
-            run_pipeline(
+            result = run_pipeline(
                 subject_folder,
                 ignore_regions,
                 multiplex,
@@ -458,12 +506,15 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
                 perform_risk_analysis,
                 display_preset,
                 display_gallery,
+                review_display_presets,
                 export_rotating_mip,
                 rotating_mip_frames,
                 rotating_mip_width,
                 rotating_mip_fps,
                 rotating_mip_interpolation,
             )
+            if isinstance(result, dict) and result.get("review_only"):
+                review_outputs.append(result)
         except KeyboardInterrupt:
             console.print()
             console.print(
@@ -518,6 +569,19 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
             for subject_folder, reason in failures:
                 failure_file.write(f"{subject_folder}\t{reason}\n")
 
+    review_manifest_path = None
+    if review_outputs:
+        review_manifest_path = Path.cwd() / f"pumaz-display-review-{datetime.now().strftime('%Y%m%d-%H%M%S')}.tsv"
+        with review_manifest_path.open("w", encoding="utf-8") as review_file:
+            review_file.write("subject_folder\taligned_pt_dir\tgallery_png\tpresets\n")
+            for output in review_outputs:
+                review_file.write(
+                    f"{output['subject_folder']}\t"
+                    f"{output['aligned_pt_dir']}\t"
+                    f"{output['gallery_png']}\t"
+                    f"{','.join(output['review_presets'])}\n"
+                )
+
     summary_text = Text(justify="left")
     summary_text.append(
         f"Processed {total_subjects} subject(s).\n",
@@ -542,6 +606,12 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
         summary_text.append(
             "Failed: 0\n",
             style=f"bold {constants.PUMAZ_COLORS['success']}",
+        )
+
+    if review_manifest_path is not None:
+        summary_text.append(
+            f"Display review manifest: {review_manifest_path}\n",
+            style=f"bold {constants.PUMAZ_COLORS['info']}",
         )
 
     summary_panel = Panel(
@@ -624,6 +694,12 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
     help="Generate balanced, green-suppressed, and red-focus MIP comparison outputs.",
 )
 @click.option(
+    "--review-display-presets",
+    is_flag=True,
+    default=False,
+    help="Generate display preset galleries for review and stop before final RGB/DICOM export.",
+)
+@click.option(
     "--export-rotating-mip",
     is_flag=True,
     default=False,
@@ -672,8 +748,8 @@ def run_batch(subject_directories, ignore_regions, multiplex, custom_colors, col
     help="Highlight potential misalignment regions using volume comparisons.",
 )
 def cli(subject_directories, subjects_root, verify_environment, ignore_regions, multiplex, custom_colors, color_map,
-        display_preset, display_gallery, export_rotating_mip, rotating_mip_frames, rotating_mip_width,
-        rotating_mip_fps, rotating_mip_interpolation, convert_to_dicom, risk_analysis):
+        display_preset, display_gallery, review_display_presets, export_rotating_mip, rotating_mip_frames,
+        rotating_mip_width, rotating_mip_fps, rotating_mip_interpolation, convert_to_dicom, risk_analysis):
     """
     PUMA (PET Universal Multi-tracer Aligner) standardizes, registers, and multiplexes serial PET/CT studies.
     """
@@ -693,6 +769,16 @@ def cli(subject_directories, subjects_root, verify_environment, ignore_regions, 
         raise click.UsageError("--display-preset requires --multiplex unless set to legacy.")
     if display_gallery and not multiplex:
         raise click.UsageError("--display-gallery requires --multiplex.")
+    if review_display_presets and not multiplex:
+        raise click.UsageError("--review-display-presets requires --multiplex.")
+    if review_display_presets and display_gallery:
+        raise click.UsageError("--review-display-presets already writes the display gallery; omit --display-gallery.")
+    if review_display_presets and export_rotating_mip:
+        raise click.UsageError("--review-display-presets cannot be combined with --export-rotating-mip.")
+    if review_display_presets and convert_to_dicom:
+        raise click.UsageError("--review-display-presets cannot be combined with --convert-to-dicom.")
+    if review_display_presets and custom_colors:
+        raise click.UsageError("--review-display-presets is batch-safe and cannot use interactive --custom-colors.")
     if export_rotating_mip and not multiplex:
         raise click.UsageError("--export-rotating-mip requires --multiplex.")
     if not ignore_regions:
@@ -732,6 +818,7 @@ def cli(subject_directories, subjects_root, verify_environment, ignore_regions, 
             risk_analysis,
             display_preset,
             display_gallery,
+            review_display_presets,
             export_rotating_mip,
             rotating_mip_frames,
             rotating_mip_width,
@@ -749,6 +836,7 @@ def cli(subject_directories, subjects_root, verify_environment, ignore_regions, 
             risk_analysis,
             display_preset,
             display_gallery,
+            review_display_presets,
             export_rotating_mip,
             rotating_mip_frames,
             rotating_mip_width,
