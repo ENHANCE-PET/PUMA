@@ -143,9 +143,9 @@ If you use PUMA in your research, please cite:
 Every QIMP library carries a trailing “z” to signal curiosity for what comes next. It nods to the unknown variable in science and to our commitment to keep stretching medical imaging beyond the expected. When you install `pumaz`, you join that exploration.
 
 ### License ⚖️
-The open-source edition ships under GPLv3. For commercial licensing or OEM partnerships, contact [lalith.shiyam@zenta.solutions](mailto:lalith.shiyam@zenta.solutions).
+The open-source edition ships under GPLv3. 
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Commercial License](https://img.shields.io/badge/Commercial--Use-Contact--Zenta-orange)](mailto:lalith.shiyam@zenta.solutions)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ### Contributors 🙌
 
