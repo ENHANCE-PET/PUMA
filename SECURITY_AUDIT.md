@@ -31,8 +31,8 @@ model weights were downloaded or added.
   integrity/path checks, legacy cache refresh and single/double rollback failures.
 - Parent independent PUMA source review: GO; independently reran 13 tests.
 - Fresh Python 3.11 dependency resolution succeeds with the final constraints.
-- Previous Python 3.13 metadata-only resolved graph: pip-audit reported no known
-  vulnerabilities. Parent owns the final audit refresh and package build.
+- Final Python 3.11 resolved graph: pip-audit checked 112 packages, none skipped,
+  and reported no known vulnerabilities. Source distribution and wheel builds pass.
 - `git diff --check` passes. No ML runtime or real registration was executed.
 
 ## Evidence and limits
