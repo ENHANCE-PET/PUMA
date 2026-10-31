@@ -26,7 +26,7 @@ model weights were downloaded or added.
 
 ## Verification
 
-- 13 security regressions pass, with observed failures before the corresponding
+- 14 security regressions pass, with observed failures before the corresponding
   fixes. Tests execute synthetic native tools and workflow Bash, exercise
   integrity/path checks, legacy cache refresh and single/double rollback failures.
 - Parent independent PUMA source review: GO; independently reran 13 tests.
@@ -57,7 +57,7 @@ model weights were downloaded or added.
 - PyPI and GitHub tag availability were checked by the coordinating release agent.
 - Metadata requires MOOSE >=3.3.0,<4 and nifti2dicom >=2.2.0 so package upgrades
   inherit the coordinated source repairs. Those releases must publish first.
-- Source security suite: 13 passed. Source distribution and wheel builds pass;
+- Source security suite: 14 passed. Source distribution and wheel builds pass;
   both archives were inspected and contain no local/imaging artifacts.
 - Actual candidate wheels for PUMA 1.9.0, MOOSE 3.3.0 and nifti2dicom 2.2.0 were
   loaded from an isolated directory outside all repositories using the available
@@ -69,3 +69,14 @@ model weights were downloaded or added.
   once; Python 3.10 is no longer supported. These changes are documented in README.
 - This validates imports/CLI availability and synthetic security paths, not the
   full segmentation/registration pipeline, clinical accuracy or native Windows.
+
+### Published binary archive compatibility
+
+All five pinned upstream ZIP hashes were recomputed and matched. Each published
+archive contains top-level `__MACOSX` AppleDouble metadata. The installer ignores
+those members without writing them, then validates/extracts only expected bundle
+members. A regression was observed failing before this compatibility repair.
+All five actual archives were validated and extracted to private temporary
+folders; both required binaries were present, with no metadata tree installed.
+Selected member counts are Windows x86_64: 7; Linux x86_64: 7; Linux arm64: 4;
+macOS x86_64: 7; macOS arm64: 7. Unexpected non-metadata roots remain rejected.

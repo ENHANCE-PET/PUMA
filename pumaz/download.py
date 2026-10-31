@@ -67,9 +67,14 @@ def _validated_members(archive: zipfile.ZipFile, parent: str, directory: str):
     members = archive.infolist()
     if len(members) > MAX_ARCHIVE_MEMBERS or sum(m.file_size for m in members) > MAX_EXTRACTED_BYTES:
         raise BinaryExtractionError("Registration archive exceeds extraction limits.")
+    selected = []
     for member in members:
         name = member.filename
         parts = PurePosixPath(name).parts
+        # Published cross-platform bundles include AppleDouble resource metadata.
+        # Ignore it without extracting; only validated bundle entries are written.
+        if parts and parts[0] == "__MACOSX":
+            continue
         mode = member.external_attr >> 16
         if (not parts or name.startswith("/") or "\\" in name or ":" in name
                 or any(part in {".", ".."} for part in name.rstrip("/").split("/"))
@@ -81,7 +86,8 @@ def _validated_members(archive: zipfile.ZipFile, parent: str, directory: str):
             raise BinaryExtractionError(f"Archive destination escapes binary cache: {name!r}")
         if any(path.is_symlink() for path in (destination, *destination.parents) if path != root):
             raise BinaryExtractionError(f"Symbolic link in archive destination: {name!r}")
-    return members
+        selected.append(member)
+    return selected
 
 
 def download(item_name: str, item_path: str, item_dict: dict, *, expected_files: list[str] | None = None) -> str:

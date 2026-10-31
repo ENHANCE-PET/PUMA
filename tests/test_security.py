@@ -205,3 +205,27 @@ def test_binary_rollback_failure_retains_recoverable_backup(binary_payload, monk
     backups = list(cache.glob('.puma-backup-*/previous/greedy.exe'))
     assert len(backups) == 1
     assert backups[0].read_bytes() == b'legacy writable executable'
+
+
+def test_binary_archive_installs_bundle_without_extracting_macos_metadata(tmp_path, monkeypatch):
+    from pumaz import download
+    archive = tmp_path / 'appledouble.zip'
+    with zipfile.ZipFile(archive, 'w') as stream:
+        stream.writestr('binaries/greedy.exe', b'verified binary')
+        stream.writestr('__MACOSX/._binaries', b'AppleDouble metadata')
+        stream.writestr('__MACOSX/binaries/._greedy.exe', b'AppleDouble metadata')
+        stream.writestr('__MACOSX/../outside', b'must never extract ignored metadata')
+    data = archive.read_bytes()
+    class Response:
+        def raise_for_status(self): pass
+        def iter_content(self, **kwargs): yield data
+        def close(self): pass
+    monkeypatch.setattr(download.requests, 'get', lambda *a, **kw: Response())
+    cache = tmp_path / 'cache'
+    download.download('test', str(cache), {'test': {'url': 'https://example.invalid/a.zip',
+                      'filename': 'a.zip', 'directory': 'binaries',
+                      'sha256': hashlib.sha256(data).hexdigest()}})
+    assert (cache / 'binaries' / 'greedy.exe').read_bytes() == b'verified binary'
+    assert not list(cache.rglob('__MACOSX'))
+    assert not list(cache.rglob('._*'))
+    assert not (cache / 'outside').exists()
