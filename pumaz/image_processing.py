@@ -415,22 +415,19 @@ class ImageRegistration:
         :rtype: str
         """
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
-        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+        combined_mask_cmd = [part for key, value in mask_options.items() if value for part in (key, value)]
 
         # Initialize the command with moments 1 <center of mass>
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -moments 1 -o " \
-                     fr"{self.transform_files['moments']} "
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+        cmd_to_run = [GREEDY_PATH, "-d", "3", "-i", self.fixed_img, self.moving_img,
+                      *combined_mask_cmd, "-moments", "1", "-o", self.transform_files['moments']]
+        subprocess.run(cmd_to_run, check=True, capture_output=True)
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -ia {self.transform_files['moments']} -dof 6 -o " \
-                     fr"{self.transform_files['rigid']} " \
-                     f"-n {self.multi_resolution_iterations} -m SSD"
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+        cmd_to_run = [GREEDY_PATH, "-d", "3", "-a", "-i", self.fixed_img, self.moving_img,
+                      *combined_mask_cmd, "-ia", self.transform_files['moments'], "-dof", "6",
+                      "-o", self.transform_files['rigid'], "-n", self.multi_resolution_iterations,
+                      "-m", "SSD"]
+        subprocess.run(cmd_to_run, check=True, capture_output=True)
 
         logging.info(
             f"Rigid alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | Aligned image: "
@@ -445,23 +442,19 @@ class ImageRegistration:
         :rtype: str
         """
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
-        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+        combined_mask_cmd = [part for key, value in mask_options.items() if value for part in (key, value)]
 
         # Initialize the command with moments 1 <center of mass>
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -moments 1 -o " \
-                     fr"{self.transform_files['moments']} "
+        cmd_to_run = [GREEDY_PATH, "-d", "3", "-i", self.fixed_img, self.moving_img,
+                      *combined_mask_cmd, "-moments", "1", "-o", self.transform_files['moments']]
+        subprocess.run(cmd_to_run, check=True, capture_output=True)
 
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
-
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -a -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -ia {self.transform_files['moments']} -dof 12 -o " \
-                     fr"{self.transform_files['affine']} " \
-                     f"-n {self.multi_resolution_iterations} -m SSD"
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+        cmd_to_run = [GREEDY_PATH, "-d", "3", "-a", "-i", self.fixed_img, self.moving_img,
+                      *combined_mask_cmd, "-ia", self.transform_files['moments'], "-dof", "12",
+                      "-o", self.transform_files['affine'], "-n", self.multi_resolution_iterations,
+                      "-m", "SSD"]
+        subprocess.run(cmd_to_run, check=True, capture_output=True)
 
         logging.info(
             f"Affine alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} |"
@@ -477,17 +470,14 @@ class ImageRegistration:
         """
         self.affine()
         mask_options = {'-gm': self.fixed_mask, '-mm': self.moving_mask}
-        combined_mask_cmd = " ".join(f"{key} {re.escape(value)}" for key, value in mask_options.items() if value)
+        combined_mask_cmd = [part for key, value in mask_options.items() if value for part in (key, value)]
 
-        cmd_to_run = f"{GREEDY_PATH} -d 3 -m SSD -i " \
-                     fr"{self.fixed_img} {self.moving_img} " \
-                     f"{combined_mask_cmd} -it " \
-                     fr"{self.transform_files['affine']} " \
-                     f"-o " \
-                     fr"{self.transform_files['warp']} -oinv {self.transform_files['inverse_warp']} " \
-                     f"-sv -n {self.multi_resolution_iterations}"
+        cmd_to_run = [GREEDY_PATH, "-d", "3", "-m", "SSD", "-i", self.fixed_img,
+                      self.moving_img, *combined_mask_cmd, "-it", self.transform_files['affine'],
+                      "-o", self.transform_files['warp'], "-oinv", self.transform_files['inverse_warp'],
+                      "-sv", "-n", self.multi_resolution_iterations]
+        subprocess.run(cmd_to_run, check=True, capture_output=True)
 
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
         logging.info(
             f"Deformable alignment: {pathlib.Path(self.moving_img).name} -> {pathlib.Path(self.fixed_img).name} | "
             f"Aligned image: moco-{pathlib.Path(self.moving_img).name} | "
@@ -536,10 +526,10 @@ class ImageRegistration:
         else:
             raise ValueError("Unknown registration type.")
 
-        subprocess.run(cmd_to_run, shell=True, capture_output=True)
+        subprocess.run(cmd_to_run, check=True, capture_output=True)
 
     def _build_cmd(self, resampled_moving_img: str, segmentation: str, resampled_seg: str,
-                   *transform_files: str) -> str:
+                   *transform_files: str) -> list[str]:
         """
         Build the command to resample the moving image.
 
@@ -554,15 +544,12 @@ class ImageRegistration:
         :return: The command to resample the moving image.
         :rtype: str
         """
-        cmd = f"{GREEDY_PATH} -d 3 -rf " \
-              fr"{self.fixed_img} -ri LINEAR -rm " \
-              fr"{self.moving_img} {resampled_moving_img}"
+        cmd = [GREEDY_PATH, "-d", "3", "-rf", self.fixed_img, "-ri", "LINEAR", "-rm",
+               self.moving_img, resampled_moving_img]
         if segmentation and resampled_seg:
-            cmd += f" -ri LABEL 0.2vox -rm " \
-                   fr"{segmentation} {resampled_seg}"
+            cmd.extend(["-ri", "LABEL", "0.2vox", "-rm", segmentation, resampled_seg])
         for transform_file in transform_files:
-            cmd += f" -r " \
-                   fr"{transform_file}"
+            cmd.extend(["-r", transform_file])
         return cmd
 
 
@@ -1279,8 +1266,9 @@ def rgb2gray(rgb_file: str, gray_file: str):
     :type gray_file: str
     :return: None
     """
-    c3d_cmd = f"{C3D_PATH} -mcs {rgb_file} -wsum {RED_WEIGHT} {GREEN_WEIGHT} {BLUE_WEIGHT} -o {gray_file}"
-    subprocess.run(c3d_cmd, shell=True, capture_output=True)
+    c3d_cmd = [C3D_PATH, "-mcs", rgb_file, "-wsum", str(RED_WEIGHT), str(GREEN_WEIGHT),
+               str(BLUE_WEIGHT), "-o", gray_file]
+    subprocess.run(c3d_cmd, check=True, capture_output=True)
     logging.info(f" Converted {os.path.basename(rgb_file)} to grayscale.")
 
 

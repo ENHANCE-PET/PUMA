@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pumaz"
-version = "1.8.14"
+version = "1.9.0"
 description = "PUMA (PET Universal Multi-tracer Aligner) aligns multi-tracer PET/CT studies using advanced diffeomorphic imaging."
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [
   { name = "Lalith Kumar Shiyam Sundar", email = "Lalith.shiyamsundar@meduniwien.ac.at" },
@@ -27,7 +27,6 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -37,22 +36,30 @@ dependencies = [
   "nibabel",
   "halo",
   "SimpleITK",
-  "pydicom>=2.4.5",
+  "pydicom>=3.0.2",
   "numpy",
   "mpire",
   "openpyxl",
   "matplotlib",
   "opencv-python-headless<5",
-  "pillow",
+  "pillow>=13",
+  "torch>=2.13",
+  "anyio>=4.14.2",
+  "certifi>=2026.10.18",
+  "filelock>=4.2.1",
+  "fsspec>=2026.6.0",
+  "msgpack>=1.2.3",
+  "setuptools>=84.1.0",
+  "urllib3>=2.8.0",
   "pyfiglet",
   "natsort",
   "colorama",
   "rich",
   "pandas",
-  "dicom2nifti",
-  "nifti2dicom",
+  "dicom2nifti>=2.6.2",
+  "nifti2dicom>=2.2.0",
   "requests>=2.33.0",
-  "moosez>=3.2.1,<4",
+  "moosez>=3.3.0,<4",
   "emoji",
   "click",
   "rich-click",

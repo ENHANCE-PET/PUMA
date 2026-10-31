@@ -33,26 +33,31 @@ PUMA_BINARIES = {
         "url": "https://github.com/ENHANCE-PET/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-windows-x86_64.zip",
         "filename": "beast-binaries-windows-x86_64.zip",
         "directory": "beast-binaries-windows-x86_64",
+        "sha256": "4b0419e401bf4e9a65c1f25f421a4301b413d3d380002794b3d637ed413363dc",
     },
     "puma-linux-x86_64": {
         "url": "https://github.com/ENHANCE-PET/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-linux-x86_64.zip",
         "filename": "beast-binaries-linux-x86_64.zip",
         "directory": "beast-binaries-linux-x86_64",
+        "sha256": "41409bef70d42048bfb63dab8884f50bf856b757c149aedd61deb7031ad18dff",
     },
     "puma-linux-arm64": {
         "url": "https://github.com/ENHANCE-PET/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-linux-arm64.zip",
         "filename": "beast-binaries-linux-arm64.zip",
         "directory": "beast-binaries-linux-arm64",
+        "sha256": "c81e74710169a85c125ab57bd1f406025b5a025fb5f8bb5fb7d1740882b11489",
     },
     "puma-mac-x86_64": {
         "url": "https://github.com/ENHANCE-PET/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-mac-x86_64.zip",
         "filename": "beast-binaries-mac-x86_64.zip",
         "directory": "beast-binaries-mac-x86_64",
+        "sha256": "e7ecd6ab2eeb6cbc5c562adda801c12d3a3833f0bdfe8a9bc578577afc3b4659",
     },
     "puma-mac-arm64": {
         "url": "https://github.com/ENHANCE-PET/PUMA/releases/download/pumaz-v.1.8.10/beast-binaries-mac-arm64.zip",
         "filename": "beast-binaries-mac-arm64.zip",
         "directory": "beast-binaries-mac-arm64",
+        "sha256": "f5985f10bf27bcd0e1ab218ec4b164e3550d19efcdb9d82c0eaf4d6781116b8a",
     },
 }
 

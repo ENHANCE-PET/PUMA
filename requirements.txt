@@ -1,25 +1,2 @@
-nibabel
-halo
-SimpleITK
-pydicom
-numpy
-mpire
-openpyxl
-matplotlib
-pyfiglet
-natsort
-colorama
-rich
-pandas
-dicom2nifti
-nifti2dicom
-requests
-moosez==3.0.30
-halo
-emoji
-cfonts
-psutil
-gputil
-dask
-click
-rich-click
+# Install dependencies from the authoritative project metadata.
+.
