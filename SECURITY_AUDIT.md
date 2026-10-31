@@ -80,3 +80,14 @@ All five actual archives were validated and extracted to private temporary
 folders; both required binaries were present, with no metadata tree installed.
 Selected member counts are Windows x86_64: 7; Linux x86_64: 7; Linux arm64: 4;
 macOS x86_64: 7; macOS arm64: 7. Unexpected non-metadata roots remain rejected.
+
+### Pull-request security CI
+
+A dedicated read-only GitHub Actions workflow now runs all 14 synthetic security
+regressions on Ubuntu with Python 3.11 and 3.14 for pull requests and master
+pushes. It installs only pytest, PyYAML, requests, rich, emoji and pyfiglet; the
+production package and ML runtime are not installed. Checkout/setup-python use
+verified commit SHAs already used by the coordinated FALCON release workflows.
+Local Python 3.13 verification passes all 14 tests, and the workflow YAML parses
+with its triggers, permission scope, matrix and action pins validated. The Ubuntu
+Python 3.11/3.14 jobs remain the remote CI gate.
