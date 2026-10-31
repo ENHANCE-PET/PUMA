@@ -179,3 +179,12 @@ without symbolic links. Downloads are limited to 256 MiB and extraction to 1 GiB
 Windows binary setup preserves inherited ACLs; administrators should grant the
 running account execute access if needed. Existing caches without the pinned digest marker are replaced using verified
 private staging, retaining previous binaries if download or publication fails.
+
+### Version 1.9 migration
+
+Version 1.9 requires Python 3.11 or newer, MOOSE 3.3 or newer, and nifti2dicom
+2.2 or newer so installed packages inherit the coordinated security repairs.
+Registration options, alignment stages and display features remain available.
+Native-tool failures now stop processing, and filenames are passed literally.
+The first run refreshes legacy binary caches from the pinned release; it needs
+network access and writable binary storage. Verified existing caches are reused.

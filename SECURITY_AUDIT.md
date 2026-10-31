@@ -33,7 +33,7 @@ model weights were downloaded or added.
 - Fresh Python 3.11 dependency resolution succeeds with the final constraints.
 - Final Python 3.11 resolved graph: pip-audit checked 112 packages, none skipped,
   and reported no known vulnerabilities. Source distribution and wheel builds pass.
-- `git diff --check` passes. No ML runtime or real registration was executed.
+- `git diff --check` passes. No model inference or real registration was executed.
 
 ## Evidence and limits
 
@@ -49,4 +49,23 @@ model weights were downloaded or added.
   subsequent changes by an account already able to modify the binary cache.
 - PUMA depends on published MOOSE/nifti2dicom packages; their local source repairs
   require coordinated upstream releases before ordinary PyPI installs inherit them.
-- No remote, push, PR, release or merge was performed.
+- The audit created no remote and rewrote no published history. Release candidates
+  are prepared on the existing security branch; publishing is coordinated separately.
+
+## Version 1.9.0 release candidate
+
+- PyPI and GitHub tag availability were checked by the coordinating release agent.
+- Metadata requires MOOSE >=3.3.0,<4 and nifti2dicom >=2.2.0 so package upgrades
+  inherit the coordinated source repairs. Those releases must publish first.
+- Source security suite: 13 passed. Source distribution and wheel builds pass;
+  both archives were inspected and contain no local/imaging artifacts.
+- Actual candidate wheels for PUMA 1.9.0, MOOSE 3.3.0 and nifti2dicom 2.2.0 were
+  loaded from an isolated directory outside all repositories using the available
+  ML dependency environment. Versions and import paths were checked. Real PUMA
+  image-processing/conversion/visualization imports succeed, and both published
+  console entrypoints (`pumaz --help`, `pumaz-display --help`) exit successfully.
+- No feature was removed. Existing options remain exposed. Intentionally stricter
+  behavior: native command failures stop processing; legacy binary caches refresh
+  once; Python 3.10 is no longer supported. These changes are documented in README.
+- This validates imports/CLI availability and synthetic security paths, not the
+  full segmentation/registration pipeline, clinical accuracy or native Windows.

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pumaz"
-version = "1.8.14"
+version = "1.9.0"
 description = "PUMA (PET Universal Multi-tracer Aligner) aligns multi-tracer PET/CT studies using advanced diffeomorphic imaging."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.11"
@@ -57,9 +57,9 @@ dependencies = [
   "rich",
   "pandas",
   "dicom2nifti",
-  "nifti2dicom",
+  "nifti2dicom>=2.2.0",
   "requests>=2.33.0",
-  "moosez>=3.2.1,<4",
+  "moosez>=3.3.0,<4",
   "emoji",
   "click",
   "rich-click",
