@@ -47,7 +47,7 @@ PUMA aligns each tracer, multiplexes RGB composites when requested, and writes r
   cd PUMA
   uv pip install -e .
   ```
-  Use Python 3.10+ and create a virtual environment when possible.
+  Use Python 3.11+ and create a virtual environment when possible.
 
 ### Usage essentials 🧾
 Retrieve the full command reference with:
@@ -170,3 +170,12 @@ Thanks to every contributor—large and small—for shaping PUMA.
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind are welcome.
+
+Registration commands pass filenames directly to native tools, including paths
+containing spaces or shell punctuation. Native-tool failures now stop processing.
+Downloaded registration binaries require the SHA-256 digests pinned in
+`pumaz/resources.py`; ZIP entries must stay inside the platform binary directory,
+without symbolic links. Downloads are limited to 256 MiB and extraction to 1 GiB.
+Windows binary setup preserves inherited ACLs; administrators should grant the
+running account execute access if needed. Existing caches without the pinned digest marker are replaced using verified
+private staging, retaining previous binaries if download or publication fails.

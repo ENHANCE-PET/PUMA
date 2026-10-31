@@ -22,7 +22,6 @@ import os
 import platform
 import shutil
 import stat
-import subprocess
 import sys
 from multiprocessing import Pool
 
@@ -52,7 +51,6 @@ def set_permissions(file_path: str, system_type: str) -> None:
     :rtype: None
     :raises FileNotFoundError: If the file specified by 'file_path' does not exist.
     :raises ValueError: If the provided operating system type is not supported.
-    :raises subprocess.CalledProcessError: If the 'icacls' command fails on Windows.
     :raises PermissionError: If the 'chmod' command fails on Linux or macOS.
 
     **Example**
@@ -72,18 +70,9 @@ def set_permissions(file_path: str, system_type: str) -> None:
 
     try:
         if system_type.lower() == 'windows':
-            try:
-                subprocess.check_call(
-                    ["icacls", file_path, "/grant", "*S-1-1-0:(F)"],
-                    stderr=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                )
-            except subprocess.CalledProcessError as exc:
-                raise PermissionSetupError(
-                    file_path,
-                    "Failed to grant execute permissions via icacls.",
-                    "Run the command as an administrator or ask IT to provision the binary.",
-                ) from exc
+            # Windows executes .exe files using inherited/provisioned ACLs. Granting
+            # Everyone full control lets other users replace binaries we execute.
+            pass
         elif system_type.lower() in ['linux', 'mac']:
             try:
                 os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
@@ -113,7 +102,7 @@ def set_permissions(file_path: str, system_type: str) -> None:
         raise PermissionSetupError(
             file_path,
             "Binary is still not executable after attempting to set permissions.",
-            f"Manually run 'chmod 755 \"{file_path}\"' (Linux/macOS) or adjust ACLs via icacls on Windows.",
+            f"Manually run 'chmod 755 \"{file_path}\"' (Linux/macOS) or ask an administrator to provision Windows execute access.",
         )
 
 
