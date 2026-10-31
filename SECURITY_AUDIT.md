@@ -91,3 +91,18 @@ verified commit SHAs already used by the coordinated FALCON release workflows.
 Local Python 3.13 verification passes all 14 tests, and the workflow YAML parses
 with its triggers, permission scope, matrix and action pins validated. The Ubuntu
 Python 3.11/3.14 jobs remain the remote CI gate.
+
+### DICOM converter compatibility floor
+
+PUMA now requires dicom2nifti >=2.6.2 alongside pydicom >=3.0.2. Unbounded
+converter metadata could retain dicom2nifti 2.4.11 during an upgrade; that release
+still calls the removed `pydicom.read_file` API and silently skips readable DICOM
+inputs. The functional regression was observed failing with the actual 2.4.11
+package code and pydicom 3.0.2, without changing shared dependencies. It passes
+with dicom2nifti 2.6.2 in the published LION runtime environment. The complete
+PUMA suite passes 15 tests: 14 security and one runtime compatibility test.
+
+The new test generates five synthetic CT slices, invokes PUMA's normal
+`non_nifti_to_nifti` helper, and independently checks all 60 scaled voxel values
+and RAS world coordinates in the written NIfTI. It lives in `tests/functional/`
+with explicit execution instructions; lightweight security CI remains unchanged.

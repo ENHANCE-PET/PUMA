@@ -56,7 +56,7 @@ dependencies = [
   "colorama",
   "rich",
   "pandas",
-  "dicom2nifti",
+  "dicom2nifti>=2.6.2",
   "nifti2dicom>=2.2.0",
   "requests>=2.33.0",
   "moosez>=3.3.0,<4",
